@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Launch via Gradle",
+            "request": "launch",
+            "mainClass": "com.example.MainKt",
+            "projectName": "Picard",
+            "preLaunchTask": "Gradle Run"
+          }
+    ]
+}

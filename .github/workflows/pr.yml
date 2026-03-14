@@ -1,0 +1,101 @@
+name: Konstellation Module PR Tests
+run-name: PR Tests for modules by ${{ github.actor }}
+
+on:
+  pull_request:
+    branches:
+      - 'main'
+    tags:
+      - codex
+    types: [opened, synchronize, reopened]
+
+jobs:
+  determine-modules:
+    name: Determine Changed Modules
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine affected modules
+        id: set-matrix
+        run: |
+          echo "matrix=$(./gradlew -q detectChangedModules | grep 'MATRIX=' | cut -d'=' -f2-)" >> "$GITHUB_OUTPUT"
+
+      - name: Debug Output
+        run: |
+          echo "Gradle Modules: ${{ fromJson(steps.set-matrix.outputs.matrix) }}"
+
+  module-tests:
+    needs: determine-modules
+    if: needs.determine-modules.outputs.matrix != '[]'
+    name: Test ${{ matrix.module-namespace.module }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        module-namespace: ${{ fromJson(needs.determine-modules.outputs.matrix) }}
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v4
+        name: Checkout code
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            .gradle
+            build
+            */build
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - uses: actions/setup-java@v4
+        name: Set up JDK 21
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Run build for ${{ matrix.module-namespace.module }}
+        run: ./gradlew ${{ matrix.module-namespace.module }}:build -x ${{ matrix.module-namespace.module }}:test
+        continue-on-error: false
+
+      - name: Run tests for ${{ matrix.module-namespace.module }}
+        run: ./gradlew ${{ matrix.module-namespace.module }}:test -Pdebug=${{ vars.DEBUG }} -Pkover ${{ matrix.module-namespace.module }}:koverXmlReport --info
+        continue-on-error: false
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports-${{ matrix.module-namespace.filename }}
+          path: ${{ matrix.module-namespace.path }}/build/reports/
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports-${{ matrix.module-namespace.filename }}
+          path: ${{ matrix.module-namespace.path }}/build/reports/kover/
+
+      - name: Add coverage report to PR
+        uses: mi-kas/kover-report@v1
+        if: false
+        with:
+          path: |
+            ${{ github.workspace }}/${{ matrix.module-namespace.path }}/build/reports/kover/report.xml
+          title: Code Coverage - ${{ matrix.module-namespace.module }}
+          update-comment: true
+          min-coverage-overall: 40
+          min-coverage-changed-files: 40
+          coverage-counter-type: LINE
