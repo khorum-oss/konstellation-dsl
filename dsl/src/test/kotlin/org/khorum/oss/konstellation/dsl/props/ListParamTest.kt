@@ -1,0 +1,41 @@
+package org.khorum.oss.konstellation.dsl.props
+
+import com.squareup.kotlinpoet.STRING
+import org.khorum.oss.geordi.UnitSim
+import org.khorum.oss.konstellation.dsl.schema.ListPropSchema
+import org.junit.jupiter.api.Test
+
+class ListParamTest : UnitSim() {
+
+    @Test
+    fun `toPropertySpec - happy path`() = test {
+        given {
+            val param = ListPropSchema("test", STRING)
+
+            expect { "protected var test: kotlin.collections.List<kotlin.String>? = null" }
+
+            whenever {
+                val propSpec = param.toPropertySpec()
+
+                propSpec.toString().trimIndent()
+            }
+        }
+    }
+
+    @Test
+    fun `accessors - happy path`() = test {
+        given {
+            val param = ListPropSchema("test", nullableAssignment = true)
+
+            expect {
+                """
+                    |public fun test(vararg items: kotlin.String) {
+                    |  this.test = items.toList()
+                    |}
+                """.trimMargin()
+            }
+
+            whenever { param.accessors().first().toString().trimIndent() }
+        }
+    }
+}

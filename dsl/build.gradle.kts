@@ -1,5 +1,6 @@
 import io.gitlab.arturbosch.detekt.Detekt
 import io.gitlab.arturbosch.detekt.DetektCreateBaselineTask
+import org.khorum.oss.plugins.open.secrets.getPropertyOrEnv
 
 val dslVersion: String by rootProject.extra
 val metaDslVersion: String by rootProject.extra
@@ -8,13 +9,14 @@ plugins {
     id("io.gitlab.arturbosch.detekt")
     `java-library`
     `maven-publish`
+    signing
 
     id("org.khorum.oss.plugins.open.secrets")
     id("org.khorum.oss.plugins.open.publishing.maven-generated-artifacts")
     id("org.khorum.oss.plugins.open.publishing.digital-ocean-spaces")
 }
 
-group = "io.violabs.konstellation"
+group = "org.khorum.oss.konstellation"
 version = dslVersion
 
 dependencies {
@@ -37,7 +39,7 @@ kover {
     reports {
         filters {
             excludes {
-                annotatedBy("io.violabs.konstellation.common.ExcludeFromCoverage")
+                annotatedBy("org.khorum.oss.konstellation.common.ExcludeFromCoverage")
             }
         }
     }
@@ -71,9 +73,22 @@ tasks.withType<DetektCreateBaselineTask>().configureEach {
 
 digitalOceanSpacesPublishing {
     bucket = "open-reliquary"
-//    accessKey = project.getPropertyOrEnv("spaces.key", "DO_SPACES_API_KEY")
-//    secretKey = project.getPropertyOrEnv("spaces.secret", "DO_SPACES_SECRET")
+    accessKey = project.getPropertyOrEnv("spaces.key", "DO_SPACES_API_KEY")
+    secretKey = project.getPropertyOrEnv("spaces.secret", "DO_SPACES_SECRET")
     publishedVersion = version.toString()
+    signingRequired = true
+}
+
+signing {
+    useInMemoryPgpKeys(
+        providers.environmentVariable("GPG_SIGNING_KEY").orNull,
+        providers.environmentVariable("GPG_SIGNING_PASSWORD").orNull
+    )
+    sign(publishing.publications)
+}
+
+tasks.withType<PublishToMavenRepository>().configureEach {
+    dependsOn(tasks.withType<Sign>())
 }
 
 mavenGeneratedArtifacts {

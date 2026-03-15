@@ -9,6 +9,7 @@ plugins {
     id("com.google.devtools.ksp") version "2.1.20-1.0.32" apply false
     id("io.gitlab.arturbosch.detekt") version "1.23.6" apply false
     id("org.jetbrains.kotlinx.kover") version "0.9.1"
+    id("org.sonarqube") version "7.0.0.6105"
     application
     id("org.khorum.oss.plugins.open.pipeline") version "1.0.3" apply false
     id("org.khorum.oss.plugins.open.secrets") version "1.0.3" apply false
@@ -77,6 +78,19 @@ tasks.register("koverMergedReport") {
     description = "Generates merged coverage report for all modules"
 
     dependsOn(subprojects.map { it.tasks.named("koverXmlReport") })
+}
+
+sonar {
+    properties {
+        property("sonar.projectKey", "khorum-oss_konstellation-dsl")
+        property("sonar.organization", "khorum-oss")
+        property("sonar.host.url", "https://sonarcloud.io")
+        property("sonar.coverage.jacoco.xmlReportPaths",
+            subprojects.joinToString(",") {
+                "${it.layout.buildDirectory.get()}/reports/kover/report.xml"
+            }
+        )
+    }
 }
 
 val secretPropsFile = project.rootProject.file("secret.properties") // update to your secret file under `buildSrc`
