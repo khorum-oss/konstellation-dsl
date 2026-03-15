@@ -8,6 +8,6 @@
 secret.properties
 
 jreleaser_public.asc
-public.key
+public.keyannoyin
 .serena
 *.asc
