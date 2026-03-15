@@ -22,7 +22,6 @@ jobs:
     uses: violabs/public-cicd/.github/workflows/gradle-detekt.yml@main
     with:
       java-version: '21'
-      module: 'dsl'
 
   unit-tests:
     needs: build-check
