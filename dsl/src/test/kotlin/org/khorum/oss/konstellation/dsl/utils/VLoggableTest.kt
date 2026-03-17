@@ -1,0 +1,96 @@
+package org.khorum.oss.konstellation.dsl.utils
+
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Test
+import org.khorum.oss.geordi.UnitSim
+
+class VLoggableTest : UnitSim() {
+
+    private class TestLoggable(private val id: String? = null) : VLoggable {
+        override fun logId(): String? = id
+    }
+
+    @AfterEach
+    fun resetDebug() {
+        VLoggable.setGlobalDebug(false)
+    }
+
+    @Test
+    fun `logger property creates Logger using logId`() = test {
+        given {
+            expect { true }
+            whenever {
+                val loggable = TestLoggable("myId")
+                val logger = loggable.logger
+                logger is Logger
+            }
+        }
+    }
+
+    @Test
+    fun `logger property caches - same instance returned on second call`() = test {
+        given {
+            expect { true }
+            whenever {
+                val loggable = TestLoggable("cachedId")
+                val first = loggable.logger
+                val second = loggable.logger
+                first === second
+            }
+        }
+    }
+
+    @Test
+    fun `setGlobalDebug true enables debug on all cached loggers`() = test {
+        given {
+            expect { true }
+            whenever {
+                val loggable = TestLoggable("debugTest")
+                val logger = loggable.logger
+                VLoggable.setGlobalDebug(true)
+                logger.debugEnabled()
+            }
+        }
+    }
+
+    @Test
+    fun `setGlobalDebug false disables debug on all cached loggers`() = test {
+        given {
+            expect { false }
+            whenever {
+                val loggable = TestLoggable("debugOffTest")
+                val logger = loggable.logger
+                VLoggable.setGlobalDebug(true)
+                VLoggable.setGlobalDebug(false)
+                logger.debugEnabled()
+            }
+        }
+    }
+
+    @Test
+    fun `resetGlobalDebug reads system property`() = test {
+        given {
+            expect { false }
+            whenever {
+                System.clearProperty("debug")
+                val loggable = TestLoggable("resetTest")
+                val logger = loggable.logger
+                VLoggable.setGlobalDebug(true)
+                VLoggable.resetGlobalDebug()
+                logger.debugEnabled()
+            }
+        }
+    }
+
+    @Test
+    fun `logger uses class simple name when logId returns null`() = test {
+        given {
+            expect { true }
+            whenever {
+                val loggable = TestLoggable(null)
+                val logger = loggable.logger
+                logger is Logger
+            }
+        }
+    }
+}

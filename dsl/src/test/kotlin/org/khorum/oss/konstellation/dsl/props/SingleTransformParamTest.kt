@@ -53,4 +53,59 @@ class SingleTransformParamTest : UnitSim() {
             whenever { param.accessors().first().toString().trimIndent() }
         }
     }
+
+    @Test
+    fun `accessors - with custom transformTemplate`() = test {
+        given {
+            val param = SingleTransformPropSchema(
+                "test",
+                inputTypeName,
+                propTypeName,
+                transformTemplate = "customTransform(%N)",
+                nullableAssignment = true
+            )
+
+            expect {
+                """
+                    |public fun test(test: kotlin.String) {
+                    |  this.test = customTransform(test)
+                    |}
+                """.trimMargin()
+            }
+
+            whenever { param.accessors().first().toString().trimIndent() }
+        }
+    }
+
+    @Test
+    fun `propertyValueReturn - nullable assignment returns propName`() = test {
+        given {
+            val param = SingleTransformPropSchema(
+                "test",
+                inputTypeName,
+                propTypeName,
+                nullableAssignment = true
+            )
+
+            expect { "test" }
+
+            whenever { param.propertyValueReturn() }
+        }
+    }
+
+    @Test
+    fun `propertyValueReturn - non-nullable assignment returns vRequireNotNull`() = test {
+        given {
+            val param = SingleTransformPropSchema(
+                "test",
+                inputTypeName,
+                propTypeName,
+                nullableAssignment = false
+            )
+
+            expect { "vRequireNotNull(::test)" }
+
+            whenever { param.propertyValueReturn() }
+        }
+    }
 }

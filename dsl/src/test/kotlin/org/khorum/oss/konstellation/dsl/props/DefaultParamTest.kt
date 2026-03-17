@@ -1,8 +1,10 @@
 package org.khorum.oss.konstellation.dsl.props
 
+import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.asTypeName
 import org.khorum.oss.geordi.UnitSim
+import org.khorum.oss.konstellation.dsl.domain.DefaultPropertyValue
 import org.khorum.oss.konstellation.dsl.schema.DefaultPropSchema
 import org.junit.jupiter.api.Test
 
@@ -26,6 +28,34 @@ class DefaultParamTest : UnitSim() {
     }
 
     @Test
+    fun `toPropertySpec - non-nullable assignment still produces nullable property spec`() = test {
+        given {
+            val param = DefaultPropSchema("test", propTypeName, nullableAssignment = false)
+
+            expect { "public var test: $testResponseClassName? = null" }
+
+            whenever { param.toPropertySpec().toString().trimIndent() }
+        }
+    }
+
+    @Test
+    fun `toPropertySpec - with defaultValue uses codeBlock initializer`() = test {
+        given {
+            val defaultValue = DefaultPropertyValue(
+                rawValue = "\"hello\"",
+                codeBlock = CodeBlock.of("%S", "hello"),
+                packageName = "kotlin",
+                className = "String"
+            )
+            val param = DefaultPropSchema("test", propTypeName, defaultValue = defaultValue)
+
+            expect { "public var test: $testResponseClassName? = \"hello\"" }
+
+            whenever { param.toPropertySpec().toString().trimIndent() }
+        }
+    }
+
+    @Test
     fun `accessors - happy path`() = test {
         given {
             val param = DefaultPropSchema("test", propTypeName, true)
@@ -33,6 +63,28 @@ class DefaultParamTest : UnitSim() {
             expect { true }
 
             whenever { param.accessors().isEmpty() }
+        }
+    }
+
+    @Test
+    fun `propertyValueReturn - nullable assignment returns propName`() = test {
+        given {
+            val param = DefaultPropSchema("test", propTypeName, nullableAssignment = true)
+
+            expect { "test" }
+
+            whenever { param.propertyValueReturn() }
+        }
+    }
+
+    @Test
+    fun `propertyValueReturn - non-nullable with verifyNotNull returns vRequireNotNull`() = test {
+        given {
+            val param = DefaultPropSchema("test", propTypeName, nullableAssignment = false)
+
+            expect { "vRequireNotNull(::test)" }
+
+            whenever { param.propertyValueReturn() }
         }
     }
 }

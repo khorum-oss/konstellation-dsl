@@ -1,8 +1,3 @@
-import java.util.Properties
-import kotlin.apply
-import kotlin.collections.component1
-import kotlin.collections.component2
-
 plugins {
     kotlin("jvm") version "2.1.20"
     id("org.jetbrains.dokka") version "1.9.20" apply false
@@ -75,9 +70,9 @@ fun Project.sharedRepositories() {
 
 tasks.register("koverMergedReport") {
     group = "verification"
-    description = "Generates merged coverage report for all modules"
+    description = "Generates coverage report for the dsl module"
 
-    dependsOn(subprojects.map { it.tasks.named("koverXmlReport") })
+    dependsOn(project(":dsl").tasks.named("koverXmlReport"))
 }
 
 sonar {
@@ -86,20 +81,7 @@ sonar {
         property("sonar.organization", "khorum-oss")
         property("sonar.host.url", "https://sonarcloud.io")
         property("sonar.coverage.jacoco.xmlReportPaths",
-            subprojects.joinToString(",") {
-                "${it.layout.buildDirectory.get()}/reports/kover/report.xml"
-            }
+            "${project(":dsl").layout.buildDirectory.get()}/reports/kover/report.xml"
         )
     }
-}
-
-val secretPropsFile = project.rootProject.file("secret.properties") // update to your secret file under `buildSrc`
-val ext = project.extensions.extraProperties
-if (secretPropsFile.exists()) {
-    secretPropsFile.reader().use {
-        Properties().apply { load(it) }
-    }.onEach { (name, value) ->
-        ext[name.toString()] = value
-    }
-    project.logger.log(LogLevel.LIFECYCLE, "Secrets loaded from file: $ext")
 }

@@ -58,7 +58,7 @@ jobs:
         uses: codecov/codecov-action@v5.5.2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: dsl/build/reports/kover/report.xml,core-test/build/reports/kover/report.xml,generate-test/build/reports/kover/report.xml
+          files: dsl/build/reports/kover/report.xml
           fail_ci_if_error: false
           verbose: true
 

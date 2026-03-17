@@ -29,6 +29,7 @@ dependencies {
     implementation("com.google.auto.service:auto-service:1.1.1")
 
     testImplementation(project(":core-test"))
+    testImplementation("io.mockk:mockk:1.13.17")
 }
 
 tasks.jar {
@@ -39,7 +40,7 @@ kover {
     reports {
         filters {
             excludes {
-                annotatedBy("org.khorum.oss.konstellation.common.ExcludeFromCoverage")
+                annotatedBy("org.khorum.oss.konstellation.dsl.common.ExcludeFromCoverage")
             }
         }
     }
