@@ -19,22 +19,17 @@ plugins {
 group = "org.khorum.oss.konstellation"
 version = dslVersion
 
-val kotlinPoetVersion: String by project
-val kspVersion: String by project
-val googleAutoServiceVersion: String by project
-val mockkVersion: String by project
-
 dependencies {
-    implementation("org.khorum.oss.konstellation:konstellation-meta-dsl:$metaDslVersion")
+    implementation(rootProject.libs.konstellation.meta.dsl)
     implementation(kotlin("stdlib"))
-    implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("com.squareup:kotlinpoet:$kotlinPoetVersion")
-    implementation("com.squareup:kotlinpoet-ksp:$kotlinPoetVersion")
-    implementation("com.google.devtools.ksp:symbol-processing-api:$kspVersion")
-    implementation("com.google.auto.service:auto-service:$googleAutoServiceVersion")
+    implementation(rootProject.libs.kotlin.reflect)
+    implementation(rootProject.libs.kotlinpoet)
+    implementation(rootProject.libs.kotlinpoet.ksp)
+    implementation(rootProject.libs.ksp.api)
+    implementation(rootProject.libs.google.auto.service)
 
     testImplementation(project(":core-test"))
-    testImplementation("io.mockk:mockk:$mockkVersion")
+    testImplementation(rootProject.libs.mockk)
 }
 
 tasks.jar {
@@ -51,21 +46,18 @@ kover {
     }
 }
 
-
 detekt {
-    buildUponDefaultConfig = true // preconfigure defaults
-    allRules = false // activate all available (even unstable) rules.
-//    config.setFrom("$projectDir/config/detekt.yml") // point to your custom config defining rules to run, overwriting default behavior
-//    baseline = file("$projectDir/config/baseline.xml") // a way of suppressing issues before introducing detekt
+    buildUponDefaultConfig = true
+    allRules = false
 }
 
 tasks.withType<Detekt>().configureEach {
     reports {
-        html.required.set(true) // observe findings in your browser with structure and code snippets
-        xml.required.set(true) // checkstyle like format mainly for integrations like Jenkins
-        txt.required.set(true) // similar to the console output, contains issue signature to manually edit baseline files
-        sarif.required.set(true) // standardized SARIF format (https://sarifweb.azurewebsites.net/) to support integrations with GitHub Code Scanning
-        md.required.set(true) // simple Markdown format
+        html.required.set(true)
+        xml.required.set(true)
+        txt.required.set(true)
+        sarif.required.set(true)
+        md.required.set(true)
     }
 }
 
@@ -137,6 +129,6 @@ mavenGeneratedArtifacts {
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(17) // Specify your desired Java version here
+        languageVersion = JavaLanguageVersion.of(17)
     }
 }

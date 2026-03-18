@@ -1,34 +1,21 @@
 plugins {
-    kotlin("jvm") version "2.1.20"
-    id("org.jetbrains.dokka") version "1.9.20" apply false
-    id("com.google.devtools.ksp") version "2.1.20-1.0.32" apply false
-    id("io.gitlab.arturbosch.detekt") version "1.23.6" apply false
-    id("org.jetbrains.kotlinx.kover") version "0.9.1"
-    id("org.sonarqube") version "7.0.0.6105"
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.dokka) apply false
+    alias(libs.plugins.ksp) apply false
+    alias(libs.plugins.detekt) apply false
+    alias(libs.plugins.kover)
+    alias(libs.plugins.sonarqube)
     application
-    id("org.khorum.oss.plugins.open.pipeline") version "1.0.3" apply false
-    id("org.khorum.oss.plugins.open.secrets") version "1.0.3" apply false
-
-    id("org.khorum.oss.plugins.open.publishing.maven-generated-artifacts") version "1.0.5" apply false
-    id("org.khorum.oss.plugins.open.publishing.digital-ocean-spaces") version "1.0.5" apply false
+    alias(libs.plugins.khorum.pipeline) apply false
+    alias(libs.plugins.khorum.secrets) apply false
+    alias(libs.plugins.khorum.maven.artifacts) apply false
+    alias(libs.plugins.khorum.digital.ocean) apply false
 }
 
 group = "org.khorum.oss.konstellation"
 
-sequenceOf(
-    "coroutinesCoreVersion" to "1.10.0",
-    "dslVersion" to file("VERSION").readText().trim(),
-    "googleAutoServiceVersion" to "1.1.1",
-    "junitJupiterVersion" to "5.13.0-M2",
-    "kotlinPoetVersion" to "2.1.0",
-    "kspVersion" to "2.1.20-1.0.32",
-    "metaDslVersion" to "1.0.1",
-    "mockkVersion" to "1.13.17",
-    "serializationJsonVersion" to "1.8.1"
-).forEach { (name, value) ->
-    println("Setting $name to $value")
-    extra[name] = value
-}
+extra["dslVersion"] = file("VERSION").readText().trim()
+extra["metaDslVersion"] = libs.versions.meta.dsl.get()
 
 java {
     toolchain {
@@ -50,13 +37,12 @@ allprojects {
 
     dependencies {
         implementation(kotlin("stdlib"))
-        implementation("org.jetbrains.kotlin:kotlin-reflect")
+        implementation(rootProject.libs.kotlin.reflect)
+        implementation(rootProject.libs.kotlin.logging)
 
-        implementation("io.github.microutils:kotlin-logging:4.0.0-beta-2")
-
-        testImplementation(kotlin("test")) // Kotlin’s own assert functions, optional but handy
-        testImplementation("org.junit.jupiter:junit-jupiter-api:6.0.0-M1")
-        testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+        testImplementation(kotlin("test"))
+        testImplementation(rootProject.libs.junit.jupiter.api)
+        testRuntimeOnly(rootProject.libs.junit.platform.launcher)
     }
 
     tasks.withType<Test> {
