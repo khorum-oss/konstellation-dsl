@@ -1,8 +1,10 @@
 package org.khorum.oss.konstellation.dsl.props
 
+import com.squareup.kotlinpoet.CodeBlock
 import org.khorum.oss.geordi.UnitSim
 import org.khorum.oss.konstellation.dsl.schema.BooleanPropSchema
 import org.junit.jupiter.api.Test
+import org.khorum.oss.konstellation.dsl.domain.DefaultPropertyValue
 
 class BooleanParamTest : UnitSim() {
 
@@ -50,12 +52,13 @@ class BooleanParamTest : UnitSim() {
     @Test
     fun `accessors - with defaultValue false`() = test {
         given {
-            val param = BooleanPropSchema("enabled", defaultValue = org.khorum.oss.konstellation.dsl.domain.DefaultPropertyValue(
+            val param = BooleanPropSchema("enabled", defaultValue = DefaultPropertyValue(
                 rawValue = "false",
-                codeBlock = com.squareup.kotlinpoet.CodeBlock.of("%L", false),
+                codeBlock = CodeBlock.of("%L", false),
                 packageName = "kotlin",
                 className = "Boolean"
-            ))
+            )
+            )
             expect { true }
             whenever { param.accessors().first().toString().contains("false") }
         }

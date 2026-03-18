@@ -1,8 +1,8 @@
 package org.khorum.oss.konstellation.dsl.schema
 
 import com.squareup.kotlinpoet.STRING
-import org.khorum.oss.geordi.UnitSim
 import org.junit.jupiter.api.Test
+import org.khorum.oss.geordi.UnitSim
 
 /**
  * Tests for DslPropSchema interface default method branches,
@@ -11,13 +11,14 @@ import org.junit.jupiter.api.Test
 class DslPropSchemaBranchTest : UnitSim() {
 
     @Test
-    fun `propertyValueReturn - non-nullable collection with verifyNotEmpty returns vRequireCollectionNotEmpty`() = test {
-        given {
-            val param = ListPropSchema("items", STRING, nullableAssignment = false)
-            expect { "vRequireCollectionNotEmpty(::items)" }
-            whenever { param.propertyValueReturn() }
+    fun `propertyValueReturn - non-nullable collection with verifyNotEmpty returns vRequireCollectionNotEmpty`() =
+        test {
+            given {
+                val param = ListPropSchema("items", STRING, nullableAssignment = false)
+                expect { "vRequireCollectionNotEmpty(::items)" }
+                whenever { param.propertyValueReturn() }
+            }
         }
-    }
 
     @Test
     fun `propertyValueReturn - non-nullable map collection returns vRequireCollectionNotEmpty`() = test {
