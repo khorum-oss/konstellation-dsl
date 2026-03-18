@@ -78,7 +78,6 @@ digitalOceanSpacesPublishing {
     secretKey = project.getPropertyOrEnv("spaces.secret", "DO_SPACES_SECRET")
     publishedVersion = version.toString()
     signingRequired = true
-    dryRun = true
 }
 
 signing {
