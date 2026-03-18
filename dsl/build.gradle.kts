@@ -78,14 +78,24 @@ digitalOceanSpacesPublishing {
     secretKey = project.getPropertyOrEnv("spaces.secret", "DO_SPACES_SECRET")
     publishedVersion = version.toString()
     signingRequired = true
+    dryRun = true
 }
 
 signing {
-    useInMemoryPgpKeys(
-        providers.environmentVariable("GPG_SIGNING_KEY").orNull,
-        providers.environmentVariable("GPG_SIGNING_PASSWORD").orNull
-    )
+    val signingKey = providers.environmentVariable("GPG_SIGNING_KEY").orNull
+    val signingPassword = providers.environmentVariable("GPG_SIGNING_PASSWORD").orNull
+
+    if (signingKey != null) {
+        useInMemoryPgpKeys(signingKey, signingPassword)
+    } else {
+        useGpgCmd()
+    }
     sign(publishing.publications)
+    afterEvaluate {
+        tasks.named("uploadToDigitalOceanSpaces") {
+            dependsOn(tasks.withType<Sign>())
+        }
+    }
 }
 
 tasks.withType<PublishToMavenRepository>().configureEach {

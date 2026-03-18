@@ -6,42 +6,27 @@
       <keyring-format>armored</keyring-format>
       <key-servers enabled="false"/>
       <trusted-artifacts>
-         <!--
-           Group-level trust for unsigned artifacts (no PGP signatures on Maven Central).
-           SHA-256 checksums are still verified via the <components> section.
-           Each group is explicitly listed — no broad wildcards.
-         -->
-         <!-- com.fasterxml (jackson) — unsigned source JARs -->
-         <trust group="^com[.]fasterxml($|([.].*))" regex="true"/>
-         <!-- com.google — auto-service, guava, errorprone, KSP, findbugs (all unsigned) -->
-         <trust group="^com[.]google($|([.].*))" regex="true"/>
-         <!-- com.squareup — kotlinpoet -->
-         <trust group="^com[.]squareup($|([.].*))" regex="true"/>
-         <!-- gradle distributions -->
          <trust group="gradle"/>
-         <!-- io.github — microutils kotlin-logging, detekt sarif4k -->
          <trust group="io.github.microutils"/>
-         <!-- io.gitlab — detekt -->
-         <trust group="^io[.]gitlab[.]arturbosch[.]detekt($|([.].*))" regex="true"/>
-         <!-- org.apache -->
          <trust group="org.apache" name="apache" version="17"/>
          <trust group="org.apiguardian"/>
          <trust group="org.checkerframework"/>
          <trust group="org.eclipse.ee4j" name="project" version="1.0.5"/>
          <trust group="org.hamcrest"/>
-         <!-- org.jetbrains — kotlin, kotlinx, dokka, intellij deps -->
-         <trust group="^org[.]jetbrains($|([.].*))" regex="true"/>
          <trust group="org.jspecify"/>
-         <!-- org.junit — JUnit 5 -->
-         <trust group="^org[.]junit($|([.].*))" regex="true"/>
-         <!-- org.khorum — own plugins (unsigned) -->
-         <trust group="^org[.]khorum($|([.].*))" regex="true"/>
          <trust group="org.objenesis"/>
          <trust group="org.opentest4j"/>
-         <!-- org.sonarsource — sonar scanner -->
-         <trust group="^org[.]sonarsource($|([.].*))" regex="true"/>
          <trust group="org.sonarqube" name="org.sonarqube.gradle.plugin" version="7.0.0.6105"/>
          <trust group="org.sonatype.oss"/>
+         <trust group="^com[.]fasterxml($|([.].*))" regex="true"/>
+         <trust group="^com[.]google($|([.].*))" regex="true"/>
+         <trust group="^com[.]soywiz($|([.].*))" regex="true"/>
+         <trust group="^com[.]squareup($|([.].*))" regex="true"/>
+         <trust group="^io[.]gitlab[.]arturbosch[.]detekt($|([.].*))" regex="true"/>
+         <trust group="^org[.]jetbrains($|([.].*))" regex="true"/>
+         <trust group="^org[.]junit($|([.].*))" regex="true"/>
+         <trust group="^org[.]khorum($|([.].*))" regex="true"/>
+         <trust group="^org[.]sonarsource($|([.].*))" regex="true"/>
       </trusted-artifacts>
       <ignored-keys>
          <ignored-key id="2161D72E7DCD4258" reason="Key couldn't be downloaded from any key server"/>
