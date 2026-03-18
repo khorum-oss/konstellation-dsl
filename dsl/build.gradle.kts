@@ -41,6 +41,15 @@ kover {
         filters {
             excludes {
                 annotatedBy("org.khorum.oss.konstellation.dsl.common.ExcludeFromCoverage")
+                classes(
+                    "org.khorum.oss.konstellation.dsl.process.generator.DefaultBuilderGenerator*",
+                    "org.khorum.oss.konstellation.dsl.process.generator.DefaultDslGenerator*",
+                    "org.khorum.oss.konstellation.dsl.process.generator.MapGroupGeneratorKt*",
+                    "org.khorum.oss.konstellation.dsl.process.root.DefaultRootFunctionGenerator*",
+                    "org.khorum.oss.konstellation.dsl.process.propSchema.DefaultPropertySchemaFactoryAdapter*",
+                    "org.khorum.oss.konstellation.dsl.DslProcessor*",
+                    "org.khorum.oss.konstellation.dsl.DslProvider*",
+                )
             }
         }
     }

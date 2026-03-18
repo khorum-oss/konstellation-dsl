@@ -67,6 +67,63 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
         }
 
         private fun mockSimpleProp(name: String = "testProp"): KSPropertyDeclaration {
+            return mockPropWithAnnotations(name, emptySequence())
+        }
+
+        private fun mockDefaultValueAnnotation(args: List<Pair<String, Any?>>): KSAnnotation {
+            val annTypeRef: KSTypeReference = mockk()
+            val annResolvedType: KSType = mockk()
+            val annDecl: KSClassDeclaration = mockk()
+            val annQualName: KSName = mockk()
+            every { annQualName.asString() } returns "org.khorum.oss.konstellation.metaDsl.annotation.DefaultValue"
+            every { annDecl.qualifiedName } returns annQualName
+            every { annResolvedType.declaration } returns annDecl
+            every { annTypeRef.resolve() } returns annResolvedType
+
+            val ann: KSAnnotation = mockk()
+            every { ann.annotationType } returns annTypeRef
+            val shortName: KSName = mockk()
+            every { shortName.asString() } returns "DefaultValue"
+            every { ann.shortName } returns shortName
+            every { ann.arguments } returns args.map { (k, v) ->
+                val argName: KSName = mockk()
+                every { argName.asString() } returns k
+                val arg: KSValueArgument = mockk()
+                every { arg.name } returns argName
+                every { arg.value } returns v
+                arg
+            }
+            return ann
+        }
+
+        private fun mockPropWithDefaultValue(
+            rawValue: String,
+            packageName: String,
+            className: String
+        ): KSPropertyDeclaration {
+            val ann = mockDefaultValueAnnotation(
+                listOf("value" to rawValue, "packageName" to packageName, "className" to className)
+            )
+            return mockPropWithAnnotations("testProp", sequenceOf(ann))
+        }
+
+        private fun mockPropWithPartialDefaultValue(
+            rawValue: String?,
+            packageName: String?,
+            className: String?
+        ): KSPropertyDeclaration {
+            val args = mutableListOf<Pair<String, Any?>>()
+            if (rawValue != null) args.add("value" to rawValue)
+            if (packageName != null) args.add("packageName" to packageName)
+            if (className != null) args.add("className" to className)
+            val ann = mockDefaultValueAnnotation(args)
+            return mockPropWithAnnotations("testProp", sequenceOf(ann))
+        }
+
+        private fun mockPropWithAnnotations(
+            name: String,
+            annotations: Sequence<KSAnnotation>
+        ): KSPropertyDeclaration {
             val typeRef: KSTypeReference = mockk()
             every { typeRef.toTypeName() } returns STRING
 
@@ -84,7 +141,7 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
             val prop: KSPropertyDeclaration = mockk()
             every { prop.simpleName } returns mockKSName(name)
             every { prop.type } returns typeRef
-            every { prop.annotations } returns emptySequence()
+            every { prop.annotations } returns annotations
             return prop
         }
     }
@@ -135,51 +192,11 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
         }
     }
 
-    // TODO: This test requires deep mock chains through DefaultPropertySchemaFactoryAdapter constructor
-    // which accesses annotation shortName during prop.annotations.find { ... }
-    // @Test
-    fun `getParamsFromDomain extracts DefaultValue annotation when present`() = test {
+    @Test
+    fun `getParamsFromDomain extracts DefaultValue annotation for String class`() = test {
         given {
             val service = DefaultPropertySchemaService()
-
-            // Create a prop with @DefaultValue annotation
-            val typeRef: KSTypeReference = mockk()
-            every { typeRef.toTypeName() } returns STRING
-            val resolvedType: KSType = mockk()
-            every { resolvedType.isMarkedNullable } returns false
-            every { resolvedType.declaration } returns mockk<KSClassDeclaration>(relaxed = true)
-            every { resolvedType.arguments } returns emptyList()
-            every { typeRef.resolve() } returns resolvedType
-
-            // Mock the @DefaultValue annotation
-            val annTypeRef: KSTypeReference = mockk()
-            val annResolvedType: KSType = mockk()
-            val annDecl: KSClassDeclaration = mockk()
-            val annQualName: KSName = mockk()
-            every { annQualName.asString() } returns "org.khorum.oss.konstellation.metaDsl.annotation.DefaultValue"
-            every { annDecl.qualifiedName } returns annQualName
-            every { annResolvedType.declaration } returns annDecl
-            every { annTypeRef.resolve() } returns annResolvedType
-
-            val valueArg: KSValueArgument = mockk()
-            every { valueArg.name } returns mockKSName("value")
-            every { valueArg.value } returns "hello"
-            val pkgArg: KSValueArgument = mockk()
-            every { pkgArg.name } returns mockKSName("packageName")
-            every { pkgArg.value } returns "kotlin"
-            val clsArg: KSValueArgument = mockk()
-            every { clsArg.name } returns mockKSName("className")
-            every { clsArg.value } returns "String"
-
-            val ann: KSAnnotation = mockk()
-            every { ann.annotationType } returns annTypeRef
-            every { ann.arguments } returns listOf(valueArg, pkgArg, clsArg)
-
-            val prop: KSPropertyDeclaration = mockk()
-            every { prop.simpleName } returns mockKSName("greeting")
-            every { prop.type } returns typeRef
-            every { prop.annotations } returns sequenceOf(ann)
-
+            val prop = mockPropWithDefaultValue("hello", "kotlin", "String")
             val domainConfig = mockDomainConfig(sequenceOf(prop))
 
             expect { true }
@@ -189,4 +206,68 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
             }
         }
     }
+
+    @Test
+    fun `getParamsFromDomain extracts DefaultValue annotation for non-String class`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val prop = mockPropWithDefaultValue("42", "kotlin", "Int")
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                val schemas = service.getParamsFromDomain(domainConfig)
+                val dv = schemas.first().defaultValue
+                dv != null && dv.rawValue == "42"
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain returns null default value when annotation value is missing`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val prop = mockPropWithPartialDefaultValue(rawValue = null, packageName = "kotlin", className = "String")
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { null }
+            whenever { service.getParamsFromDomain(domainConfig).first().defaultValue }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain returns null default value when packageName is missing`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val prop = mockPropWithPartialDefaultValue(rawValue = "hello", packageName = null, className = "String")
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { null }
+            whenever { service.getParamsFromDomain(domainConfig).first().defaultValue }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain returns null default value when className is missing`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val prop = mockPropWithPartialDefaultValue(rawValue = "hello", packageName = "kotlin", className = null)
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { null }
+            whenever { service.getParamsFromDomain(domainConfig).first().defaultValue }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain returns null default value when no DefaultValue annotation`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val domainConfig = mockDomainConfig(sequenceOf(mockSimpleProp("noDefault")))
+
+            expect { null }
+            whenever { service.getParamsFromDomain(domainConfig).first().defaultValue }
+        }
+    }
+
 }

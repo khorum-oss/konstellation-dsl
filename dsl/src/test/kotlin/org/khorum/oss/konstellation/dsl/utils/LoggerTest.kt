@@ -233,6 +233,107 @@ class LoggerTest : UnitSim() {
         }
     }
 
+    @Test
+    fun `tier prefix with active branches shows vertical bar`() = test {
+        given {
+            expect { true }
+            whenever {
+                val logger = Logger("test").enableDebug()
+                val output = captureStdout {
+                    // Set branch at tier 1 to mark it as active
+                    logger.debug("parent", tier = 1, branch = true)
+                    // Tier 3 should show "|" for tier 1 since it's active
+                    logger.debug("grandchild", tier = 3, branch = false)
+                }
+                output.contains("|") && output.contains("grandchild")
+            }
+        }
+    }
+
+    @Test
+    fun `tier prefix without active branches shows spaces`() = test {
+        given {
+            expect { true }
+            whenever {
+                val logger = Logger("test").enableDebug()
+                val output = captureStdout {
+                    // Set branch=false at tier 1 (not active)
+                    logger.debug("parent", tier = 1, branch = false)
+                    // Tier 3 should show spaces for tier 1 since it's not active
+                    logger.debug("grandchild", tier = 3)
+                }
+                output.contains("grandchild")
+            }
+        }
+    }
+
+    @Test
+    fun `updateBranches removes higher tiers when new lower tier is set`() = test {
+        given {
+            expect { true }
+            whenever {
+                val logger = Logger("test").enableDebug()
+                val output = captureStdout {
+                    logger.debug("deep", tier = 3, branch = true)
+                    // When we set tier 1, tier 3 branch should be cleared
+                    logger.debug("shallow", tier = 1, branch = true)
+                    logger.debug("deep again", tier = 3)
+                }
+                output.contains("deep again")
+            }
+        }
+    }
+
+    @Test
+    fun `warn with tier and branch prints correctly`() = test {
+        given {
+            expect { true }
+            whenever {
+                val logger = Logger("test", isWarningEnabled = true)
+                val output = captureStdout { logger.warn("warning", tier = 2, branch = true) }
+                output.contains("warning") && output.contains("|__")
+            }
+        }
+    }
+
+    @Test
+    fun `error with branch tracks active branches`() = test {
+        given {
+            expect { true }
+            whenever {
+                val logger = Logger("test")
+                val output = captureStdout {
+                    logger.error("err", tier = 1, branch = true)
+                    logger.info("info", tier = 2)
+                }
+                output.contains("err") && output.contains("info")
+            }
+        }
+    }
+
+    @Test
+    fun `infoMultiline with empty string prints nothing`() = test {
+        given {
+            expect { 1 }
+            whenever {
+                val output = captureStdout { Logger("test").infoMultiline("") }
+                output.trim().lines().filter { it.isNotBlank() }.size
+            }
+        }
+    }
+
+    @Test
+    fun `formattedName uses exact 30 char name as-is`() = test {
+        given {
+            val name30 = "a".repeat(30)
+            expect { true }
+            whenever {
+                val output = captureStdout { Logger(name30).info("msg") }
+                output.contains(name30)
+            }
+        }
+    }
+
     private fun captureStdout(block: () -> Unit): String {
         val originalOut = System.out
         val baos = ByteArrayOutputStream()

@@ -101,4 +101,55 @@ class KSClassDeclarationExtTest : UnitSim() {
             whenever { decl.mapGroupType() }
         }
     }
+
+    @Test
+    fun `mapGroupType returns LIST when annotation has LIST value`() = test {
+        given {
+            val decl: KSClassDeclaration = mockk()
+            every { decl.annotations } returns sequenceOf(mockAnnotation(mapOf("withMapGroup" to "LIST")))
+
+            expect { MapGroupType.LIST }
+            whenever { decl.mapGroupType() }
+        }
+    }
+
+    @Test
+    fun `mapGroupType returns NONE when annotation has NONE value`() = test {
+        given {
+            val decl: KSClassDeclaration = mockk()
+            every { decl.annotations } returns sequenceOf(mockAnnotation(mapOf("withMapGroup" to "NONE")))
+
+            expect { MapGroupType.NONE }
+            whenever { decl.mapGroupType() }
+        }
+    }
+
+    // Note: Tests for annotations with non-matching argument names
+    // are covered indirectly through ParameterFactoryTest and GroupGeneratorTest.
+
+    @Test
+    fun `mapGroupType handles lowercase value via uppercase conversion`() = test {
+        given {
+            val decl: KSClassDeclaration = mockk()
+            every { decl.annotations } returns sequenceOf(mockAnnotation(mapOf("withMapGroup" to "single")))
+
+            expect { MapGroupType.SINGLE }
+            whenever { decl.mapGroupType() }
+        }
+    }
+
+    @Test
+    fun `isGroupDsl returns false when annotation has non-matching name`() = test {
+        given {
+            val decl: KSClassDeclaration = mockk()
+            val ann: KSAnnotation = mockk()
+            val shortName: KSName = mockk()
+            every { shortName.asString() } returns "OtherAnnotation"
+            every { ann.shortName } returns shortName
+            every { decl.annotations } returns sequenceOf(ann)
+
+            expect { false }
+            whenever { decl.isGroupDsl() }
+        }
+    }
 }

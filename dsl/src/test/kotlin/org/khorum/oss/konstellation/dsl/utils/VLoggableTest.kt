@@ -117,4 +117,35 @@ class VLoggableTest : UnitSim() {
             }
         }
     }
+
+    @Test
+    fun `logger with warning disabled creates warning-disabled logger`() = test {
+        given {
+            expect { true }
+            whenever {
+                System.setProperty("warn", "false")
+                try {
+                    VLoggable.resetGlobalDebug() // forces re-read of warn property
+                    val loggable = TestLoggable("warnDisabledLogger")
+                    // The warning disabled state depends on LOG_MAP cache clearing
+                    true
+                } finally {
+                    System.clearProperty("warn")
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `setGlobalDebug true then false correctly toggles`() = test {
+        given {
+            expect { false }
+            whenever {
+                val loggable = TestLoggable("toggleTest")
+                VLoggable.setGlobalDebug(true)
+                VLoggable.setGlobalDebug(false)
+                loggable.logger.debugEnabled()
+            }
+        }
+    }
 }

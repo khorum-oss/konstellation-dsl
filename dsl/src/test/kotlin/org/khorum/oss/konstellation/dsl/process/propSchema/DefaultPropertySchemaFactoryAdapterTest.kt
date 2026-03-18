@@ -29,6 +29,7 @@ class DefaultPropertySchemaFactoryAdapterTest : UnitSim() {
         fun setupAll() {
             mockkStatic(KSTypeReference::toTypeName)
             mockkStatic(KSClassDeclaration::toClassName)
+            mockkStatic(KSType::toTypeName)
         }
 
         @JvmStatic
@@ -36,6 +37,7 @@ class DefaultPropertySchemaFactoryAdapterTest : UnitSim() {
         fun teardownAll() {
             unmockkStatic(KSTypeReference::toTypeName)
             unmockkStatic(KSClassDeclaration::toClassName)
+            unmockkStatic(KSType::toTypeName)
         }
 
         private fun mockKSName(value: String): KSName {
@@ -52,13 +54,6 @@ class DefaultPropertySchemaFactoryAdapterTest : UnitSim() {
             return arg
         }
 
-        /**
-         * Creates a minimal KSPropertyDeclaration mock with:
-         * - simpleName
-         * - type -> toTypeName() returns STRING
-         * - type.resolve() -> KSType with isMarkedNullable, declaration, arguments
-         * - annotations (empty by default)
-         */
         fun mockProp(
             name: String = "testProp",
             nullable: Boolean = false,
@@ -87,6 +82,37 @@ class DefaultPropertySchemaFactoryAdapterTest : UnitSim() {
             every { prop.type } returns typeRef
             every { prop.annotations } returns annotations
             return prop
+        }
+
+        fun mockDslPropertyAnnotation(withVararg: Boolean?, withProvider: Boolean?): KSAnnotation {
+            val ann: KSAnnotation = mockk()
+            val shortName = mockKSName("DslProperty")
+            every { ann.shortName } returns shortName
+
+            val args = mutableListOf<KSValueArgument>()
+            if (withVararg != null) args.add(mockValueArg("withVararg", withVararg))
+            if (withProvider != null) args.add(mockValueArg("withProvider", withProvider))
+
+            every { ann.arguments } returns args
+            return ann
+        }
+
+        fun mockSingleEntryTransformDecl(
+            transformTemplate: String?,
+            inputTypeKSType: Any?
+        ): KSClassDeclaration {
+            val decl: KSClassDeclaration = mockk()
+            val ann: KSAnnotation = mockk()
+            val shortName = mockKSName("SingleEntryTransformDsl")
+            every { ann.shortName } returns shortName
+
+            val args = mutableListOf<KSValueArgument>()
+            if (transformTemplate != null) args.add(mockValueArg("transformTemplate", transformTemplate))
+            if (inputTypeKSType != null) args.add(mockValueArg("inputType", inputTypeKSType))
+
+            every { ann.arguments } returns args
+            every { decl.annotations } returns sequenceOf(ann)
+            return decl
         }
     }
 
@@ -193,4 +219,108 @@ class DefaultPropertySchemaFactoryAdapterTest : UnitSim() {
         }
     }
 
+    // --- DslProperty annotation branches ---
+
+    @Test
+    fun `withVararg is false when DslProperty annotation sets it to false`() = test {
+        given {
+            val ann = mockDslPropertyAnnotation(withVararg = false, withProvider = true)
+            val adapter = DefaultPropertySchemaFactoryAdapter(mockProp(annotations = sequenceOf(ann)), null)
+            expect { false }
+            whenever { adapter.withVararg }
+        }
+    }
+
+    @Test
+    fun `withProvider is false when DslProperty annotation sets it to false`() = test {
+        given {
+            val ann = mockDslPropertyAnnotation(withVararg = true, withProvider = false)
+            val adapter = DefaultPropertySchemaFactoryAdapter(mockProp(annotations = sequenceOf(ann)), null)
+            expect { false }
+            whenever { adapter.withProvider }
+        }
+    }
+
+    @Test
+    fun `withVararg and withProvider both false when annotation sets both false`() = test {
+        given {
+            val ann = mockDslPropertyAnnotation(withVararg = false, withProvider = false)
+            val adapter = DefaultPropertySchemaFactoryAdapter(mockProp(annotations = sequenceOf(ann)), null)
+            expect { false to false }
+            whenever { adapter.withVararg to adapter.withProvider }
+        }
+    }
+
+    @Test
+    fun `withVararg defaults to true when DslProperty annotation has no arguments`() = test {
+        given {
+            val ann = mockDslPropertyAnnotation(withVararg = null, withProvider = null)
+            val adapter = DefaultPropertySchemaFactoryAdapter(mockProp(annotations = sequenceOf(ann)), null)
+            expect { true }
+            whenever { adapter.withVararg }
+        }
+    }
+
+    // --- SingleEntryTransform branches ---
+
+    @Test
+    fun `hasSingleEntryTransform is true when transform class is provided`() = test {
+        given {
+            val transformDecl = mockSingleEntryTransformDecl(
+                transformTemplate = "MyType(%N)",
+                inputTypeKSType = null
+            )
+            val adapter = DefaultPropertySchemaFactoryAdapter(mockProp(), transformDecl)
+            expect { true }
+            whenever { adapter.hasSingleEntryTransform }
+        }
+    }
+
+    @Test
+    fun `transformTemplate extracts value from SingleEntryTransformDsl annotation`() = test {
+        given {
+            val transformDecl = mockSingleEntryTransformDecl(
+                transformTemplate = "MyType(%N)",
+                inputTypeKSType = null
+            )
+            val adapter = DefaultPropertySchemaFactoryAdapter(mockProp(), transformDecl)
+            expect { "MyType(%N)" }
+            whenever { adapter.transformTemplate }
+        }
+    }
+
+    @Test
+    fun `transformTemplate is null when template is blank`() = test {
+        given {
+            val transformDecl = mockSingleEntryTransformDecl(
+                transformTemplate = "   ",
+                inputTypeKSType = null
+            )
+            val adapter = DefaultPropertySchemaFactoryAdapter(mockProp(), transformDecl)
+            expect { null }
+            whenever { adapter.transformTemplate }
+        }
+    }
+
+    @Test
+    fun `transformType is null when inputType argument value is not KSType`() = test {
+        given {
+            val transformDecl = mockSingleEntryTransformDecl(
+                transformTemplate = "x",
+                inputTypeKSType = "notAKSType"
+            )
+            val adapter = DefaultPropertySchemaFactoryAdapter(mockProp(), transformDecl)
+            expect { null }
+            whenever { adapter.transformType }
+        }
+    }
+
+    @Test
+    fun `mapDetails returns null when type is not parameterized`() = test {
+        given {
+            val adapter = DefaultPropertySchemaFactoryAdapter(mockProp(), null)
+            expect { null }
+            whenever { adapter.mapDetails() }
+        }
+    }
 }
