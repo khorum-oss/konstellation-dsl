@@ -3,12 +3,18 @@ plugins {
     kotlin("plugin.serialization") version "2.0.20"
 }
 
+val mockkVersion: String by project
+val serializationJsonVersion: String by project
+val coroutinesCoreVersion: String by project
+val junitJupiterVersion: String by project
+
+
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.0")
     implementation(kotlin("test"))
     implementation("org.junit.jupiter:junit-jupiter-api:5.13.0-M2")
-    implementation("io.mockk:mockk:1.13.17")
+    implementation("io.mockk:mockk:$mockkVersion")
 }
 
 tasks.withType<Test> {

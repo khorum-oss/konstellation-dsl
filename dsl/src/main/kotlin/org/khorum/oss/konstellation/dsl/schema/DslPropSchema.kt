@@ -54,14 +54,11 @@ interface DslPropSchema {
     fun propertyValueReturn(): String {
         if (nullableAssignment) return propName
 
-        return if (verifyNotNull) {
-            "vRequireNotNull(::$propName)" // Added message for vRequireNotNull
-        } else if (verifyNotEmpty && isCollection()) {
-            "vRequireCollectionNotEmpty(::$propName)"
-        } else if (verifyNotEmpty && isMap()) {
-            "vRequireMapNotEmpty(::$propName)"
-        } else {
-            propName
+        return when {
+            verifyNotNull -> "vRequireNotNull(::$propName)"
+            verifyNotEmpty && isCollection() -> "vRequireCollectionNotEmpty(::$propName)"
+            verifyNotEmpty && isMap() -> "vRequireMapNotEmpty(::$propName)"
+            else -> propName
         }
     }
 

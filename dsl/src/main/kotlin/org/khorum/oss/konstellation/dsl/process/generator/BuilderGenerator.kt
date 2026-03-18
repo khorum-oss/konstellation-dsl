@@ -246,11 +246,11 @@ class DefaultBuilderGenerator(
 
         return kotlinPoet {
             file {
-                addImportIf(hasRequireNotNull, "org.khorum.oss.konstellation.metaDsl", "vRequireNotNull")
+                addImportIf(hasRequireNotNull, META_DSL_PACKAGE, "vRequireNotNull")
                 addImportIf(
-                    hasCollectionRequireNotEmpty, "org.khorum.oss.konstellation.metaDsl", "vRequireCollectionNotEmpty"
+                    hasCollectionRequireNotEmpty, META_DSL_PACKAGE, "vRequireCollectionNotEmpty"
                 )
-                addImportIf(hasMapRequireNotEmpty, "org.khorum.oss.konstellation.metaDsl", "vRequireMapNotEmpty")
+                addImportIf(hasMapRequireNotEmpty, META_DSL_PACKAGE, "vRequireMapNotEmpty")
                 defaultValueImports.forEach {
                     addImport(it)
                 }
@@ -259,5 +259,9 @@ class DefaultBuilderGenerator(
                 types(builderContent)
             }
         }
+    }
+
+    companion object {
+        const val META_DSL_PACKAGE = "org.khorum.oss.konstellation.metaDsl"
     }
 }

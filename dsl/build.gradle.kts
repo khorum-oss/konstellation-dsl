@@ -19,17 +19,22 @@ plugins {
 group = "org.khorum.oss.konstellation"
 version = dslVersion
 
+val kotlinPoetVersion: String by project
+val kspVersion: String by project
+val googleAutoServiceVersion: String by project
+val mockkVersion: String by project
+
 dependencies {
     implementation("org.khorum.oss.konstellation:konstellation-meta-dsl:$metaDslVersion")
     implementation(kotlin("stdlib"))
     implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("com.squareup:kotlinpoet:2.1.0")
-    implementation("com.squareup:kotlinpoet-ksp:2.1.0")
-    implementation("com.google.devtools.ksp:symbol-processing-api:2.1.20-1.0.32")
-    implementation("com.google.auto.service:auto-service:1.1.1")
+    implementation("com.squareup:kotlinpoet:$kotlinPoetVersion")
+    implementation("com.squareup:kotlinpoet-ksp:$kotlinPoetVersion")
+    implementation("com.google.devtools.ksp:symbol-processing-api:$kspVersion")
+    implementation("com.google.auto.service:auto-service:$googleAutoServiceVersion")
 
     testImplementation(project(":core-test"))
-    testImplementation("io.mockk:mockk:1.13.17")
+    testImplementation("io.mockk:mockk:$mockkVersion")
 }
 
 tasks.jar {

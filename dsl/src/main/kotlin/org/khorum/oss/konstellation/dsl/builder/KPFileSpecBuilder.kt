@@ -17,7 +17,7 @@ class KPFileSpecBuilder {
     private var imports = mutableListOf<Pair<String, String>>()
     private var typeAliases = mutableListOf<TypeAliasSpec>()
     private var types = mutableListOf<TypeSpec>()
-    private var functions = mutableListOf<FunSpec>()
+    private var functions = listOf<FunSpec>()
 
     /**
      * Adds a list of [TypeSpec] objects to the file.
@@ -33,7 +33,6 @@ class KPFileSpecBuilder {
      * Adds a list of [TypeAliasSpec] objects to the file.
      * Available accessors:
      * - [KPFunSpecBuilder.Group.items]
-     * - [KPFunSpecBuilder.Group.addTypeAlias]
      */
     fun functions(block: KPFunSpecBuilder.Group.() -> Unit) {
         functions = KPFunSpecBuilder.Group().apply(block).items
@@ -44,7 +43,7 @@ class KPFileSpecBuilder {
      *
      * @param funs A mutable list of [FunSpec] to be added to the file.
      */
-    fun functions(funs: MutableList<FunSpec>) { this.functions = funs }
+    fun functions(funs: List<FunSpec>) { this.functions = funs }
 
     /**
      * Adds a list of [TypeAliasSpec] objects to the file.

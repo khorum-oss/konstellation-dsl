@@ -218,11 +218,6 @@ abstract class AbstractPropertySchemaFactory<T : PropertySchemaFactoryAdapter, P
             "Could not determine group element class name."
         }
         logger.debug("listElementClassName: $groupElementClassName", tier = 5)
-        val builderClassName = ClassName(
-            groupElementClassName.packageName,
-            groupElementClassName.simpleName + "DslBuilder"
-        )
-        val kdoc = builderDoc(builderClassName, adapter.groupElementClassDeclaration)
         return GroupPropSchema(
             adapter.propName,
             adapter.actualPropTypeName,
@@ -233,7 +228,6 @@ abstract class AbstractPropertySchemaFactory<T : PropertySchemaFactoryAdapter, P
 
     private fun createMapGroupProp(adapter: T): MapGroupPropSchema {
         val mapDetails = requireNotNull(adapter.mapDetails) { "Please add map details to the map parameter" }
-        val kdoc = builderDoc(mapDetails.valueClass(), adapter.mapValueClassDeclaration)
 
         return MapGroupPropSchema(
             adapter.propName,

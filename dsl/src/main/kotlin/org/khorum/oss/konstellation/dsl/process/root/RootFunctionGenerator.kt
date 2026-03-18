@@ -10,7 +10,7 @@ import org.khorum.oss.konstellation.dsl.domain.BuilderConfig
 /**
  * Interface for generating the root DSL function.
  */
-interface RootFunctionGenerator {
+fun interface RootFunctionGenerator {
     fun generate(
         domain: KSClassDeclaration,
         builderConfig: BuilderConfig
@@ -31,7 +31,6 @@ class DefaultRootFunctionGenerator : RootFunctionGenerator {
             val domainBuilderClassName =
                 ClassName(domainClassName.packageName, "${domainClassName.simpleName}DslBuilder")
             funName = domain.simpleName.asString().replaceFirstChar { it.lowercase() }
-            // todo: add docs
 
             param {
                 lambdaType {

@@ -67,7 +67,6 @@ class DefaultDslGenerator(
      * - Builder Class: the generated class that should match the specs of the Resolved Class
      * - Group Class: A list of builders - requires a specific implementation
      * - Map Group Class: a map of builders - requires a specific implementation
-     * todo: List<List<*>>, Map<T, List<*>>, Map<T, Map<T, *>
      * @param resolver symbol resolver for ksp interaction
      * @param codeGenerator creates and manages files with ksp
      * @param options compile time options defined in the host project:

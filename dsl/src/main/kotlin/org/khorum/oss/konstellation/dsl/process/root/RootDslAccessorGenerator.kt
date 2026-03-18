@@ -29,10 +29,6 @@ interface RootDslAccessorGenerator : DslFileWriter, VLoggable {
 class DefaultRootDslAccessorGenerator(
     private val rootFunctionGenerator: DefaultRootFunctionGenerator = DefaultRootFunctionGenerator(),
 ) : RootDslAccessorGenerator {
-//    init {
-//        logger.enableDebug()
-//    }
-
     override fun generate(
         codeGenerator: CodeGenerator,
         domains: List<KSClassDeclaration>,

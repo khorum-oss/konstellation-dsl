@@ -15,8 +15,20 @@ plugins {
 
 group = "org.khorum.oss.konstellation"
 
-extra["dslVersion"] = file("VERSION").readText().trim()
-extra["metaDslVersion"] = "1.0.1"
+sequenceOf(
+    "coroutinesCoreVersion" to "1.10.0",
+    "dslVersion" to file("VERSION").readText().trim(),
+    "googleAutoServiceVersion" to "1.1.1",
+    "junitJupiterVersion" to "5.13.0-M2",
+    "kotlinPoetVersion" to "2.1.0",
+    "kspVersion" to "2.1.20-1.0.32",
+    "metaDslVersion" to "1.0.1",
+    "mockkVersion" to "1.13.17",
+    "serializationJsonVersion" to "1.8.1"
+).forEach { (name, value) ->
+    println("Setting $name to $value")
+    extra[name] = value
+}
 
 java {
     toolchain {
@@ -80,7 +92,8 @@ sonar {
         property("sonar.projectKey", "khorum-oss_konstellation-dsl")
         property("sonar.organization", "khorum-oss")
         property("sonar.host.url", "https://sonarcloud.io")
-        property("sonar.coverage.jacoco.xmlReportPaths",
+        property(
+            "sonar.coverage.jacoco.xmlReportPaths",
             "${project(":dsl").layout.buildDirectory.get()}/reports/kover/report.xml"
         )
     }
