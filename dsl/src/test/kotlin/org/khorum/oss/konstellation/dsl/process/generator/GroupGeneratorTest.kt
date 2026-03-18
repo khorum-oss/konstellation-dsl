@@ -140,4 +140,73 @@ class GroupGeneratorTest : UnitSim() {
             }
         }
     }
+
+    @Test
+    fun `ListGroupGenerator Group type has no type variable`() = test {
+        given {
+            val builder = KPTypeSpecBuilder()
+            builder.name = "TestBuilder"
+            val dc = DomainConfig(config, emptyMap(), domainWithListGroup, false)
+
+            expect { false }
+            whenever {
+                ListGroupGenerator().generate(builder, dc)
+                // ListGroup has no type variable (typeVariable is null in config)
+                builder.build().toString().contains("<T>")
+            }
+        }
+    }
+
+    @Test
+    fun `MapGroupGenerator Group type has type variable T`() = test {
+        given {
+            val builder = KPTypeSpecBuilder()
+            builder.name = "TestBuilder"
+            val dc = DomainConfig(config, emptyMap(), domainWithMapSingle, false)
+
+            expect { true }
+            whenever {
+                MapGroupGenerator().generate(builder, dc)
+                builder.build().toString().contains("<T>")
+            }
+        }
+    }
+
+    @Test
+    fun `MapGroupGenerator adds key parameter to builder function`() = test {
+        given {
+            val builder = KPTypeSpecBuilder()
+            builder.name = "TestBuilder"
+            val dc = DomainConfig(config, emptyMap(), domainWithMapSingle, false)
+
+            expect { true }
+            whenever {
+                MapGroupGenerator().generate(builder, dc)
+                builder.build().toString().contains("key")
+            }
+        }
+    }
+
+    @Test
+    fun `ListGroupGenerator with dslMarkerClass adds annotation to group`() = test {
+        given {
+            val configWithMarker = BuilderConfig(
+                mapOf(
+                    "projectRootClasspath" to "org.test",
+                    "dslBuilderClasspath" to "org.test",
+                    "dslMarkerClass" to "org.test.MyDslMarker"
+                ),
+                Logger("GroupGeneratorTest")
+            )
+            val builder = KPTypeSpecBuilder()
+            builder.name = "TestBuilder"
+            val dc = DomainConfig(configWithMarker, emptyMap(), domainWithListGroup, false)
+
+            expect { true }
+            whenever {
+                ListGroupGenerator().generate(builder, dc)
+                builder.build().toString().contains("Group")
+            }
+        }
+    }
 }

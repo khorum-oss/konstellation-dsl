@@ -323,4 +323,26 @@ class DefaultPropertySchemaFactoryAdapterTest : UnitSim() {
             whenever { adapter.mapDetails() }
         }
     }
+
+    @Test
+    fun `transformTemplate is null when SingleEntryTransformDsl has no transformTemplate arg`() = test {
+        given {
+            val transformDecl = mockSingleEntryTransformDecl(
+                transformTemplate = null,
+                inputTypeKSType = null
+            )
+            val adapter = DefaultPropertySchemaFactoryAdapter(mockProp(), transformDecl)
+            expect { null }
+            whenever { adapter.transformTemplate }
+        }
+    }
+
+    @Test
+    fun `hasSingleEntryTransform false means no annotation to scan`() = test {
+        given {
+            val adapter = DefaultPropertySchemaFactoryAdapter(mockProp(), null)
+            expect { null to null }
+            whenever { adapter.transformTemplate to adapter.transformType }
+        }
+    }
 }

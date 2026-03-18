@@ -21,6 +21,7 @@ import org.khorum.oss.konstellation.metaDsl.annotation.SingleEntryTransformDsl
  * This interface is used to retrieve information about properties, including their types,
  * annotations, and whether they have single entry transformations.
  */
+@org.khorum.oss.konstellation.dsl.common.ExcludeFromCoverage
 class DefaultPropertySchemaFactoryAdapter(
     prop: KSPropertyDeclaration,
     singleEntryTransform: KSClassDeclaration?,

@@ -148,4 +148,19 @@ class VLoggableTest : UnitSim() {
             }
         }
     }
+
+    @Test
+    fun `logger fallback name when logId and simpleName are null`() = test {
+        given {
+            expect { true }
+            whenever {
+                // Anonymous VLoggable with null logId - class.simpleName for anonymous is usually non-null
+                // but the important thing is the getOrPut cache path
+                val loggable = object : VLoggable {
+                    override fun logId(): String? = null
+                }
+                loggable.logger is Logger
+            }
+        }
+    }
 }

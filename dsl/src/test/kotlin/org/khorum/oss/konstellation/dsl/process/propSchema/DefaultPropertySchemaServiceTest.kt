@@ -20,6 +20,7 @@ import org.khorum.oss.geordi.UnitSim
 import org.khorum.oss.konstellation.dsl.domain.BuilderConfig
 import org.khorum.oss.konstellation.dsl.domain.DomainConfig
 import org.khorum.oss.konstellation.dsl.utils.Logger
+import org.khorum.oss.konstellation.dsl.utils.VLoggable
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -48,7 +49,10 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
             return name
         }
 
-        private fun mockDomainConfig(properties: Sequence<KSPropertyDeclaration>): DomainConfig {
+        private fun mockDomainConfig(
+            properties: Sequence<KSPropertyDeclaration>,
+            debug: Boolean = false
+        ): DomainConfig {
             val domain: KSClassDeclaration = mockk()
             every { domain.toClassName() } returns ClassName("org.test", "TestClass")
             every { domain.packageName } returns mockKSName("org.test")
@@ -63,7 +67,7 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
                 ),
                 Logger("DefaultPropertySchemaServiceTest")
             )
-            return DomainConfig(config, emptyMap(), domain, false)
+            return DomainConfig(config, emptyMap(), domain, debug)
         }
 
         private fun mockSimpleProp(name: String = "testProp"): KSPropertyDeclaration {
@@ -270,4 +274,61 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
         }
     }
 
+    @Test
+    fun `getParamsFromDomain with debug enabled exercises logging branches for String default`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            service.logger.enableDebug()
+            val prop = mockPropWithDefaultValue("hello", "kotlin", "String")
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                try {
+                    val schemas = service.getParamsFromDomain(domainConfig)
+                    schemas.first().defaultValue != null
+                } finally {
+                    service.logger.disableDebug()
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain with debug enabled for non-String default`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            service.logger.enableDebug()
+            val prop = mockPropWithDefaultValue("42", "kotlin", "Int")
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                try {
+                    val schemas = service.getParamsFromDomain(domainConfig)
+                    schemas.first().defaultValue != null
+                } finally {
+                    service.logger.disableDebug()
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain with debug enabled and no default value`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            service.logger.enableDebug()
+            val domainConfig = mockDomainConfig(sequenceOf(mockSimpleProp("field")))
+
+            expect { true }
+            whenever {
+                try {
+                    service.getParamsFromDomain(domainConfig).first().defaultValue == null
+                } finally {
+                    service.logger.disableDebug()
+                }
+            }
+        }
+    }
 }

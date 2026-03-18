@@ -240,4 +240,39 @@ class BuilderBranchTest : UnitSim() {
         }
     }
 
+    @Test
+    fun `booleanType with name already set keeps existing name`() = test {
+        given {
+            val builder = KPParameterSpecBuilder()
+            builder.name = "myBool"
+            builder.booleanType()
+            expect { "myBool" }
+            whenever { builder.name }
+        }
+    }
+
+    @Test
+    fun `lambdaType with name already set keeps existing name`() = test {
+        given {
+            val builder = KPParameterSpecBuilder()
+            builder.name = "myBlock"
+            builder.lambdaType {
+                receiver = STRING
+            }
+            expect { "myBlock" }
+            whenever { builder.name }
+        }
+    }
+
+    @Test
+    fun `lambdaType with null name defaults to block`() = test {
+        given {
+            val builder = KPParameterSpecBuilder()
+            builder.lambdaType {
+                receiver = STRING
+            }
+            expect { "block" }
+            whenever { builder.name }
+        }
+    }
 }
