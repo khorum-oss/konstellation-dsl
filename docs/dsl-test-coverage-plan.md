@@ -2,10 +2,10 @@
 
 ## Progress
 - **Starting coverage:** 41.1% class (30/73), ~30% line
-- **Current coverage:** 85.5% class (59/69), 70.3% line (835/1188)
-- **Tests:** 170 test methods across 24 test files
-- **Completed:** Waves 1-4 + partial Wave 5 (domain, utility, builder, KSP extensions, generators, root)
-- **Remaining:** DefaultBuilderGenerator (113 lines), DefaultPropertySchemaFactoryAdapter (86 lines), DefaultPropertySchemaService (41 lines) — deeply coupled to KSP internals, require extensive mock chains
+- **Current coverage:** 91.3% class, 83.3% line, 51.9% branch, ~67.6% SonarQube estimate
+- **Tests:** 257 test methods across 29 test files
+- **Completed:** Waves 1-5 + branch coverage improvements (DslPropSchema, builders, logger, schemas)
+- **Remaining:** DefaultBuilderGenerator (113 lines, 24 branches), DefaultPropertySchemaFactoryAdapter (97 branches), DefaultPropertySchemaService (37 branches)
 
 ## Context
 DSL module coverage is 41.1% (30/73 classes). 43 classes have 0% coverage. Goal is to get as close to 100% as practical. The remaining ~10% gap accounts for KSP entry points and trivial one-liners that should be excluded from coverage.

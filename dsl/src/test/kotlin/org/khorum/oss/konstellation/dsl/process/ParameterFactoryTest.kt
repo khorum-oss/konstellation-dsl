@@ -184,6 +184,70 @@ class ParameterFactoryTest : UnitSim() {
         }
     }
 
+    @Test
+    fun `determineParam with singleEntryTransform but null transformType falls back to DefaultPropSchema`() = test {
+        given {
+            val adapter = TestParamFactoryAdaptor(
+                hasSingleEntryTransform = true,
+                transformType = null,
+                transformTemplate = null
+            )
+
+            expect { true }
+
+            whenever {
+                val propSchema = parameterFactory.determinePropertySchema(adapter)
+                propSchema is DefaultPropSchema
+            }
+        }
+    }
+
+    @Test
+    fun `determineParam with nullable type produces schema`() = test {
+        given {
+            val adapter = TestParamFactoryAdaptor(
+                actualPropTypeName = STRING.copy(nullable = true),
+                hasNullableAssignment = true
+            )
+
+            expect { true }
+
+            whenever {
+                val propSchema = parameterFactory.determinePropertySchema(adapter)
+                propSchema is DefaultPropSchema
+            }
+        }
+    }
+
+    @Test
+    fun `determineParam with isLast false does not affect result`() = test {
+        given {
+            val adapter = TestParamFactoryAdaptor()
+
+            expect { true }
+
+            whenever {
+                val propSchema = parameterFactory.determinePropertySchema(adapter, isLast = false)
+                propSchema is DefaultPropSchema
+            }
+        }
+    }
+
+    @Test
+    fun `determineParam with isLast true does not affect result`() = test {
+        given {
+            val adapter = TestParamFactoryAdaptor()
+
+            expect { true }
+
+            whenever {
+                val propSchema = parameterFactory.determinePropertySchema(adapter, isLast = true)
+                propSchema is DefaultPropSchema
+            }
+        }
+    }
+
+
     @Suppress("LongParameterList")
     class TestParamFactoryAdaptor(
         override val actualPropTypeName: TypeName = STRING,

@@ -38,4 +38,58 @@ class ListParamTest : UnitSim() {
             whenever { param.accessors().first().toString().trimIndent() }
         }
     }
+
+    @Test
+    fun `isCollection returns true`() = test {
+        given {
+            val param = ListPropSchema("test", STRING)
+            expect { true }
+            whenever { param.isCollection() }
+        }
+    }
+
+    @Test
+    fun `isMap returns false`() = test {
+        given {
+            val param = ListPropSchema("test", STRING)
+            expect { false }
+            whenever { param.isMap() }
+        }
+    }
+
+    @Test
+    fun `propertyValueReturn - nullable returns propName`() = test {
+        given {
+            val param = ListPropSchema("items", STRING, nullableAssignment = true)
+            expect { "items" }
+            whenever { param.propertyValueReturn() }
+        }
+    }
+
+    @Test
+    fun `propertyValueReturn - non-nullable collection returns vRequireCollectionNotEmpty`() = test {
+        given {
+            val param = ListPropSchema("items", STRING, nullableAssignment = false)
+            expect { "vRequireCollectionNotEmpty(::items)" }
+            whenever { param.propertyValueReturn() }
+        }
+    }
+
+    @Test
+    fun `accessors - withVararg false omits vararg function`() = test {
+        given {
+            val param = ListPropSchema("test", STRING, withVararg = false)
+            expect { true }
+            whenever { param.accessors().none { it.toString().contains("vararg") } }
+        }
+    }
+
+    @Test
+    fun `accessors - withProvider false omits provider function`() = test {
+        given {
+            val param = ListPropSchema("test", STRING, withProvider = false)
+            expect { true }
+            whenever { param.accessors().none { it.toString().contains("block") } }
+        }
+    }
 }

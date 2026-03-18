@@ -24,7 +24,6 @@ class SimulationGroup(private val properties: Array<out String>) {
      * @return The current instance of [SimulationGroup] for chaining calls.
      */
     @Suppress("ForbiddenComment")
-    // TODO: Add support for validating size must match. Possibly, type must match
     fun with(vararg scenarioParts: Any?): SimulationGroup = apply {
         properties
             .mapIndexed { index, property -> property to scenarioParts[index] }

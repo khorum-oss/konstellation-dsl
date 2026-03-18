@@ -176,6 +176,63 @@ class LoggerTest : UnitSim() {
         }
     }
 
+    @Test
+    fun `debug with tier and branch updates active branches`() = test {
+        given {
+            expect { true }
+            whenever {
+                val logger = Logger("test").enableDebug()
+                val output = captureStdout {
+                    logger.debug("first", tier = 1, branch = true)
+                    logger.debug("second", tier = 2)
+                }
+                output.contains("first") && output.contains("second") && output.contains("|")
+            }
+        }
+    }
+
+    @Test
+    fun `warn prints when warning is enabled`() = test {
+        given {
+            expect { true }
+            whenever {
+                val logger = Logger("test", isWarningEnabled = true)
+                val output = captureStdout { logger.warn("warning msg") }
+                output.contains("warning msg") && output.contains("WARN")
+            }
+        }
+    }
+
+    @Test
+    fun `error with tier has prefix`() = test {
+        given {
+            expect { true }
+            whenever {
+                val output = captureStdout { Logger("test").error("err", tier = 1) }
+                output.contains("|__") && output.contains("err")
+            }
+        }
+    }
+
+    @Test
+    fun `globalDebugEnabled reads system property`() = test {
+        given {
+            expect { false }
+            whenever { Logger("test").globalDebugEnabled() }
+        }
+    }
+
+    @Test
+    fun `disableWarning sets warning disabled`() = test {
+        given {
+            expect { "" }
+            whenever {
+                val logger = Logger("test", isWarningEnabled = true).disableWarning()
+                captureStdout { logger.warn("should not print") }.trim()
+            }
+        }
+    }
+
     private fun captureStdout(block: () -> Unit): String {
         val originalOut = System.out
         val baos = ByteArrayOutputStream()

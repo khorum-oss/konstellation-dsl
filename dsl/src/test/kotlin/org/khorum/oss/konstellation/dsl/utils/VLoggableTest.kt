@@ -93,4 +93,28 @@ class VLoggableTest : UnitSim() {
             }
         }
     }
+
+    @Test
+    fun `logger with debug enabled creates debug-enabled logger`() = test {
+        given {
+            expect { true }
+            whenever {
+                VLoggable.setGlobalDebug(true)
+                val loggable = TestLoggable("newDebugLogger")
+                loggable.logger.debugEnabled()
+            }
+        }
+    }
+
+    @Test
+    fun `logger caches by logId across different instances`() = test {
+        given {
+            expect { true }
+            whenever {
+                val a = TestLoggable("sharedId")
+                val b = TestLoggable("sharedId")
+                a.logger === b.logger
+            }
+        }
+    }
 }

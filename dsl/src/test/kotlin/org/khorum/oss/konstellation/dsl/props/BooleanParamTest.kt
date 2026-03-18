@@ -37,4 +37,27 @@ class BooleanParamTest : UnitSim() {
             whenever { param.accessors().first().toString().trimIndent() }
         }
     }
+
+    @Test
+    fun `toPropertySpec - non-nullable boolean`() = test {
+        given {
+            val param = BooleanPropSchema("active", nullableAssignment = false)
+            expect { true }
+            whenever { param.toPropertySpec().toString().contains("Boolean") }
+        }
+    }
+
+    @Test
+    fun `accessors - with defaultValue false`() = test {
+        given {
+            val param = BooleanPropSchema("enabled", defaultValue = org.khorum.oss.konstellation.dsl.domain.DefaultPropertyValue(
+                rawValue = "false",
+                codeBlock = com.squareup.kotlinpoet.CodeBlock.of("%L", false),
+                packageName = "kotlin",
+                className = "Boolean"
+            ))
+            expect { true }
+            whenever { param.accessors().first().toString().contains("false") }
+        }
+    }
 }

@@ -39,4 +39,22 @@ class MapParamTest : UnitSim() {
             whenever { param.accessors().first().toString().trimIndent() }
         }
     }
+
+    @Test
+    fun `accessors - withVararg false omits vararg function`() = test {
+        given {
+            val param = MapPropSchema("test", STRING, INT, withVararg = false)
+            expect { true }
+            whenever { param.accessors().none { it.toString().contains("vararg") } }
+        }
+    }
+
+    @Test
+    fun `accessors - withProvider false omits provider function`() = test {
+        given {
+            val param = MapPropSchema("test", STRING, INT, withProvider = false)
+            expect { true }
+            whenever { param.accessors().none { it.toString().contains("block") } }
+        }
+    }
 }

@@ -87,4 +87,22 @@ class DefaultParamTest : UnitSim() {
             whenever { param.propertyValueReturn() }
         }
     }
+
+    @Test
+    fun `isCollection returns false for default schema`() = test {
+        given {
+            val param = DefaultPropSchema("test", propTypeName)
+            expect { false }
+            whenever { param.isCollection() }
+        }
+    }
+
+    @Test
+    fun `isMap returns false for default schema`() = test {
+        given {
+            val param = DefaultPropSchema("test", propTypeName)
+            expect { false }
+            whenever { param.isMap() }
+        }
+    }
 }
