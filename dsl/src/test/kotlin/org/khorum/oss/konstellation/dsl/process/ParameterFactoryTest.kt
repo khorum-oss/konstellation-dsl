@@ -443,6 +443,199 @@ class ParameterFactoryTest : UnitSim() {
         }
     }
 
+    @Test
+    fun `determineParam will create a BooleanPropSchema for nullable BOOLEAN type`() = test {
+        given {
+            val adapter = TestParamFactoryAdaptor(
+                actualPropTypeName = BOOLEAN.copy(nullable = true),
+                hasNullableAssignment = true
+            )
+
+            expect { true }
+
+            whenever {
+                val propSchema = parameterFactory.determinePropertySchema(adapter)
+                propSchema is BooleanPropSchema
+            }
+        }
+    }
+
+    @Test
+    fun `determineParam will create MapPropSchema when mapDetails returns null mapGroupType NONE`() = test {
+        given {
+            val mapDetails = object : PropertySchemaFactoryAdapter.MapDetails {
+                override val mapGroupType = MapGroupType.NONE
+                override val keyType: TypeName = STRING
+                override val valueType: TypeName = INT
+            }
+            val adapter = TestParamFactoryAdaptor(
+                actualPropTypeName = MAP.parameterizedBy(STRING, INT),
+                mapDetailsValue = mapDetails
+            )
+
+            expect { true }
+
+            whenever {
+                val propSchema = parameterFactory.determinePropertySchema(adapter)
+                propSchema is MapPropSchema
+            }
+        }
+    }
+
+    @Test
+    fun `determineParam will create ListPropSchema for LIST with non-nullable type`() = test {
+        given {
+            val adapter = TestParamFactoryAdaptor(
+                actualPropTypeName = LIST.parameterizedBy(INT),
+                isGroup = false,
+                hasNullableAssignment = false
+            )
+
+            expect { true }
+
+            whenever {
+                val propSchema = parameterFactory.determinePropertySchema(adapter)
+                propSchema is ListPropSchema
+            }
+        }
+    }
+
+    @Test
+    fun `determineParam with singleEntryTransform and valid transformType creates SingleTransformPropSchema`() = test {
+        given {
+            val adapter = TestParamFactoryAdaptor(
+                hasSingleEntryTransform = true,
+                transformType = STRING,
+                transformTemplate = null
+            )
+
+            expect { true }
+
+            whenever {
+                val propSchema = parameterFactory.determinePropertySchema(adapter)
+                propSchema is SingleTransformPropSchema
+            }
+        }
+    }
+
+    @Test
+    fun `determineParam with hasGeneratedDslAnnotation true but null propertyNonNullableClassName returns null annotated`() = test {
+        given {
+            val adapter = TestParamFactoryAdaptor(
+                actualPropTypeName = ClassName("com.example", "UnknownType"),
+                hasGeneratedDslAnnotation = true,
+                propertyNonNullableClassName = null
+            )
+
+            expect { true }
+
+            whenever {
+                val propSchema = parameterFactory.determinePropertySchema(adapter)
+                propSchema is DefaultPropSchema
+            }
+        }
+    }
+
+    @Test
+    fun `determineParam creates MapPropSchema for MAP with nullable type`() = test {
+        given {
+            val adapter = TestParamFactoryAdaptor(
+                actualPropTypeName = MAP.parameterizedBy(STRING, STRING).copy(nullable = true),
+                hasNullableAssignment = true
+            )
+
+            expect { true }
+
+            whenever {
+                val propSchema = parameterFactory.determinePropertySchema(adapter)
+                propSchema is MapPropSchema
+            }
+        }
+    }
+
+    @Test
+    fun `determineParam creates DefaultPropSchema with defaultValue`() = test {
+        given {
+            val dv = DefaultPropertyValue(
+                rawValue = "hello",
+                codeBlock = com.squareup.kotlinpoet.CodeBlock.of("%S", "hello"),
+                packageName = "kotlin",
+                className = "String"
+            )
+            val adapter = TestParamFactoryAdaptor(
+                actualPropTypeName = STRING,
+                defaultValue = dv
+            )
+
+            expect { true }
+
+            whenever {
+                val propSchema = parameterFactory.determinePropertySchema(adapter)
+                propSchema is DefaultPropSchema && propSchema.defaultValue != null
+            }
+        }
+    }
+
+    @Test
+    fun `determineParam creates BooleanPropSchema with defaultValue`() = test {
+        given {
+            val dv = DefaultPropertyValue(
+                rawValue = "false",
+                codeBlock = com.squareup.kotlinpoet.CodeBlock.of("%L", false),
+                packageName = "kotlin",
+                className = "Boolean"
+            )
+            val adapter = TestParamFactoryAdaptor(
+                actualPropTypeName = BOOLEAN,
+                defaultValue = dv
+            )
+
+            expect { true }
+
+            whenever {
+                val propSchema = parameterFactory.determinePropertySchema(adapter)
+                propSchema is BooleanPropSchema && propSchema.defaultValue != null
+            }
+        }
+    }
+
+    @Test
+    fun `determineParam creates ListPropSchema with withVararg false`() = test {
+        given {
+            val adapter = TestParamFactoryAdaptor(
+                actualPropTypeName = LIST.parameterizedBy(STRING),
+                isGroup = false,
+                withVararg = false,
+                withProvider = true
+            )
+
+            expect { true }
+
+            whenever {
+                val propSchema = parameterFactory.determinePropertySchema(adapter)
+                propSchema is ListPropSchema
+            }
+        }
+    }
+
+    @Test
+    fun `determineParam creates MapPropSchema with withProvider false`() = test {
+        given {
+            val adapter = TestParamFactoryAdaptor(
+                actualPropTypeName = MAP.parameterizedBy(STRING, INT),
+                withVararg = true,
+                withProvider = false
+            )
+
+            expect { true }
+
+            whenever {
+                val propSchema = parameterFactory.determinePropertySchema(adapter)
+                propSchema is MapPropSchema
+            }
+        }
+    }
+
     @Suppress("LongParameterList")
     class TestParamFactoryAdaptor(
         override val actualPropTypeName: TypeName = STRING,

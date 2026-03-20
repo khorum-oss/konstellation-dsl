@@ -8,6 +8,7 @@ import org.khorum.oss.konstellation.metaDsl.annotation.GeneratedDsl
 import org.khorum.oss.konstellation.dsl.builder.AnnotationDecorator
 import org.khorum.oss.konstellation.dsl.builder.KPTypeSpecBuilder
 import org.khorum.oss.konstellation.dsl.domain.DomainConfig
+import org.khorum.oss.konstellation.dsl.utils.AnnotationLookup
 import org.khorum.oss.konstellation.dsl.utils.VLoggable
 import kotlin.reflect.KProperty1
 
@@ -77,10 +78,7 @@ abstract class GroupGenerator<T>(
      * @return True if the domain is a group, false otherwise.
      */
     protected fun isGroup(domainConfig: DomainConfig): Boolean {
-        val isGroup = domainConfig
-            .domain
-            .annotations
-            .filter { it.shortName.asString() == GeneratedDsl::class.simpleName.toString() }
+        val isGroup = AnnotationLookup.filterAnnotations(domainConfig.domain.annotations, GeneratedDsl::class)
             .flatMap { it.arguments }
             .filter { it.name?.asString() == config.property.name }
             .onEach { logger.debug("found arg: ${it.name?.asString()} - ${it.value}", tier = 1) }

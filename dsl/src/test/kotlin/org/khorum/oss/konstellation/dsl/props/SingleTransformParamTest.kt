@@ -108,4 +108,52 @@ class SingleTransformParamTest : UnitSim() {
             whenever { param.propertyValueReturn() }
         }
     }
+
+    @Test
+    fun `accessors produces exactly one function`() = test {
+        given {
+            val param = SingleTransformPropSchema(
+                "test",
+                inputTypeName,
+                propTypeName,
+                nullableAssignment = true
+            )
+
+            expect { 1 }
+            whenever { param.accessors().size }
+        }
+    }
+
+    @Test
+    fun `propTypeName copies nullable from nullableAssignment`() = test {
+        given {
+            val param = SingleTransformPropSchema(
+                "test",
+                inputTypeName,
+                propTypeName,
+                nullableAssignment = false
+            )
+
+            expect { false }
+            whenever { param.propTypeName.isNullable }
+        }
+    }
+
+    @Test
+    fun `toPropertySpec - non-nullable assignment`() = test {
+        given {
+            val param = SingleTransformPropSchema(
+                "test",
+                inputTypeName,
+                propTypeName,
+                nullableAssignment = false
+            )
+
+            expect { true }
+            whenever {
+                val propSpec = param.toPropertySpec()
+                propSpec.toString().contains("protected var test")
+            }
+        }
+    }
 }

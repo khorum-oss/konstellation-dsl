@@ -92,4 +92,52 @@ class ListParamTest : UnitSim() {
             whenever { param.accessors().none { it.toString().contains("block") } }
         }
     }
+
+    @Test
+    fun `accessors - both vararg and provider generates two functions`() = test {
+        given {
+            val param = ListPropSchema("test", STRING, withVararg = true, withProvider = true)
+            expect { 2 }
+            whenever { param.accessors().size }
+        }
+    }
+
+    @Test
+    fun `accessors - neither vararg nor provider generates empty list`() = test {
+        given {
+            val param = ListPropSchema("test", STRING, withVararg = false, withProvider = false)
+            expect { 0 }
+            whenever { param.accessors().size }
+        }
+    }
+
+    @Test
+    fun `provider accessor contains mutableListOf apply`() = test {
+        given {
+            val param = ListPropSchema("test", STRING, withVararg = false, withProvider = true)
+            expect { true }
+            whenever {
+                val accessor = param.accessors().first().toString()
+                accessor.contains("mutableListOf")
+            }
+        }
+    }
+
+    @Test
+    fun `verifyNotEmpty is true`() = test {
+        given {
+            val param = ListPropSchema("test", STRING)
+            expect { true }
+            whenever { param.verifyNotEmpty }
+        }
+    }
+
+    @Test
+    fun `verifyNotNull is false`() = test {
+        given {
+            val param = ListPropSchema("test", STRING)
+            expect { false }
+            whenever { param.verifyNotNull }
+        }
+    }
 }

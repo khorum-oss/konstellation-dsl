@@ -209,4 +209,96 @@ class GroupGeneratorTest : UnitSim() {
             }
         }
     }
+
+    @Test
+    fun `ListGroupGenerator generated Group has items function`() = test {
+        given {
+            val builder = KPTypeSpecBuilder()
+            builder.name = "TestBuilder"
+            val dc = DomainConfig(config, emptyMap(), domainWithListGroup, false)
+
+            expect { true }
+            whenever {
+                ListGroupGenerator().generate(builder, dc)
+                builder.build().toString().contains("fun items()")
+            }
+        }
+    }
+
+    @Test
+    fun `MapGroupGenerator generated MapGroup has items function`() = test {
+        given {
+            val builder = KPTypeSpecBuilder()
+            builder.name = "TestBuilder"
+            val dc = DomainConfig(config, emptyMap(), domainWithMapSingle, false)
+
+            expect { true }
+            whenever {
+                MapGroupGenerator().generate(builder, dc)
+                builder.build().toString().contains("fun items()")
+            }
+        }
+    }
+
+    @Test
+    fun `ListGroupGenerator Group has items property with mutableListOf initializer`() = test {
+        given {
+            val builder = KPTypeSpecBuilder()
+            builder.name = "TestBuilder"
+            val dc = DomainConfig(config, emptyMap(), domainWithListGroup, false)
+
+            expect { true }
+            whenever {
+                ListGroupGenerator().generate(builder, dc)
+                builder.build().toString().contains("mutableListOf()")
+            }
+        }
+    }
+
+    @Test
+    fun `MapGroupGenerator Group has items property with mutableMapOf initializer`() = test {
+        given {
+            val builder = KPTypeSpecBuilder()
+            builder.name = "TestBuilder"
+            val dc = DomainConfig(config, emptyMap(), domainWithMapSingle, false)
+
+            expect { true }
+            whenever {
+                MapGroupGenerator().generate(builder, dc)
+                builder.build().toString().contains("mutableMapOf()")
+            }
+        }
+    }
+
+    @Test
+    fun `ListGroupGenerator with domain having no annotations does not add Group`() = test {
+        given {
+            val emptyDomain = makeDomain(emptyList())
+            val builder = KPTypeSpecBuilder()
+            builder.name = "TestBuilder"
+            val dc = DomainConfig(config, emptyMap(), emptyDomain, false)
+
+            expect { false }
+            whenever {
+                ListGroupGenerator().generate(builder, dc)
+                builder.build().toString().contains("class Group")
+            }
+        }
+    }
+
+    @Test
+    fun `MapGroupGenerator with domain having no annotations does not add MapGroup`() = test {
+        given {
+            val emptyDomain = makeDomain(emptyList())
+            val builder = KPTypeSpecBuilder()
+            builder.name = "TestBuilder"
+            val dc = DomainConfig(config, emptyMap(), emptyDomain, false)
+
+            expect { false }
+            whenever {
+                MapGroupGenerator().generate(builder, dc)
+                builder.build().toString().contains("class MapGroup")
+            }
+        }
+    }
 }

@@ -1,6 +1,5 @@
 package org.khorum.oss.konstellation.dsl.process.propSchema
 
-import com.google.devtools.ksp.symbol.KSAnnotation
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSType
@@ -11,6 +10,7 @@ import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.toTypeName
 import org.khorum.oss.konstellation.dsl.domain.DefaultDomainProperty
 import org.khorum.oss.konstellation.dsl.domain.DefaultPropertyValue
+import org.khorum.oss.konstellation.dsl.utils.AnnotationLookup
 import org.khorum.oss.konstellation.metaDsl.annotation.DslProperty
 import org.khorum.oss.konstellation.metaDsl.annotation.GeneratedDsl
 import org.khorum.oss.konstellation.metaDsl.annotation.MapGroupType
@@ -18,10 +18,9 @@ import org.khorum.oss.konstellation.metaDsl.annotation.SingleEntryTransformDsl
 
 /**
  * Adapter for property schema factory, providing details about a property in the DSL.
- * This interface is used to retrieve information about properties, including their types,
- * annotations, and whether they have single entry transformations.
+ * This class extracts annotation metadata from KSP declarations and exposes it
+ * through the [PropertySchemaFactoryAdapter] interface.
  */
-@org.khorum.oss.konstellation.dsl.common.ExcludeFromCoverage
 class DefaultPropertySchemaFactoryAdapter(
     prop: KSPropertyDeclaration,
     singleEntryTransform: KSClassDeclaration?,
@@ -32,20 +31,13 @@ class DefaultPropertySchemaFactoryAdapter(
     override val hasSingleEntryTransform: Boolean = singleEntryTransform != null
 
     // DslProperty annotation for controlling list/map accessor generation
-    private val dslPropertyAnnotation: KSAnnotation? = prop.annotations
-        .find { it.shortName.asString() == DslProperty::class.simpleName }
+    private val dslPropertyAnnotation = AnnotationLookup.findAnnotation(prop.annotations, DslProperty::class)
 
-    override val withVararg: Boolean = dslPropertyAnnotation
-        ?.arguments
-        ?.firstOrNull { it.name?.asString() == DslProperty::withVararg.name }
-        ?.value as? Boolean
-        ?: true
+    override val withVararg: Boolean =
+        AnnotationLookup.findArgumentValue<Boolean>(dslPropertyAnnotation, DslProperty::withVararg.name) ?: true
 
-    override val withProvider: Boolean = dslPropertyAnnotation
-        ?.arguments
-        ?.firstOrNull { it.name?.asString() == DslProperty::withProvider.name }
-        ?.value as? Boolean
-        ?: true
+    override val withProvider: Boolean =
+        AnnotationLookup.findArgumentValue<Boolean>(dslPropertyAnnotation, DslProperty::withProvider.name) ?: true
 
     constructor(propertyAdapter: DefaultDomainProperty) : this(
         propertyAdapter.prop,
@@ -53,22 +45,19 @@ class DefaultPropertySchemaFactoryAdapter(
         propertyAdapter.defaultValue
     )
 
-    private val singleEntryTransformAnnotation = singleEntryTransform
-        ?.annotations
-        ?.find { it.shortName.asString() == SingleEntryTransformDsl::class.simpleName }
+    private val singleEntryTransformAnnotation = singleEntryTransform?.let {
+        AnnotationLookup.findAnnotation(it.annotations, SingleEntryTransformDsl::class)
+    }
 
-    override val transformTemplate = singleEntryTransformAnnotation
-        ?.arguments
-        ?.firstOrNull { it.name?.asString() == SingleEntryTransformDsl<*>::transformTemplate.name }
-        ?.value
-        ?.toString()
-        ?.takeIf { it.isNotBlank() }
+    override val transformTemplate: String? =
+        AnnotationLookup.findArgumentValue<String>(
+            singleEntryTransformAnnotation, SingleEntryTransformDsl<*>::transformTemplate.name
+        )?.takeIf { it.isNotBlank() }
 
-    override val transformType = singleEntryTransformAnnotation
-        ?.arguments
-        ?.firstOrNull { it.name?.asString() == SingleEntryTransformDsl<*>::inputType.name }
-        ?.let { it.value as? KSType }
-        ?.toTypeName()
+    override val transformType: TypeName? =
+        AnnotationLookup.findArgumentValue<KSType>(
+            singleEntryTransformAnnotation, SingleEntryTransformDsl<*>::inputType.name
+        )?.toTypeName()
 
     private val resolvedPropKSType: KSType = prop.type.resolve()
 
@@ -78,8 +67,8 @@ class DefaultPropertySchemaFactoryAdapter(
 
     override val propertyNonNullableClassName: ClassName? = classDeclarationInternal?.toClassName()
 
-    override val hasGeneratedDslAnnotation: Boolean = classDeclarationInternal?.annotations?.any {
-        it.shortName.asString() == GeneratedDsl::class.simpleName
+    override val hasGeneratedDslAnnotation: Boolean = classDeclarationInternal?.let {
+        AnnotationLookup.hasAnnotation(it.annotations, GeneratedDsl::class)
     } ?: false
 
     override val propertyClassDeclarationQualifiedName: String? = classDeclarationInternal?.qualifiedName?.asString()
@@ -101,32 +90,23 @@ class DefaultPropertySchemaFactoryAdapter(
         ?.resolve()
         ?.declaration as? KSClassDeclaration
 
-    override val isGroupElement: Boolean = collectionFirstElementClassDecl
-        ?.annotations
-        ?.filter { it.shortName.asString() == GeneratedDsl::class.simpleName }
-        ?.any { annotation ->
-            annotation
-                .arguments
-                .firstOrNull { it.name?.asString() == GeneratedDsl::withListGroup.name }
-                ?.value == true
-        }
-        ?: false
+    override val isGroupElement: Boolean = collectionFirstElementClassDecl?.let {
+        AnnotationLookup.anyAnnotationArgMatches(
+            it.annotations, GeneratedDsl::class, GeneratedDsl::withListGroup.name
+        ) { value -> value == true }
+    } ?: false
 
     override val groupElementClassName: ClassName? = collectionFirstElementClassDecl?.toClassName()
     override val groupElementClassDeclaration: KSClassDeclaration? = collectionFirstElementClassDecl
 
-    private val dslAnnotations: List<KSAnnotation>? = collectionSecondElementClassDecl
-        ?.annotations
-        ?.filter { it.shortName.asString() == GeneratedDsl::class.simpleName }
-        ?.toList()
+    private val dslAnnotation = collectionSecondElementClassDecl?.let {
+        AnnotationLookup.findAnnotation(it.annotations, GeneratedDsl::class)
+    }
 
     private fun mapGroupType(): MapGroupType? {
-        val arguments = dslAnnotations?.flatMap(KSAnnotation::arguments)
-        val mapGroup = arguments
-            ?.firstOrNull { it.name?.asString() == GeneratedDsl::withMapGroup.name }
+        val mapGroupValue = AnnotationLookup.findArgument(dslAnnotation, GeneratedDsl::withMapGroup.name)
             ?: return null
-
-        return MapGroupType.valueOf(mapGroup.value.toString().uppercase())
+        return MapGroupType.valueOf(mapGroupValue.value.toString().uppercase())
     }
 
     override var mapDetails: PropertySchemaFactoryAdapter.MapDetails? = null

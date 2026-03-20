@@ -63,4 +63,55 @@ class BooleanParamTest : UnitSim() {
             whenever { param.accessors().first().toString().contains("false") }
         }
     }
+
+    @Test
+    fun `propertyValueReturn - nullable returns propName`() = test {
+        given {
+            val param = BooleanPropSchema("active", nullableAssignment = true)
+            expect { "active" }
+            whenever { param.propertyValueReturn() }
+        }
+    }
+
+    @Test
+    fun `propertyValueReturn - non-nullable returns vRequireNotNull`() = test {
+        given {
+            val param = BooleanPropSchema("active", nullableAssignment = false)
+            expect { "vRequireNotNull(::active)" }
+            whenever { param.propertyValueReturn() }
+        }
+    }
+
+    @Test
+    fun `isCollection returns false`() = test {
+        given {
+            val param = BooleanPropSchema("active")
+            expect { false }
+            whenever { param.isCollection() }
+        }
+    }
+
+    @Test
+    fun `isMap returns false`() = test {
+        given {
+            val param = BooleanPropSchema("active")
+            expect { false }
+            whenever { param.isMap() }
+        }
+    }
+
+    @Test
+    fun `toPropertySpec with defaultValue codeBlock`() = test {
+        given {
+            val defaultValue = DefaultPropertyValue(
+                rawValue = "true",
+                codeBlock = CodeBlock.of("%L", true),
+                packageName = "kotlin",
+                className = "Boolean"
+            )
+            val param = BooleanPropSchema("enabled", defaultValue = defaultValue)
+            expect { true }
+            whenever { param.toPropertySpec().toString().contains("true") }
+        }
+    }
 }

@@ -13,6 +13,7 @@ import org.khorum.oss.konstellation.dsl.process.propSchema.PropertySchemaFactory
 import org.khorum.oss.konstellation.dsl.process.propSchema.PropertySchemaFactoryAdapter
 import org.khorum.oss.konstellation.dsl.process.root.DefaultRootDslAccessorGenerator
 import org.khorum.oss.konstellation.dsl.process.root.RootDslAccessorGenerator
+import org.khorum.oss.konstellation.dsl.utils.AnnotationLookup
 import org.khorum.oss.konstellation.dsl.utils.Colors
 import org.khorum.oss.konstellation.dsl.utils.VLoggable
 import org.khorum.oss.konstellation.metaDsl.annotation.GeneratedDsl
@@ -161,24 +162,14 @@ class DefaultDslGenerator(
      * @receiver [KSClassDeclaration] The KSClassDeclaration to check.
      * @return Boolean indicating whether the class is a root DSL class.
      */
-    private fun KSClassDeclaration.isRootDsl(): Boolean = this
-        .annotations
-        .filter { it.shortName.asString() == GeneratedDsl::class.simpleName }
-        .any { annotation ->
-            annotation
-                .arguments
-                .firstOrNull { it.name?.asString() == GeneratedDsl::isRoot.name }
-                ?.value == true
-        }
+    private fun KSClassDeclaration.isRootDsl(): Boolean =
+        AnnotationLookup.anyAnnotationArgMatches(
+            annotations, GeneratedDsl::class, GeneratedDsl::isRoot.name
+        ) { it == true }
 
-    private fun KSClassDeclaration.isDebug(): Boolean = this
-        .annotations
-        .filter { it.shortName.asString() == GeneratedDsl::class.simpleName }
-        .any { annotation ->
-            annotation
-                .arguments
-                .firstOrNull { it.name?.asString() == GeneratedDsl::debug.name }
-                ?.value == true
-        }
+    private fun KSClassDeclaration.isDebug(): Boolean =
+        AnnotationLookup.anyAnnotationArgMatches(
+            annotations, GeneratedDsl::class, GeneratedDsl::debug.name
+        ) { it == true }
 }
 

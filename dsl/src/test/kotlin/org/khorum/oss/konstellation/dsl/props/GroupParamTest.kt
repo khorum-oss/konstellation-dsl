@@ -47,5 +47,32 @@ class GroupParamTest : UnitSim() {
         }
     }
 
+    @Test
+    fun `isCollection returns true`() = test {
+        given {
+            val param = GroupPropSchema("test", propTypeName, groupBuilderName)
+            expect { true }
+            whenever { param.isCollection() }
+        }
+    }
+
+    @Test
+    fun `isMap returns false`() = test {
+        given {
+            val param = GroupPropSchema("test", propTypeName, groupBuilderName)
+            expect { false }
+            whenever { param.isMap() }
+        }
+    }
+
+    @Test
+    fun `propertyValueReturn - nullable returns propName`() = test {
+        given {
+            val param = GroupPropSchema("test", propTypeName, groupBuilderName, nullableAssignment = true)
+            expect { "test" }
+            whenever { param.propertyValueReturn() }
+        }
+    }
+
     class TestObj
 }
