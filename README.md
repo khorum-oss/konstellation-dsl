@@ -28,8 +28,8 @@ plugins {
 }
 
 dependencies {
-    implementation("io.violabs.konstellation:meta-dsl:0.0.7")
-    ksp("io.violabs.konstellation:dsl:0.0.7")
+    implementation("io.violabs.konstellation:meta-dsl:x.x.x")
+    ksp("io.violabs.konstellation:dsl:x.x.x")
 }
 
 // Configure source sets for generated code
@@ -171,10 +171,8 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 ## Support
 
-- 📝 [Documentation](https://github.com/violabs/konstellation/wiki)
-- 🐛 [Issue Tracker](https://github.com/violabs/konstellation/issues)
-- 💬 [Discussions](https://github.com/violabs/konstellation/discussions)
+- 🐛 [Issue Tracker](https://github.com/khorum-oss/konstellation-dsl/issues)
 
 ---
 
-*Built with ❤️ by the Violabs team*
+*Built with ❤️ by the Khorum OSS team*
