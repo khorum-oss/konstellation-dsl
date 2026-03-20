@@ -1,26 +1,21 @@
-import java.util.Properties
-import kotlin.apply
-import kotlin.collections.component1
-import kotlin.collections.component2
-
 plugins {
-    kotlin("jvm") version "2.1.20"
-    id("org.jetbrains.dokka") version "1.9.20" apply false
-    id("com.google.devtools.ksp") version "2.1.20-1.0.32" apply false
-    id("io.gitlab.arturbosch.detekt") version "1.23.6" apply false
-    id("org.jetbrains.kotlinx.kover") version "0.9.1"
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.dokka) apply false
+    alias(libs.plugins.ksp) apply false
+    alias(libs.plugins.detekt) apply false
+    alias(libs.plugins.kover)
+    alias(libs.plugins.sonarqube)
     application
-    id("org.khorum.oss.plugins.open.pipeline") version "1.0.3" apply false
-    id("org.khorum.oss.plugins.open.secrets") version "1.0.3" apply false
-
-    id("org.khorum.oss.plugins.open.publishing.maven-generated-artifacts") version "1.0.5" apply false
-    id("org.khorum.oss.plugins.open.publishing.digital-ocean-spaces") version "1.0.5" apply false
+    alias(libs.plugins.khorum.pipeline) apply false
+    alias(libs.plugins.khorum.secrets) apply false
+    alias(libs.plugins.khorum.maven.artifacts) apply false
+    alias(libs.plugins.khorum.digital.ocean) apply false
 }
 
 group = "org.khorum.oss.konstellation"
 
 extra["dslVersion"] = file("VERSION").readText().trim()
-extra["metaDslVersion"] = "1.0.1"
+extra["metaDslVersion"] = libs.versions.meta.dsl.get()
 
 java {
     toolchain {
@@ -42,13 +37,12 @@ allprojects {
 
     dependencies {
         implementation(kotlin("stdlib"))
-        implementation("org.jetbrains.kotlin:kotlin-reflect")
+        implementation(rootProject.libs.kotlin.reflect)
+        implementation(rootProject.libs.kotlin.logging)
 
-        implementation("io.github.microutils:kotlin-logging:4.0.0-beta-2")
-
-        testImplementation(kotlin("test")) // Kotlin’s own assert functions, optional but handy
-        testImplementation("org.junit.jupiter:junit-jupiter-api:6.0.0-M1")
-        testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+        testImplementation(kotlin("test"))
+        testImplementation(rootProject.libs.junit.jupiter.api)
+        testRuntimeOnly(rootProject.libs.junit.platform.launcher)
     }
 
     tasks.withType<Test> {
@@ -74,18 +68,19 @@ fun Project.sharedRepositories() {
 
 tasks.register("koverMergedReport") {
     group = "verification"
-    description = "Generates merged coverage report for all modules"
+    description = "Generates coverage report for the dsl module"
 
-    dependsOn(subprojects.map { it.tasks.named("koverXmlReport") })
+    dependsOn(project(":dsl").tasks.named("koverXmlReport"))
 }
 
-val secretPropsFile = project.rootProject.file("secret.properties") // update to your secret file under `buildSrc`
-val ext = project.extensions.extraProperties
-if (secretPropsFile.exists()) {
-    secretPropsFile.reader().use {
-        Properties().apply { load(it) }
-    }.onEach { (name, value) ->
-        ext[name.toString()] = value
+sonar {
+    properties {
+        property("sonar.projectKey", "khorum-oss_konstellation-dsl")
+        property("sonar.organization", "khorum-oss")
+        property("sonar.host.url", "https://sonarcloud.io")
+        property(
+            "sonar.coverage.jacoco.xmlReportPaths",
+            "${project(":dsl").layout.buildDirectory.get()}/reports/kover/report.xml"
+        )
     }
-    project.logger.log(LogLevel.LIFECYCLE, "Secrets loaded from file: $ext")
 }

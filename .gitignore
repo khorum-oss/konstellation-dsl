@@ -10,3 +10,5 @@ secret.properties
 jreleaser_public.asc
 public.key
 .serena
+*.asc
+*.gpg

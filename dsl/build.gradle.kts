@@ -1,5 +1,6 @@
 import io.gitlab.arturbosch.detekt.Detekt
 import io.gitlab.arturbosch.detekt.DetektCreateBaselineTask
+import org.khorum.oss.plugins.open.secrets.getPropertyOrEnv
 
 val dslVersion: String by rootProject.extra
 val metaDslVersion: String by rootProject.extra
@@ -8,25 +9,27 @@ plugins {
     id("io.gitlab.arturbosch.detekt")
     `java-library`
     `maven-publish`
+    signing
 
     id("org.khorum.oss.plugins.open.secrets")
     id("org.khorum.oss.plugins.open.publishing.maven-generated-artifacts")
     id("org.khorum.oss.plugins.open.publishing.digital-ocean-spaces")
 }
 
-group = "io.violabs.konstellation"
+group = "org.khorum.oss.konstellation"
 version = dslVersion
 
 dependencies {
-    implementation("org.khorum.oss.konstellation:konstellation-meta-dsl:$metaDslVersion")
+    implementation(rootProject.libs.konstellation.meta.dsl)
     implementation(kotlin("stdlib"))
-    implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("com.squareup:kotlinpoet:2.1.0")
-    implementation("com.squareup:kotlinpoet-ksp:2.1.0")
-    implementation("com.google.devtools.ksp:symbol-processing-api:2.1.20-1.0.32")
-    implementation("com.google.auto.service:auto-service:1.1.1")
+    implementation(rootProject.libs.kotlin.reflect)
+    implementation(rootProject.libs.kotlinpoet)
+    implementation(rootProject.libs.kotlinpoet.ksp)
+    implementation(rootProject.libs.ksp.api)
+    implementation(rootProject.libs.google.auto.service)
 
     testImplementation(project(":core-test"))
+    testImplementation(rootProject.libs.mockk)
 }
 
 tasks.jar {
@@ -37,27 +40,24 @@ kover {
     reports {
         filters {
             excludes {
-                annotatedBy("io.violabs.konstellation.common.ExcludeFromCoverage")
+                annotatedBy("org.khorum.oss.konstellation.dsl.common.ExcludeFromCoverage")
             }
         }
     }
 }
 
-
 detekt {
-    buildUponDefaultConfig = true // preconfigure defaults
-    allRules = false // activate all available (even unstable) rules.
-//    config.setFrom("$projectDir/config/detekt.yml") // point to your custom config defining rules to run, overwriting default behavior
-//    baseline = file("$projectDir/config/baseline.xml") // a way of suppressing issues before introducing detekt
+    buildUponDefaultConfig = true
+    allRules = false
 }
 
 tasks.withType<Detekt>().configureEach {
     reports {
-        html.required.set(true) // observe findings in your browser with structure and code snippets
-        xml.required.set(true) // checkstyle like format mainly for integrations like Jenkins
-        txt.required.set(true) // similar to the console output, contains issue signature to manually edit baseline files
-        sarif.required.set(true) // standardized SARIF format (https://sarifweb.azurewebsites.net/) to support integrations with GitHub Code Scanning
-        md.required.set(true) // simple Markdown format
+        html.required.set(true)
+        xml.required.set(true)
+        txt.required.set(true)
+        sarif.required.set(true)
+        md.required.set(true)
     }
 }
 
@@ -71,9 +71,31 @@ tasks.withType<DetektCreateBaselineTask>().configureEach {
 
 digitalOceanSpacesPublishing {
     bucket = "open-reliquary"
-//    accessKey = project.getPropertyOrEnv("spaces.key", "DO_SPACES_API_KEY")
-//    secretKey = project.getPropertyOrEnv("spaces.secret", "DO_SPACES_SECRET")
+    accessKey = project.getPropertyOrEnv("spaces.key", "DO_SPACES_API_KEY")
+    secretKey = project.getPropertyOrEnv("spaces.secret", "DO_SPACES_SECRET")
     publishedVersion = version.toString()
+    signingRequired = true
+}
+
+signing {
+    val signingKey = providers.environmentVariable("GPG_SIGNING_KEY").orNull
+    val signingPassword = providers.environmentVariable("GPG_SIGNING_PASSWORD").orNull
+
+    if (signingKey != null) {
+        useInMemoryPgpKeys(signingKey, signingPassword)
+    } else {
+        useGpgCmd()
+    }
+    sign(publishing.publications)
+    afterEvaluate {
+        tasks.named("uploadToDigitalOceanSpaces") {
+            dependsOn(tasks.withType<Sign>())
+        }
+    }
+}
+
+tasks.withType<PublishToMavenRepository>().configureEach {
+    dependsOn(tasks.withType<Sign>())
 }
 
 mavenGeneratedArtifacts {
@@ -107,6 +129,6 @@ mavenGeneratedArtifacts {
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(17) // Specify your desired Java version here
+        languageVersion = JavaLanguageVersion.of(17)
     }
 }
