@@ -104,7 +104,7 @@ mavenGeneratedArtifacts {
     description = """
             An annotation based DSL Builder for Kotlin.
         """
-    websiteUrl = "https://github.com/violabs/konstellation/tree/main/dsl"
+    websiteUrl = "https://github.com/khorum-oss/konstellation-dsl/tree/main/dsl"
 
     licenses {
         license {
@@ -115,15 +115,15 @@ mavenGeneratedArtifacts {
 
     developers {
         developer {
-            id = "violabs"
-            name = "Violabs Team"
-            email = "support@violabs.io"
-            organization = "Violabs Software"
+            id = "khorum-oss"
+            name = "Khorum OSS Team"
+            email = "khorum.oss@gmail.com"
+            organization = "Khorum OSS"
         }
     }
 
     scm {
-        connection = "https://github.com/violabs/konstellation.git"
+        connection = "https://github.com/khorum-oss/konstellation-dsl.git"
     }
 }
 
