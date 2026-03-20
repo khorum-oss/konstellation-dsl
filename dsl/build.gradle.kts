@@ -33,7 +33,7 @@ dependencies {
 }
 
 tasks.jar {
-    archiveBaseName.set("dsl")
+    archiveBaseName.set("konstellation-dsl")
 }
 
 kover {
