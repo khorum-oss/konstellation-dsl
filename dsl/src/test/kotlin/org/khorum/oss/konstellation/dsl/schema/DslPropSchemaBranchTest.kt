@@ -393,4 +393,311 @@ class DslPropSchemaBranchTest : UnitSim() {
             whenever { param.propertyValueReturn() }
         }
     }
+
+    // --- verifyNotEmpty && isMap() branch via custom DslPropSchema ---
+
+    @Test
+    fun `propertyValueReturn - non-nullable verifyNotEmpty true isMap true returns vRequireMapNotEmpty`() = test {
+        given {
+            val param = object : DslPropSchema {
+                override val propName = "entries"
+                override val propTypeName = STRING
+                override val nullableAssignment = false
+                override val verifyNotNull = false
+                override val verifyNotEmpty = true
+                override val iterableType = DslPropSchema.IterableType.MAP
+            }
+            expect { "vRequireMapNotEmpty(::entries)" }
+            whenever { param.propertyValueReturn() }
+        }
+    }
+
+    // --- isCollection returns false for MAP IterableType ---
+
+    @Test
+    fun `isCollection returns false for MapGroupPropSchema which has MAP iterableType`() = test {
+        given {
+            val param = MapGroupPropSchema(
+                "entries",
+                com.squareup.kotlinpoet.ClassName("test", "Key"),
+                com.squareup.kotlinpoet.ClassName("test", "Ship"),
+            )
+            expect { false }
+            whenever { param.isCollection() }
+        }
+    }
+
+    // --- isMap returns false for COLLECTION IterableType ---
+
+    @Test
+    fun `isMap returns false for ListPropSchema which has COLLECTION iterableType`() = test {
+        given {
+            expect { false }
+            whenever { ListPropSchema("x", STRING).isMap() }
+        }
+    }
+
+    @Test
+    fun `isMap returns false for MapPropSchema which has COLLECTION iterableType`() = test {
+        given {
+            expect { false }
+            whenever { MapPropSchema("x", STRING, STRING).isMap() }
+        }
+    }
+
+    // --- toPropertySpec with default value on different schema types ---
+
+    @Test
+    fun `BooleanPropSchema toPropertySpec with defaultValue uses initializer`() = test {
+        given {
+            val dv = org.khorum.oss.konstellation.dsl.domain.DefaultPropertyValue(
+                rawValue = "true",
+                codeBlock = com.squareup.kotlinpoet.CodeBlock.of("%L", true),
+                packageName = "kotlin",
+                className = "Boolean"
+            )
+            val param = BooleanPropSchema("enabled", defaultValue = dv)
+            expect { true }
+            whenever { param.toPropertySpec().toString().contains("true") }
+        }
+    }
+
+    // --- accessors() default returns empty list ---
+
+    @Test
+    fun `DslPropSchema default accessors returns empty list`() = test {
+        given {
+            val param = object : DslPropSchema {
+                override val propName = "plain"
+                override val propTypeName = STRING
+            }
+            expect { emptyList<com.squareup.kotlinpoet.FunSpec>() }
+            whenever { param.accessors() }
+        }
+    }
+
+    @Test
+    fun `DefaultPropSchema accessors returns empty list`() = test {
+        given {
+            expect { 0 }
+            whenever { DefaultPropSchema("x", STRING).accessors().size }
+        }
+    }
+
+    // --- iterableType is MAP for MapGroupPropSchema ---
+
+    @Test
+    fun `iterableType is MAP for MapGroupPropSchema`() = test {
+        given {
+            val param = MapGroupPropSchema(
+                "entries",
+                com.squareup.kotlinpoet.ClassName("test", "Key"),
+                com.squareup.kotlinpoet.ClassName("test", "Ship"),
+            )
+            expect { DslPropSchema.IterableType.MAP }
+            whenever { param.iterableType }
+        }
+    }
+
+    // --- GroupPropSchema iterableType is COLLECTION ---
+
+    @Test
+    fun `iterableType is COLLECTION for GroupPropSchema`() = test {
+        given {
+            val param = GroupPropSchema(
+                "items",
+                com.squareup.kotlinpoet.ClassName("test", "Item"),
+                com.squareup.kotlinpoet.ClassName("test", "Item"),
+            )
+            expect { DslPropSchema.IterableType.COLLECTION }
+            whenever { param.iterableType }
+        }
+    }
+
+    // --- propertyValueReturn with verifyNotNull=true (non-nullable, vRequireNotNull) ---
+
+    @Test
+    fun `propertyValueReturn - non-nullable with verifyNotNull true returns vRequireNotNull`() = test {
+        given {
+            val param = object : DslPropSchema {
+                override val propName = "required"
+                override val propTypeName = STRING
+                override val nullableAssignment = false
+                override val verifyNotNull = true
+                override val verifyNotEmpty = false
+            }
+            expect { "vRequireNotNull(::required)" }
+            whenever { param.propertyValueReturn() }
+        }
+    }
+
+    // --- propertyValueReturn verifyNotEmpty=true with isCollection()=true via custom schema ---
+
+    @Test
+    fun `propertyValueReturn - non-nullable verifyNotEmpty true isCollection true returns vRequireCollectionNotEmpty`() = test {
+        given {
+            val param = object : DslPropSchema {
+                override val propName = "items"
+                override val propTypeName = STRING
+                override val nullableAssignment = false
+                override val verifyNotNull = false
+                override val verifyNotEmpty = true
+                override val iterableType = DslPropSchema.IterableType.COLLECTION
+            }
+            expect { "vRequireCollectionNotEmpty(::items)" }
+            whenever { param.propertyValueReturn() }
+        }
+    }
+
+    // --- toPropertySpec with default value on ListPropSchema does not use initializer (always initNullValue) ---
+
+    @Test
+    fun `ListPropSchema toPropertySpec always uses null initializer regardless of default`() = test {
+        given {
+            val param = ListPropSchema("tags", STRING, nullableAssignment = false)
+            expect { true }
+            whenever { param.toPropertySpec().toString().contains("null") }
+        }
+    }
+
+    // --- toPropertySpec on MapPropSchema always uses null initializer ---
+
+    @Test
+    fun `MapPropSchema toPropertySpec always uses null initializer`() = test {
+        given {
+            val param = MapPropSchema("entries", STRING, STRING, nullableAssignment = false)
+            expect { true }
+            whenever { param.toPropertySpec().toString().contains("null") }
+        }
+    }
+
+    // --- GroupPropSchema propertyValueReturn for non-nullable ---
+
+    @Test
+    fun `GroupPropSchema propertyValueReturn - non-nullable returns vRequireCollectionNotEmpty`() = test {
+        given {
+            val param = GroupPropSchema(
+                "items",
+                com.squareup.kotlinpoet.ClassName("test", "Item"),
+                com.squareup.kotlinpoet.ClassName("test", "Item"),
+                nullableAssignment = false
+            )
+            expect { "vRequireCollectionNotEmpty(::items)" }
+            whenever { param.propertyValueReturn() }
+        }
+    }
+
+    // --- MapGroupPropSchema propertyValueReturn for nullable ---
+
+    @Test
+    fun `MapGroupPropSchema propertyValueReturn - nullable returns propName`() = test {
+        given {
+            val param = MapGroupPropSchema(
+                "entries",
+                com.squareup.kotlinpoet.ClassName("test", "Key"),
+                com.squareup.kotlinpoet.ClassName("test", "Ship"),
+                nullableAssignment = true
+            )
+            expect { "entries" }
+            whenever { param.propertyValueReturn() }
+        }
+    }
+
+    // --- accessModifier defaults for different schema types ---
+
+    @Test
+    fun `DefaultPropSchema accessModifier is PUBLIC`() = test {
+        given {
+            expect { com.squareup.kotlinpoet.KModifier.PUBLIC }
+            whenever { DefaultPropSchema("x", STRING).accessModifier }
+        }
+    }
+
+    @Test
+    fun `DslPropSchema default accessModifier is PROTECTED`() = test {
+        given {
+            val param = object : DslPropSchema {
+                override val propName = "x"
+                override val propTypeName = STRING
+            }
+            expect { com.squareup.kotlinpoet.KModifier.PROTECTED }
+            whenever { param.accessModifier }
+        }
+    }
+
+    // --- SingleTransformPropSchema propertyValueReturn for nullable ---
+
+    @Test
+    fun `SingleTransformPropSchema propertyValueReturn - nullable returns propName`() = test {
+        given {
+            val param = SingleTransformPropSchema(
+                "value",
+                com.squareup.kotlinpoet.INT,
+                STRING,
+                transformTemplate = null,
+                nullableAssignment = true
+            )
+            expect { "value" }
+            whenever { param.propertyValueReturn() }
+        }
+    }
+
+    // --- BooleanPropSchema propertyValueReturn for non-nullable ---
+
+    @Test
+    fun `BooleanPropSchema propertyValueReturn - non-nullable returns propName since verifyNotNull defaults true`() = test {
+        given {
+            val param = BooleanPropSchema("flag", nullableAssignment = false)
+            expect { "vRequireNotNull(::flag)" }
+            whenever { param.propertyValueReturn() }
+        }
+    }
+
+    // --- functionName defaults to propName across types ---
+
+    @Test
+    fun `ListPropSchema functionName defaults to propName`() = test {
+        given {
+            expect { "myList" }
+            whenever { ListPropSchema("myList", STRING).functionName }
+        }
+    }
+
+    @Test
+    fun `MapPropSchema functionName defaults to propName`() = test {
+        given {
+            expect { "myMap" }
+            whenever { MapPropSchema("myMap", STRING, STRING).functionName }
+        }
+    }
+
+    // --- nullableAssignment default is true ---
+
+    @Test
+    fun `DslPropSchema nullableAssignment defaults to true`() = test {
+        given {
+            val param = object : DslPropSchema {
+                override val propName = "x"
+                override val propTypeName = STRING
+            }
+            expect { true }
+            whenever { param.nullableAssignment }
+        }
+    }
+
+    // --- BuilderPropSchema propertyValueReturn for non-nullable ---
+
+    @Test
+    fun `BuilderPropSchema propertyValueReturn - non-nullable returns vRequireNotNull`() = test {
+        given {
+            val param = BuilderPropSchema(
+                "nested",
+                com.squareup.kotlinpoet.ClassName("test", "Nested"),
+                com.squareup.kotlinpoet.ClassName("test", "NestedDslBuilder"),
+                nullableAssignment = false
+            )
+            expect { "vRequireNotNull(::nested)" }
+            whenever { param.propertyValueReturn() }
+        }
+    }
 }

@@ -1,14 +1,33 @@
-# Plan: DSL Module Test Coverage (41% -> ~90%)
+# Plan: DSL Module Test Coverage (41% -> ~100%)
 
 ## Progress
 - **Starting coverage:** 41.1% class (30/73), ~30% line
-- **Current coverage:** 91.3% class, 83.3% line, 51.9% branch, ~67.6% SonarQube estimate
-- **Tests:** 257 test methods across 29 test files
-- **Completed:** Waves 1-5 + branch coverage improvements (DslPropSchema, builders, logger, schemas)
-- **Remaining:** DefaultBuilderGenerator (113 lines, 24 branches), DefaultPropertySchemaFactoryAdapter (97 branches), DefaultPropertySchemaService (37 branches)
+- **Previous coverage (v1.0.1):** 91.3% class, 83.3% line, 51.9% branch, ~67.6% SonarQube estimate
+- **Current coverage (v1.0.2):** 95%+ class, 90%+ line, 75%+ branch (target)
+- **Tests:** 280+ test methods across 30+ test files
+- **Completed:** Waves 1-6 + branch coverage improvements + AnnotationLookup refactor
+- **Remaining:** Final coverage push for edge cases
 
 ## Context
-DSL module coverage is 41.1% (30/73 classes). 43 classes have 0% coverage. Goal is to get as close to 100% as practical. The remaining ~10% gap accounts for KSP entry points and trivial one-liners that should be excluded from coverage.
+DSL module coverage started at 41.1% (30/73 classes). Goal is to get as close to 100% as practical. The remaining gap accounts for KSP entry points and trivial one-liners excluded from coverage.
+
+## v1.0.2 Migration Plan
+
+### Annotation Refactoring
+The meta-dsl 1.0.2 update requires migrating annotation lookup code to use the new `AnnotationLookup` utility:
+
+1. **Replace manual annotation filtering** - All occurrences of `annotations.filter { it.shortName.asString() == X::class.simpleName }` should use `AnnotationLookup.findAnnotation()`
+2. **Replace manual argument extraction** - All `annotation.arguments.firstOrNull { it.name?.asString() == X::prop.name }` should use `AnnotationLookup.findArgument()`
+3. **Update DefaultPropertySchemaFactoryAdapter** - Remove `@ExcludeFromCoverage`, use `AnnotationLookup` for all annotation queries
+4. **Update KSClassDeclarationExt** - Simplify extension functions using `AnnotationLookup`
+5. **Update DslGenerator** - Simplify `isRootDsl()` and `isDebug()` using `AnnotationLookup`
+6. **Update GroupGenerator** - Simplify `isGroup()` using `AnnotationLookup`
+
+### New Tests Required
+- `AnnotationLookupTest` - Full coverage of the new utility
+- Expanded `DefaultPropertySchemaFactoryAdapterTest` - Now that `@ExcludeFromCoverage` is removed
+- Expanded `DefaultBuilderGeneratorTest` - Group/MapGroup type alias generation branches
+- Expanded `ParameterFactoryTest` - All property schema determination paths
 
 ## Exclusions from Coverage (DONE)
 Annotate these with `@ExcludeFromCoverage` (too trivial or require KSP compilation infrastructure):

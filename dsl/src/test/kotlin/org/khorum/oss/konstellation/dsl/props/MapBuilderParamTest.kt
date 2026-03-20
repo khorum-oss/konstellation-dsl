@@ -46,5 +46,59 @@ class MapBuilderParamTest : UnitSim() {
         }
     }
 
+    @Test
+    fun `isMap returns true`() = test {
+        given {
+            val param = MapGroupPropSchema("test", STRING, TestObj::class.asTypeName() as TypeName)
+            expect { true }
+            whenever { param.isMap() }
+        }
+    }
+
+    @Test
+    fun `isCollection returns false`() = test {
+        given {
+            val param = MapGroupPropSchema("test", STRING, TestObj::class.asTypeName() as TypeName)
+            expect { false }
+            whenever { param.isCollection() }
+        }
+    }
+
+    @Test
+    fun `verifyNotEmpty is true`() = test {
+        given {
+            val param = MapGroupPropSchema("test", STRING, TestObj::class.asTypeName() as TypeName)
+            expect { true }
+            whenever { param.verifyNotEmpty }
+        }
+    }
+
+    @Test
+    fun `verifyNotNull is false`() = test {
+        given {
+            val param = MapGroupPropSchema("test", STRING, TestObj::class.asTypeName() as TypeName)
+            expect { false }
+            whenever { param.verifyNotNull }
+        }
+    }
+
+    @Test
+    fun `propertyValueReturn - nullable returns propName`() = test {
+        given {
+            val param = MapGroupPropSchema("test", STRING, TestObj::class.asTypeName() as TypeName, nullableAssignment = true)
+            expect { "test" }
+            whenever { param.propertyValueReturn() }
+        }
+    }
+
+    @Test
+    fun `propertyValueReturn - non-nullable returns vRequireMapNotEmpty`() = test {
+        given {
+            val param = MapGroupPropSchema("test", STRING, TestObj::class.asTypeName() as TypeName, nullableAssignment = false)
+            expect { "vRequireMapNotEmpty(::test)" }
+            whenever { param.propertyValueReturn() }
+        }
+    }
+
     class TestObj
 }

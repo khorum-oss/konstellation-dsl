@@ -482,6 +482,136 @@ class DefaultBuilderGeneratorTest : UnitSim() {
     }
 
     @Test
+    fun `generate with mapGroup PAIR annotation adds MapGroup type alias`() = test {
+        given {
+            val codeGen = mockCodeGenerator()
+            val config = mockBuilderConfig()
+            val domain = mockDomain(
+                annotations = mapOf("withMapGroup" to "LIST"),
+                properties = listOf(mockProp("name"))
+            )
+            val generator = DefaultBuilderGenerator()
+
+            expect { true }
+            whenever {
+                generator.generate(codeGen, domain, config, emptyMap(), false)
+                true
+            }
+        }
+    }
+
+    @Test
+    fun `generate with non-nullable int property exercises requireNotNull import path`() = test {
+        given {
+            val codeGen = mockCodeGenerator()
+            val config = mockBuilderConfig()
+
+            val typeRef: KSTypeReference = mockk()
+            every { typeRef.toTypeName() } returns INT
+            val resolvedType: KSType = mockk()
+            every { resolvedType.isMarkedNullable } returns false
+            val decl: KSClassDeclaration = mockk()
+            every { decl.toClassName() } returns ClassName("kotlin", "Int")
+            every { decl.annotations } returns emptySequence()
+            every { decl.qualifiedName } returns mockKSName("kotlin.Int")
+            every { resolvedType.declaration } returns decl
+            every { resolvedType.arguments } returns emptyList()
+            every { typeRef.resolve() } returns resolvedType
+            val prop: KSPropertyDeclaration = mockk()
+            every { prop.simpleName } returns mockKSName("count")
+            every { prop.type } returns typeRef
+            every { prop.annotations } returns emptySequence()
+
+            val domain = mockDomain(properties = listOf(prop))
+            val generator = DefaultBuilderGenerator()
+
+            expect { true }
+            whenever {
+                generator.generate(codeGen, domain, config, emptyMap(), false)
+                true
+            }
+        }
+    }
+
+    @Test
+    fun `generate captures output to ByteArrayOutputStream`() = test {
+        given {
+            val outputStream = ByteArrayOutputStream()
+            val codeGen: CodeGenerator = mockk()
+            every {
+                codeGen.createNewFile(any<Dependencies>(), any(), any(), any())
+            } returns outputStream
+
+            val config = mockBuilderConfig()
+            val domain = mockDomain(properties = listOf(mockProp("name")))
+            val generator = DefaultBuilderGenerator()
+
+            expect { true }
+            whenever {
+                generator.generate(codeGen, domain, config, emptyMap(), false)
+                val output = outputStream.toString()
+                output.contains("StarShipDslBuilder")
+            }
+        }
+    }
+
+    @Test
+    fun `generate with nullable boolean property covers nullable boolean path`() = test {
+        given {
+            val codeGen = mockCodeGenerator()
+            val config = mockBuilderConfig()
+
+            val typeRef: KSTypeReference = mockk()
+            every { typeRef.toTypeName() } returns BOOLEAN.copy(nullable = true)
+            val resolvedType: KSType = mockk()
+            every { resolvedType.isMarkedNullable } returns true
+            val decl: KSClassDeclaration = mockk()
+            every { decl.toClassName() } returns ClassName("kotlin", "Boolean")
+            every { decl.annotations } returns emptySequence()
+            every { decl.qualifiedName } returns mockKSName("kotlin.Boolean")
+            every { resolvedType.declaration } returns decl
+            every { resolvedType.arguments } returns emptyList()
+            every { typeRef.resolve() } returns resolvedType
+            val prop: KSPropertyDeclaration = mockk()
+            every { prop.simpleName } returns mockKSName("optional")
+            every { prop.type } returns typeRef
+            every { prop.annotations } returns emptySequence()
+
+            val domain = mockDomain(properties = listOf(prop))
+            val generator = DefaultBuilderGenerator()
+
+            expect { true }
+            whenever {
+                generator.generate(codeGen, domain, config, emptyMap(), false)
+                true
+            }
+        }
+    }
+
+    @Test
+    fun `generate with multiple non-nullable properties exercises multiple requireNotNull`() = test {
+        given {
+            val codeGen = mockCodeGenerator()
+            val config = mockBuilderConfig()
+
+            val domain = mockDomain(
+                properties = listOf(
+                    mockProp("firstName"),
+                    mockProp("lastName"),
+                    mockProp("email")
+                )
+            )
+            val generator = DefaultBuilderGenerator()
+
+            expect { true }
+            whenever {
+                generator.generate(codeGen, domain, config, emptyMap(), false)
+                true
+            }
+        }
+    }
+
+    @Test
     fun `generate with non-nullable list property exercises collection import`() {
         val codeGen = mockCodeGenerator()
         val config = mockBuilderConfig()

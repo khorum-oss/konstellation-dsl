@@ -57,4 +57,70 @@ class MapParamTest : UnitSim() {
             whenever { param.accessors().none { it.toString().contains("block") } }
         }
     }
+
+    @Test
+    fun `isCollection returns true for map iterableType`() = test {
+        given {
+            val param = MapPropSchema("test", STRING, INT)
+            expect { true }
+            whenever { param.isCollection() }
+        }
+    }
+
+    @Test
+    fun `isMap returns false for map with COLLECTION iterableType`() = test {
+        given {
+            val param = MapPropSchema("test", STRING, INT)
+            expect { false }
+            whenever { param.isMap() }
+        }
+    }
+
+    @Test
+    fun `propertyValueReturn - nullable returns propName`() = test {
+        given {
+            val param = MapPropSchema("codes", STRING, INT, nullableAssignment = true)
+            expect { "codes" }
+            whenever { param.propertyValueReturn() }
+        }
+    }
+
+    @Test
+    fun `propertyValueReturn - non-nullable returns vRequireCollectionNotEmpty`() = test {
+        given {
+            val param = MapPropSchema("codes", STRING, INT, nullableAssignment = false)
+            expect { "vRequireCollectionNotEmpty(::codes)" }
+            whenever { param.propertyValueReturn() }
+        }
+    }
+
+    @Test
+    fun `accessors - both vararg and provider generates two functions`() = test {
+        given {
+            val param = MapPropSchema("test", STRING, INT, withVararg = true, withProvider = true)
+            expect { 2 }
+            whenever { param.accessors().size }
+        }
+    }
+
+    @Test
+    fun `accessors - neither vararg nor provider generates empty list`() = test {
+        given {
+            val param = MapPropSchema("test", STRING, INT, withVararg = false, withProvider = false)
+            expect { 0 }
+            whenever { param.accessors().size }
+        }
+    }
+
+    @Test
+    fun `provider accessor contains apply block`() = test {
+        given {
+            val param = MapPropSchema("test", STRING, INT, withVararg = false, withProvider = true)
+            expect { true }
+            whenever {
+                val accessor = param.accessors().first().toString()
+                accessor.contains("apply(block)")
+            }
+        }
+    }
 }

@@ -45,6 +45,52 @@ class BuilderParamTest : UnitSim() {
         }
     }
 
+    @Test
+    fun `accessors - with kdoc`() = test {
+        given {
+            val param = BuilderPropSchema("test", typeName, buildClassName, true, kdoc = "Builder docs")
+
+            expect { true }
+
+            whenever {
+                val accessor = param.accessors().first().toString()
+                accessor.contains("Builder docs")
+            }
+        }
+    }
+
+    @Test
+    fun `accessors - without kdoc`() = test {
+        given {
+            val param = BuilderPropSchema("test", typeName, buildClassName, true, kdoc = null)
+
+            expect { false }
+
+            whenever {
+                val accessor = param.accessors().first().toString()
+                accessor.contains("/**")
+            }
+        }
+    }
+
+    @Test
+    fun `propertyValueReturn - nullable returns propName`() = test {
+        given {
+            val param = BuilderPropSchema("test", typeName, buildClassName, nullableAssignment = true)
+            expect { "test" }
+            whenever { param.propertyValueReturn() }
+        }
+    }
+
+    @Test
+    fun `propertyValueReturn - non-nullable returns vRequireNotNull`() = test {
+        given {
+            val param = BuilderPropSchema("test", typeName, buildClassName, nullableAssignment = false)
+            expect { "vRequireNotNull(::test)" }
+            whenever { param.propertyValueReturn() }
+        }
+    }
+
     class TestResponse
     class TestBuilder
 }

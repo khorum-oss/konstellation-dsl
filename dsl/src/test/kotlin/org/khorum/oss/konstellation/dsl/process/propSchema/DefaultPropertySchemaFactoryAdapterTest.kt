@@ -345,4 +345,83 @@ class DefaultPropertySchemaFactoryAdapterTest : UnitSim() {
             whenever { adapter.transformTemplate to adapter.transformType }
         }
     }
+
+    @Test
+    fun `hasGeneratedDslAnnotation is false when class has no annotations`() = test {
+        given {
+            val adapter = DefaultPropertySchemaFactoryAdapter(mockProp(), null)
+            expect { false }
+            whenever { adapter.hasGeneratedDslAnnotation }
+        }
+    }
+
+    @Test
+    fun `hasGeneratedDslAnnotation is true when class has GeneratedDsl annotation`() = test {
+        given {
+            val classDecl: KSClassDeclaration = mockk()
+            val ann: KSAnnotation = mockk()
+            val shortName = mockKSName("GeneratedDsl")
+            every { ann.shortName } returns shortName
+            every { classDecl.toClassName() } returns ClassName("org.test", "MyClass")
+            every { classDecl.annotations } returns sequenceOf(ann)
+            every { classDecl.qualifiedName } returns mockKSName("org.test.MyClass")
+
+            val adapter = DefaultPropertySchemaFactoryAdapter(
+                mockProp(declarationClass = classDecl), null
+            )
+            expect { true }
+            whenever { adapter.hasGeneratedDslAnnotation }
+        }
+    }
+
+    @Test
+    fun `isGroupElement is false when collection element has no annotations`() = test {
+        given {
+            val adapter = DefaultPropertySchemaFactoryAdapter(mockProp(), null)
+            expect { false }
+            whenever { adapter.isGroupElement }
+        }
+    }
+
+    @Test
+    fun `propertyNonNullableClassName returns class name from declaration`() = test {
+        given {
+            val adapter = DefaultPropertySchemaFactoryAdapter(mockProp(), null)
+            expect { ClassName("kotlin", "String") }
+            whenever { adapter.propertyNonNullableClassName }
+        }
+    }
+
+    @Test
+    fun `propertyClassDeclarationQualifiedName returns qualified name`() = test {
+        given {
+            val adapter = DefaultPropertySchemaFactoryAdapter(mockProp(), null)
+            expect { "kotlin.String" }
+            whenever { adapter.propertyClassDeclarationQualifiedName }
+        }
+    }
+
+    @Test
+    fun `defaultValue is null when not provided`() = test {
+        given {
+            val adapter = DefaultPropertySchemaFactoryAdapter(mockProp(), null)
+            expect { null }
+            whenever { adapter.defaultValue }
+        }
+    }
+
+    @Test
+    fun `transformType returns TypeName when inputType argument is a KSType`() = test {
+        given {
+            val inputType: KSType = mockk()
+            every { inputType.toTypeName() } returns STRING
+            val transformDecl = mockSingleEntryTransformDecl(
+                transformTemplate = "wrap(%N)",
+                inputTypeKSType = inputType
+            )
+            val adapter = DefaultPropertySchemaFactoryAdapter(mockProp(), transformDecl)
+            expect { STRING }
+            whenever { adapter.transformType }
+        }
+    }
 }
