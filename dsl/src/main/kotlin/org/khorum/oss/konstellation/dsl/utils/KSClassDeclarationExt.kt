@@ -18,6 +18,7 @@ fun KSClassDeclaration?.isGroupDsl(): Boolean {
 /**
  * Extension function to retrieve the group type from the annotations of a [KSClassDeclaration].
  */
+@Suppress("ReturnCount")
 fun KSClassDeclaration?.mapGroupType(): MapGroupType? {
     if (this == null) return null
     val annotation = AnnotationLookup.findAnnotation(annotations, GeneratedDsl::class) ?: return null

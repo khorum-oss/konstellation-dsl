@@ -89,7 +89,7 @@ class DefaultPropertySchemaService(
 
         // decide whether this raw should be a literal or raw code:
         // here we assume it’s raw Kotlin snippet (e.g. "listOf(1,2,3)"); adjust to %S if literal
-        val isStringClass = className == "String"
+        val isStringClass = className == "String" || (className.isEmpty() && packageName.isEmpty())
         logger.debug("Is String class: $isStringClass", tier = 2)
         val template = if (isStringClass) "%S" else "%L"
         val cb = CodeBlock.of(template, raw)

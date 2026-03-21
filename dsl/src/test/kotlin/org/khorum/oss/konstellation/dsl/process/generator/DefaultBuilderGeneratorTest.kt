@@ -538,7 +538,7 @@ class DefaultBuilderGeneratorTest : UnitSim() {
         given {
             val outputStream = ByteArrayOutputStream()
             val codeGen: CodeGenerator = mockk()
-            every {
+            io.mockk.every {
                 codeGen.createNewFile(any<Dependencies>(), any(), any(), any())
             } returns outputStream
 

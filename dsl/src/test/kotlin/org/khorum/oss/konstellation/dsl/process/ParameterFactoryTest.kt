@@ -519,7 +519,7 @@ class ParameterFactoryTest : UnitSim() {
     }
 
     @Test
-    fun `determineParam with hasGeneratedDslAnnotation true but null propertyNonNullableClassName returns null annotated`() = test {
+    fun `determineParam with hasGeneratedDslAnnotation true but null className returns null`() = test {
         given {
             val adapter = TestParamFactoryAdaptor(
                 actualPropTypeName = ClassName("com.example", "UnknownType"),

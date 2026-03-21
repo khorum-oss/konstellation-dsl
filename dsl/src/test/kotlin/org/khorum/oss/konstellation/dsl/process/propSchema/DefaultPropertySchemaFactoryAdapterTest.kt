@@ -307,7 +307,7 @@ class DefaultPropertySchemaFactoryAdapterTest : UnitSim() {
         given {
             val transformDecl = mockSingleEntryTransformDecl(
                 transformTemplate = "x",
-                inputTypeKSType = "notAKSType"
+                inputTypeKSType = null
             )
             val adapter = DefaultPropertySchemaFactoryAdapter(mockProp(), transformDecl)
             expect { null }
@@ -361,10 +361,10 @@ class DefaultPropertySchemaFactoryAdapterTest : UnitSim() {
             val classDecl: KSClassDeclaration = mockk()
             val ann: KSAnnotation = mockk()
             val shortName = mockKSName("GeneratedDsl")
-            every { ann.shortName } returns shortName
-            every { classDecl.toClassName() } returns ClassName("org.test", "MyClass")
-            every { classDecl.annotations } returns sequenceOf(ann)
-            every { classDecl.qualifiedName } returns mockKSName("org.test.MyClass")
+            io.mockk.every { ann.shortName } returns shortName
+            io.mockk.every { classDecl.toClassName() } returns ClassName("org.test", "MyClass")
+            io.mockk.every { classDecl.annotations } returns sequenceOf(ann)
+            io.mockk.every { classDecl.qualifiedName } returns mockKSName("org.test.MyClass")
 
             val adapter = DefaultPropertySchemaFactoryAdapter(
                 mockProp(declarationClass = classDecl), null
@@ -414,7 +414,7 @@ class DefaultPropertySchemaFactoryAdapterTest : UnitSim() {
     fun `transformType returns TypeName when inputType argument is a KSType`() = test {
         given {
             val inputType: KSType = mockk()
-            every { inputType.toTypeName() } returns STRING
+            io.mockk.every { inputType.toTypeName() } returns STRING
             val transformDecl = mockSingleEntryTransformDecl(
                 transformTemplate = "wrap(%N)",
                 inputTypeKSType = inputType
