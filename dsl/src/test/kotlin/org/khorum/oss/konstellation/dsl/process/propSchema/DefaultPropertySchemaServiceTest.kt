@@ -58,6 +58,7 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
             every { domain.packageName } returns mockKSName("org.test")
             every { domain.simpleName } returns mockKSName("TestClass")
             every { domain.containingFile } returns mockk<KSFile>()
+            every { domain.annotations } returns emptySequence()
             every { domain.getAllProperties() } returns properties
 
             val config = BuilderConfig(

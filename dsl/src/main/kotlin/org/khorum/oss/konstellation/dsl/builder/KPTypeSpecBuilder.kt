@@ -10,6 +10,7 @@ import com.squareup.kotlinpoet.TypeSpec
 /**
  * A builder for creating Kotlin Poets [TypeSpec].
  */
+@Suppress("TooManyFunctions")
 @PicardDSLMarker
 class KPTypeSpecBuilder : DefaultKotlinPoetSpec() {
     var kdocString: String? = null
