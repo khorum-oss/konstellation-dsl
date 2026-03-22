@@ -19,6 +19,21 @@ object AnnotationLookup {
     }
 
     /**
+     * Find a single annotation matching the given simple name on the provided annotation sequence.
+     * Useful for annotations that may not be on the processor's compile classpath.
+     */
+    fun findAnnotationByName(annotations: Sequence<KSAnnotation>, simpleName: String): KSAnnotation? {
+        return annotations.firstOrNull { it.shortName.asString() == simpleName }
+    }
+
+    /**
+     * Check whether any annotation matching the given simple name exists.
+     */
+    fun hasAnnotationByName(annotations: Sequence<KSAnnotation>, simpleName: String): Boolean {
+        return annotations.any { it.shortName.asString() == simpleName }
+    }
+
+    /**
      * Filter all annotations matching the given class from the provided annotation sequence.
      */
     fun filterAnnotations(annotations: Sequence<KSAnnotation>, annotationClass: KClass<*>): Sequence<KSAnnotation> {

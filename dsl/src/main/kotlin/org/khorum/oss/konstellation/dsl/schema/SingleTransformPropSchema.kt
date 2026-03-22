@@ -3,6 +3,7 @@ package org.khorum.oss.konstellation.dsl.schema
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.TypeName
 import org.khorum.oss.konstellation.dsl.builder.kotlinPoet
+import org.khorum.oss.konstellation.dsl.domain.PropertyAnnotationMetadata
 import org.khorum.oss.konstellation.dsl.process.propSchema.PropertySchemaFactoryAdapter
 
 /**
@@ -15,6 +16,7 @@ class SingleTransformPropSchema(
     actualPropTypeName: TypeName,
     val transformTemplate: String? = null,
     override val nullableAssignment: Boolean = true,
+    override val annotationMetadata: PropertyAnnotationMetadata = PropertyAnnotationMetadata()
 ) : DslPropSchema {
     override val propTypeName: TypeName = actualPropTypeName.copy(nullable = nullableAssignment)
 
@@ -23,7 +25,8 @@ class SingleTransformPropSchema(
         transformTemplate = adapter.transformTemplate,
         actualPropTypeName = adapter.actualPropTypeName,
         inputTypeName = requireNotNull(adapter.transformType) { "input type name is required" },
-        nullableAssignment = adapter.hasNullableAssignment
+        nullableAssignment = adapter.hasNullableAssignment,
+        annotationMetadata = adapter.annotationMetadata
     )
 
     override fun accessors(): List<FunSpec> = kotlinPoet {

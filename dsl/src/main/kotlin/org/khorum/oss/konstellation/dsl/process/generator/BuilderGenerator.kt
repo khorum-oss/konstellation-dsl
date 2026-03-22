@@ -19,6 +19,7 @@ import org.khorum.oss.konstellation.dsl.domain.DomainConfig
 import org.khorum.oss.konstellation.dsl.process.DslFileWriter
 import org.khorum.oss.konstellation.dsl.process.propSchema.DefaultPropertySchemaService
 import org.khorum.oss.konstellation.dsl.schema.DslPropSchema
+import org.khorum.oss.konstellation.dsl.utils.AnnotationLookup
 import org.khorum.oss.konstellation.dsl.utils.VLoggable
 import org.khorum.oss.konstellation.dsl.utils.isGroupDsl
 import org.khorum.oss.konstellation.dsl.utils.mapGroupType
@@ -137,6 +138,13 @@ class DefaultBuilderGenerator(
     ): TypeSpec = kotlinPoet {
         val domainClassName = domainConfig.domainClassName
 
+        // Check for @DslDescription on the domain class for builder KDoc
+        val classDescription = AnnotationLookup.findAnnotationByName(
+            domainConfig.domain.annotations, "DslDescription"
+        )?.let {
+            AnnotationLookup.findArgumentValue<String>(it, "value")?.takeIf { v -> v.isNotBlank() }
+        }
+
         type {
             annotations {
                 annotationDecorator
@@ -145,6 +153,10 @@ class DefaultBuilderGenerator(
             }
             public()
             name = domainConfig.builderName
+
+            // Add KDoc from @DslDescription on the class
+            classDescription?.let { kdoc(it) }
+
             superInterface(domainConfig.parameterizedDslBuilder)
             logger.debug("DSL Builder Interface added", tier = 1, branch = true)
             logger.debug("Properties added", tier = 1)
@@ -154,7 +166,7 @@ class DefaultBuilderGenerator(
             }
 
             functions {
-                params.addForEach(DslPropSchema::accessors)
+                params.addForEach(DslPropSchema::allAccessors)
 
                 add {
                     override()
@@ -162,6 +174,12 @@ class DefaultBuilderGenerator(
                     returns = domainClassName
 
                     statements {
+                        // Emit @ValidateDsl validation statements before construction
+                        val validationStatements = params.mapNotNull { it.validationStatement() }
+                        for (validation in validationStatements) {
+                            addLine(validation)
+                        }
+
                         val constructorParams = params
                             .map { CodeBlock.of("%N = %L", it.propName, it.propertyValueReturn()) }
                         if (constructorParams.isEmpty()) {

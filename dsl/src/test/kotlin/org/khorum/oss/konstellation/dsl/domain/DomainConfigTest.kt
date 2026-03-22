@@ -1,8 +1,10 @@
 package org.khorum.oss.konstellation.dsl.domain
 
+import com.google.devtools.ksp.symbol.KSAnnotation
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSFile
 import com.google.devtools.ksp.symbol.KSName
+import com.google.devtools.ksp.symbol.KSValueArgument
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.ksp.toClassName
 import io.mockk.mockk
@@ -32,6 +34,7 @@ class DomainConfigTest : UnitSim() {
 
         every { mockDomain.toClassName() } returns ClassName("org.khorum.oss.test", "StarShip")
         every { mockDomain.containingFile } returns mockFile
+        every { mockDomain.annotations } returns emptySequence()
     }
 
     @AfterEach
@@ -106,4 +109,52 @@ class DomainConfigTest : UnitSim() {
         }
     }
 
+    @Test
+    fun `customName overrides builderName when GeneratedDsl name is set`() = test {
+        given {
+            val ann = mockGeneratedDslAnnotation("CustomShip")
+            every { mockDomain.annotations } returns sequenceOf(ann)
+
+            expect { "CustomShipDslBuilder" }
+            whenever { DomainConfig(builderConfig(), emptyMap(), mockDomain, false).builderName }
+        }
+    }
+
+    @Test
+    fun `customName is null when GeneratedDsl name is blank`() = test {
+        given {
+            val ann = mockGeneratedDslAnnotation("")
+            every { mockDomain.annotations } returns sequenceOf(ann)
+
+            expect { "StarShipDslBuilder" }
+            whenever { DomainConfig(builderConfig(), emptyMap(), mockDomain, false).builderName }
+        }
+    }
+
+    @Test
+    fun `fileClassName uses customName when GeneratedDsl name is set`() = test {
+        given {
+            val ann = mockGeneratedDslAnnotation("CustomShip")
+            every { mockDomain.annotations } returns sequenceOf(ann)
+
+            expect { ClassName("org.khorum.oss.test", "CustomShipDsl") }
+            whenever { DomainConfig(builderConfig(), emptyMap(), mockDomain, false).fileClassName }
+        }
+    }
+
+    private fun mockGeneratedDslAnnotation(name: String): KSAnnotation {
+        val ann: KSAnnotation = mockk()
+        val shortName: KSName = mockk()
+        every { shortName.asString() } returns "GeneratedDsl"
+        every { ann.shortName } returns shortName
+
+        val argName: KSName = mockk()
+        every { argName.asString() } returns "name"
+        val arg: KSValueArgument = mockk()
+        every { arg.name } returns argName
+        every { arg.value } returns name
+
+        every { ann.arguments } returns listOf(arg)
+        return ann
+    }
 }

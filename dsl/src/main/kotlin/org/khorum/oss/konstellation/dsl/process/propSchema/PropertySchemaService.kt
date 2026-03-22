@@ -7,6 +7,7 @@ import org.khorum.oss.konstellation.dsl.domain.DefaultDomainProperty
 import org.khorum.oss.konstellation.dsl.domain.DefaultPropertyValue
 import org.khorum.oss.konstellation.dsl.domain.DomainConfig
 import org.khorum.oss.konstellation.dsl.domain.DomainProperty
+import org.khorum.oss.konstellation.dsl.domain.PropertyAnnotationMetadata
 import org.khorum.oss.konstellation.dsl.schema.DslPropSchema
 import org.khorum.oss.konstellation.dsl.utils.Colors
 import org.khorum.oss.konstellation.dsl.utils.VLoggable
@@ -28,16 +29,35 @@ interface PropertySchemaService<FACTORY_ADAPTER : PropertySchemaFactoryAdapter, 
  * It converts domain properties into DSL property schemas.
  */
 class DefaultPropertySchemaService(
-    private val propertySchemaFactory: DefaultPropertySchemaFactory = DefaultPropertySchemaFactory()
+    private val propertySchemaFactory: DefaultPropertySchemaFactory = DefaultPropertySchemaFactory(),
+    private val annotationExtractor: PropertyAnnotationExtractor = DefaultPropertyAnnotationExtractor()
 ) : PropertySchemaService<DefaultPropertySchemaFactoryAdapter, DefaultDomainProperty> {
     override fun getParamsFromDomain(domainConfig: DomainConfig): List<DslPropSchema> {
         val domain = domainConfig.domain
-        val lastIndex = domain.getAllProperties().count() - 1
+        val allProps = domain.getAllProperties().toList()
 
-        return domain
-            .getAllProperties()
+        // Filter out @TransientDsl properties
+        val nonTransientProps = allProps.filter { prop ->
+            val metadata = prop.extractAnnotationMetadata()
+            if (metadata.isTransient) {
+                logger.debug(
+                    "Property '${prop.simpleName.asString()}' is ${Colors.yellow("@TransientDsl")}" +
+                        (metadata.transientReason?.let { " (reason: $it)" } ?: "") +
+                        " — skipping",
+                    tier = 2, branch = true
+                )
+                false
+            } else {
+                true
+            }
+        }
+
+        val lastIndex = nonTransientProps.size - 1
+
+        return nonTransientProps
             .mapIndexed { i, prop ->
                 val defaultValue = prop.extractDefaultPropertyValue()
+                val annotationMetadata = prop.extractAnnotationMetadata()
 
                 if (defaultValue != null) logger.debug(
                     "Property '${prop.simpleName.asString()}' has ${Colors.yellow("@DefaultValue")}: $defaultValue",
@@ -48,7 +68,8 @@ class DefaultPropertySchemaService(
                     i, lastIndex,
                     prop,
                     domainConfig.singleEntryTransformByClassName,
-                    defaultValue
+                    defaultValue,
+                    annotationMetadata = annotationMetadata
                 )
             }
             .map(propertySchemaFactory::createPropertySchemaFactoryAdapter)
@@ -96,5 +117,14 @@ class DefaultPropertySchemaService(
         logger.debug("CodeBlock for default value: $cb", tier = 2)
 
         return DefaultPropertyValue(rawValue = raw, codeBlock = cb, packageName, className)
+    }
+
+    /**
+     * Extract metadata from new-style annotations (@TransientDsl, @DslDescription,
+     * @DslAlias, @DeprecatedDsl, @ValidateDsl) on a property declaration.
+     * Delegates to [PropertyAnnotationExtractor] for the actual extraction logic.
+     */
+    private fun KSPropertyDeclaration.extractAnnotationMetadata(): PropertyAnnotationMetadata {
+        return annotationExtractor.extract(this.annotations)
     }
 }

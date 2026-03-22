@@ -1,7 +1,9 @@
 package org.khorum.oss.konstellation.dsl.builder
 
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.STRING
+import com.squareup.kotlinpoet.INT
 import com.squareup.kotlinpoet.TypeVariableName
 import org.khorum.oss.geordi.UnitSim
 import org.junit.jupiter.api.Test
@@ -173,6 +175,65 @@ class KPTypeSpecBuilderTest : UnitSim() {
                 }
 
                 builder.build().toString().contains("class NestedClass")
+            }
+        }
+    }
+
+    @Test
+    fun `kdoc adds documentation to type`() = test {
+        given {
+            expect { true }
+
+            whenever {
+                val builder = KPTypeSpecBuilder().apply {
+                    name = "MyClass"
+                    kdoc("This is a documented class")
+                }
+
+                builder.build().toString().contains("This is a documented class")
+            }
+        }
+    }
+
+    @Test
+    fun `properties with list overload adds properties`() = test {
+        given {
+            expect { true }
+
+            whenever {
+                val propList = listOf(
+                    PropertySpec.builder("prop1", STRING).build(),
+                    PropertySpec.builder("prop2", INT).build()
+                )
+                val builder = KPTypeSpecBuilder().apply {
+                    name = "MyClass"
+                    properties(propList)
+                }
+
+                val output = builder.build().toString()
+                output.contains("prop1") && output.contains("prop2")
+            }
+        }
+    }
+
+    @Test
+    fun `nested called twice uses shared group`() = test {
+        given {
+            expect { true }
+
+            whenever {
+                val builder = KPTypeSpecBuilder().apply {
+                    name = "MyClass"
+                    nested {
+                        addType { name = "First" }
+                    }
+                    nested {
+                        addType { name = "Second" }
+                    }
+                }
+
+                val output = builder.build().toString()
+                output.contains("class First") && output.contains("class Second")
             }
         }
     }

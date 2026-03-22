@@ -10,6 +10,7 @@ import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.toTypeName
 import org.khorum.oss.konstellation.dsl.domain.DefaultDomainProperty
 import org.khorum.oss.konstellation.dsl.domain.DefaultPropertyValue
+import org.khorum.oss.konstellation.dsl.domain.PropertyAnnotationMetadata
 import org.khorum.oss.konstellation.dsl.utils.AnnotationLookup
 import org.khorum.oss.konstellation.metaDsl.annotation.DslProperty
 import org.khorum.oss.konstellation.metaDsl.annotation.GeneratedDsl
@@ -25,6 +26,7 @@ class DefaultPropertySchemaFactoryAdapter(
     prop: KSPropertyDeclaration,
     singleEntryTransform: KSClassDeclaration?,
     override val defaultValue: DefaultPropertyValue? = null,
+    override val annotationMetadata: PropertyAnnotationMetadata = PropertyAnnotationMetadata(),
 ) : PropertySchemaFactoryAdapter {
     override val propName: String = prop.simpleName.asString()
     override val actualPropTypeName: TypeName = prop.type.toTypeName()
@@ -42,7 +44,8 @@ class DefaultPropertySchemaFactoryAdapter(
     constructor(propertyAdapter: DefaultDomainProperty) : this(
         propertyAdapter.prop,
         propertyAdapter.singleEntryTransform(),
-        propertyAdapter.defaultValue
+        propertyAdapter.defaultValue,
+        propertyAdapter.annotationMetadata
     )
 
     private val singleEntryTransformAnnotation = singleEntryTransform?.let {

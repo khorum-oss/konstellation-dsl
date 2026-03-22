@@ -105,12 +105,15 @@ abstract class AbstractPropertySchemaFactory<T : PropertySchemaFactoryAdapter, P
         return getAnnotated(adapter, branch) ?: when {
             BOOLEAN == nonNullPropType -> {
                 logger.debug("BooleanProp", tier = 4, branch = branch)
-                BooleanPropSchema(propName, isNullable, adapter.defaultValue)
+                BooleanPropSchema(propName, isNullable, adapter.defaultValue, adapter.annotationMetadata)
             }
 
             DEFAULT_TYPE_NAMES.contains(nonNullPropType) -> {
                 logger.debug("DefaultProp", tier = 4, branch = branch)
-                DefaultPropSchema(propName, actualPropertyType, isNullable, adapter.defaultValue)
+                DefaultPropSchema(
+                    propName, actualPropertyType, isNullable,
+                    adapter.defaultValue, adapter.annotationMetadata
+                )
             }
 
             checkCollectionType(adapter, MAP, Map::class) -> {
@@ -139,7 +142,10 @@ abstract class AbstractPropertySchemaFactory<T : PropertySchemaFactoryAdapter, P
             else -> {
                 logger.warn("Property '$propName' of type '${actualPropertyType}' " +
                     "could not be mapped to a known DSLParam type. Using DefaultParam as a fallback.")
-                val param = DefaultPropSchema(propName, actualPropertyType, isNullable, adapter.defaultValue)
+                val param = DefaultPropSchema(
+                    propName, actualPropertyType, isNullable,
+                    adapter.defaultValue, adapter.annotationMetadata
+                )
                 logger.debug("-> DefaultProp (fallback)", tier = 4, branch = branch)
                 param
             }
@@ -209,7 +215,8 @@ abstract class AbstractPropertySchemaFactory<T : PropertySchemaFactoryAdapter, P
             adapter.actualPropTypeName,
             nestedBuilderClassName,
             adapter.hasNullableAssignment,
-            kdoc = kdoc
+            kdoc = kdoc,
+            annotationMetadata = adapter.annotationMetadata
         )
     }
 
@@ -222,7 +229,8 @@ abstract class AbstractPropertySchemaFactory<T : PropertySchemaFactoryAdapter, P
             adapter.propName,
             adapter.actualPropTypeName,
             groupElementClassName,
-            adapter.hasNullableAssignment
+            adapter.hasNullableAssignment,
+            adapter.annotationMetadata
         )
     }
 
@@ -233,7 +241,8 @@ abstract class AbstractPropertySchemaFactory<T : PropertySchemaFactoryAdapter, P
             adapter.propName,
             mapDetails.keyType,
             mapDetails.valueType,
-            adapter.hasNullableAssignment
+            adapter.hasNullableAssignment,
+            adapter.annotationMetadata
         )
     }
 
@@ -268,14 +277,18 @@ abstract class AbstractPropertySchemaFactory<T : PropertySchemaFactoryAdapter, P
                 mapValueType = valueType,
                 nullableAssignment = adapter.hasNullableAssignment,
                 withVararg = adapter.withVararg,
-                withProvider = adapter.withProvider
+                withProvider = adapter.withProvider,
+                annotationMetadata = adapter.annotationMetadata
             )
         }
 
         logger.warn(
             "Attempted to create MapProp for unsupported type '$actualPropertyType'. Falling back to DefaultProp."
         )
-        return DefaultPropSchema(propName, actualPropertyType, adapter.hasNullableAssignment, adapter.defaultValue)
+        return DefaultPropSchema(
+            propName, actualPropertyType, adapter.hasNullableAssignment,
+            adapter.defaultValue, adapter.annotationMetadata
+        )
     }
 
     /**
@@ -294,13 +307,17 @@ abstract class AbstractPropertySchemaFactory<T : PropertySchemaFactoryAdapter, P
                 collectionType = elementTypeArgument,
                 nullableAssignment = adapter.hasNullableAssignment,
                 withVararg = adapter.withVararg,
-                withProvider = adapter.withProvider
+                withProvider = adapter.withProvider,
+                annotationMetadata = adapter.annotationMetadata
             )
         }
 
         logger.warn(
             "Attempted to create ListProp for unsupported type '$actualPropertyType'. Falling back to DefaultProp."
         )
-        return DefaultPropSchema(propName, actualPropertyType, adapter.hasNullableAssignment, adapter.defaultValue)
+        return DefaultPropSchema(
+            propName, actualPropertyType, adapter.hasNullableAssignment,
+            adapter.defaultValue, adapter.annotationMetadata
+        )
     }
 }

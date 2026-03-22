@@ -1,5 +1,6 @@
 package org.khorum.oss.konstellation.dsl.builder
 
+import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
@@ -28,6 +29,7 @@ class KPFunSpecBuilder : ParamSpecEnabled {
      */
     var kdoc: String? = null
     private var annotations: List<ClassName> = mutableListOf()
+    private var annotationSpecs: MutableList<AnnotationSpec> = mutableListOf()
     private var overridden: Boolean = false
     private var statements: MutableList<KPStatement> = mutableListOf()
     override var params: MutableList<ParameterSpec> = mutableListOf()
@@ -59,6 +61,13 @@ class KPFunSpecBuilder : ParamSpecEnabled {
      */
     fun annotations(block: AnnotationGroup.() -> Unit) {
         this.annotations = AnnotationGroup().apply(block).annotationNames
+    }
+
+    /**
+     * Adds a pre-built AnnotationSpec to the function.
+     */
+    fun addAnnotationSpec(spec: AnnotationSpec) {
+        annotationSpecs.add(spec)
     }
 
     /**
@@ -99,6 +108,10 @@ class KPFunSpecBuilder : ParamSpecEnabled {
 
         for (annotation in annotations) {
             spec = spec.addAnnotation(annotation)
+        }
+
+        for (annotationSpec in annotationSpecs) {
+            spec = spec.addAnnotation(annotationSpec)
         }
 
         return spec.build()

@@ -2,8 +2,13 @@ package org.khorum.oss.konstellation.generateTest
 
 import org.khorum.oss.konstellation.generateTest.nested.Version
 import org.khorum.oss.konstellation.metaDsl.annotation.DefaultValue
+import org.khorum.oss.konstellation.metaDsl.annotation.DeprecatedDsl
+import org.khorum.oss.konstellation.metaDsl.annotation.DslAlias
+import org.khorum.oss.konstellation.metaDsl.annotation.DslDescription
 import org.khorum.oss.konstellation.metaDsl.annotation.DslProperty
 import org.khorum.oss.konstellation.metaDsl.annotation.GeneratedDsl
+import org.khorum.oss.konstellation.metaDsl.annotation.TransientDsl
+import org.khorum.oss.konstellation.metaDsl.annotation.ValidateDsl
 
 @GeneratedDsl(
     isRoot = true,
@@ -14,7 +19,12 @@ data class StarShip(
     val commanderNames: List<String>,
     val crewMap: Map<String, Passenger>,
     val description: String? = null,
+    // @DslAlias: generates an additional accessor function with the alias name
+    @DslAlias(names = ["active"])
     val activated: Boolean? = null,
+
+    // @DeprecatedDsl: marks generated accessors as @Deprecated
+    @DeprecatedDsl(message = "Use 'activated' instead", replaceWith = "activated")
     val docked: Boolean? = null,
     val capacity: Int? = null,
     val coordinates: SpaceTime? = null,
@@ -27,6 +37,20 @@ data class StarShip(
     val defaultString: String = "DEFAULT",
     @DefaultValue("Version.V1", packageName = "org.khorum.oss.konstellation.generateTest.nested", className = "Version")
     val version: Version = Version.V1,
+
+    // -- Annotation metadata examples --
+
+    // @DslDescription: adds KDoc to the generated builder property
+    @DslDescription("Maximum warp speed the ship can achieve")
+    val maxWarpSpeed: Float? = null,
+
+    // @ValidateDsl: generates a require() check in the build() method
+    @ValidateDsl(expression = "it?.let { v -> v > 0 } ?: true", message = "hullIntegrity must be positive")
+    val hullIntegrity: Int? = null,
+
+    // @TransientDsl: excluded from DSL builder generation entirely
+    @TransientDsl(reason = "Internal tracking only")
+    val internalTrackingId: String? = null,
 
     // @DslProperty examples - demonstrating different accessor configurations
 

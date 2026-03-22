@@ -435,4 +435,68 @@ class AnnotationLookupTest : UnitSim() {
             }
         }
     }
+
+    // ===== findAnnotationByName =====
+
+    @Test
+    fun `findAnnotationByName returns annotation when match is found`() = test {
+        given {
+            val ann = mockAnnotation("TransientDsl")
+            val annotations = sequenceOf(ann)
+
+            expect { ann }
+            whenever { AnnotationLookup.findAnnotationByName(annotations, "TransientDsl") }
+        }
+    }
+
+    @Test
+    fun `findAnnotationByName returns null when no match`() = test {
+        given {
+            val ann = mockAnnotation("OtherAnnotation")
+            val annotations = sequenceOf(ann)
+
+            expect { null }
+            whenever { AnnotationLookup.findAnnotationByName(annotations, "TransientDsl") }
+        }
+    }
+
+    @Test
+    fun `findAnnotationByName returns null for empty sequence`() = test {
+        given {
+            expect { null }
+            whenever { AnnotationLookup.findAnnotationByName(emptySequence(), "TransientDsl") }
+        }
+    }
+
+    // ===== hasAnnotationByName =====
+
+    @Test
+    fun `hasAnnotationByName returns true when annotation exists`() = test {
+        given {
+            val ann = mockAnnotation("DslDescription")
+            val annotations = sequenceOf(ann)
+
+            expect { true }
+            whenever { AnnotationLookup.hasAnnotationByName(annotations, "DslDescription") }
+        }
+    }
+
+    @Test
+    fun `hasAnnotationByName returns false when annotation does not exist`() = test {
+        given {
+            val ann = mockAnnotation("OtherAnnotation")
+            val annotations = sequenceOf(ann)
+
+            expect { false }
+            whenever { AnnotationLookup.hasAnnotationByName(annotations, "DslDescription") }
+        }
+    }
+
+    @Test
+    fun `hasAnnotationByName returns false for empty sequence`() = test {
+        given {
+            expect { false }
+            whenever { AnnotationLookup.hasAnnotationByName(emptySequence(), "DslDescription") }
+        }
+    }
 }
