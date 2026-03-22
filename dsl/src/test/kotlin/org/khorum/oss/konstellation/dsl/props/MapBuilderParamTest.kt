@@ -85,7 +85,9 @@ class MapBuilderParamTest : UnitSim() {
     @Test
     fun `propertyValueReturn - nullable returns propName`() = test {
         given {
-            val param = MapGroupPropSchema("test", STRING, TestObj::class.asTypeName() as TypeName, nullableAssignment = true)
+            val param = MapGroupPropSchema(
+                "test", STRING, TestObj::class.asTypeName() as TypeName, nullableAssignment = true
+            )
             expect { "test" }
             whenever { param.propertyValueReturn() }
         }
@@ -94,7 +96,9 @@ class MapBuilderParamTest : UnitSim() {
     @Test
     fun `propertyValueReturn - non-nullable returns vRequireMapNotEmpty`() = test {
         given {
-            val param = MapGroupPropSchema("test", STRING, TestObj::class.asTypeName() as TypeName, nullableAssignment = false)
+            val param = MapGroupPropSchema(
+                "test", STRING, TestObj::class.asTypeName() as TypeName, nullableAssignment = false
+            )
             expect { "vRequireMapNotEmpty(::test)" }
             whenever { param.propertyValueReturn() }
         }

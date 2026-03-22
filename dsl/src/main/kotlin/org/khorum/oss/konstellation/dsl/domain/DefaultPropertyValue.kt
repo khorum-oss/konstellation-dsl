@@ -8,5 +8,6 @@ data class DefaultPropertyValue(
     val packageName: String,
     val className: String
 ) {
-    fun importString(): String = "$packageName.$className"
+    fun importString(): String? =
+        if (packageName.isNotEmpty() && className.isNotEmpty()) "$packageName.$className" else null
 }

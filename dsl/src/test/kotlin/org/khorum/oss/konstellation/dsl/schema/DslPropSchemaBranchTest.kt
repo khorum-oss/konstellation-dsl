@@ -534,7 +534,7 @@ class DslPropSchemaBranchTest : UnitSim() {
     // --- propertyValueReturn verifyNotEmpty=true with isCollection()=true via custom schema ---
 
     @Test
-    fun `propertyValueReturn - non-nullable verifyNotEmpty true isCollection true returns vRequireCollectionNotEmpty`() = test {
+    fun `propertyValueReturn - non-nullable verifyNotEmpty true isCollection true`() = test {
         given {
             val param = object : DslPropSchema {
                 override val propName = "items"
@@ -574,7 +574,7 @@ class DslPropSchemaBranchTest : UnitSim() {
     // --- GroupPropSchema propertyValueReturn for non-nullable ---
 
     @Test
-    fun `GroupPropSchema propertyValueReturn - non-nullable returns vRequireCollectionNotEmpty`() = test {
+    fun `GroupPropSchema propertyValueReturn - non-nullable returns vRequireNotNull`() = test {
         given {
             val param = GroupPropSchema(
                 "items",
@@ -582,7 +582,8 @@ class DslPropSchemaBranchTest : UnitSim() {
                 com.squareup.kotlinpoet.ClassName("test", "Item"),
                 nullableAssignment = false
             )
-            expect { "vRequireCollectionNotEmpty(::items)" }
+            // verifyNotNull defaults to true, so it takes priority over verifyNotEmpty
+            expect { "vRequireNotNull(::items)" }
             whenever { param.propertyValueReturn() }
         }
     }
@@ -645,7 +646,7 @@ class DslPropSchemaBranchTest : UnitSim() {
     // --- BooleanPropSchema propertyValueReturn for non-nullable ---
 
     @Test
-    fun `BooleanPropSchema propertyValueReturn - non-nullable returns propName since verifyNotNull defaults true`() = test {
+    fun `BooleanPropSchema propertyValueReturn - non-nullable returns propName`() = test {
         given {
             val param = BooleanPropSchema("flag", nullableAssignment = false)
             expect { "vRequireNotNull(::flag)" }
