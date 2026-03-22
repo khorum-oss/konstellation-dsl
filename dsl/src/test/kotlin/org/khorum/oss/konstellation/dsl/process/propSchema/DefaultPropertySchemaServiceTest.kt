@@ -426,7 +426,7 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
     fun `extractAnnotationMetadata extracts DslAlias single value`() = test {
         given {
             val service = DefaultPropertySchemaService()
-            val ann = mockAnnotation("DslAlias", listOf("value" to "aliasName"))
+            val ann = mockAnnotation("DslAlias", listOf("names" to "aliasName"))
             val prop = mockPropWithAnnotations("aliased", sequenceOf(ann))
             val domainConfig = mockDomainConfig(sequenceOf(prop))
 
@@ -443,6 +443,19 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
             val domainConfig = mockDomainConfig(sequenceOf(prop))
 
             expect { emptyList<String>() }
+            whenever { service.getParamsFromDomain(domainConfig).first().annotationMetadata.aliases }
+        }
+    }
+
+    @Test
+    fun `extractAnnotationMetadata extracts DslAlias list value`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockAnnotation("DslAlias", listOf("names" to listOf("alias1", "alias2")))
+            val prop = mockPropWithAnnotations("aliased", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { listOf("alias1", "alias2") }
             whenever { service.getParamsFromDomain(domainConfig).first().annotationMetadata.aliases }
         }
     }

@@ -9,7 +9,7 @@ import org.khorum.oss.konstellation.dsl.utils.AnnotationLookup
  * Each annotation type is handled by a dedicated extraction method,
  * following a factory-style pattern for extensibility.
  */
-interface PropertyAnnotationExtractor {
+fun interface PropertyAnnotationExtractor {
     fun extract(annotations: Sequence<KSAnnotation>): PropertyAnnotationMetadata
 }
 
@@ -55,14 +55,13 @@ class DefaultPropertyAnnotationExtractor : PropertyAnnotationExtractor {
 
     @Suppress("UNCHECKED_CAST")
     private fun extractAliases(annotations: Sequence<KSAnnotation>): List<String> {
-        val ann = AnnotationLookup.findAnnotationByName(annotations, "DslAlias")
+        val raw = AnnotationLookup.findAnnotationByName(annotations, "DslAlias")
+            ?.let { AnnotationLookup.findArgument(it, "names")?.value }
             ?: return emptyList()
-        val singleValue = AnnotationLookup.findArgumentValue<String>(ann, "value")
-        return if (singleValue != null && singleValue.isNotBlank()) {
-            listOf(singleValue)
-        } else {
-            val listValue = AnnotationLookup.findArgumentValue<List<String>>(ann, "value")
-            listValue?.filter { it.isNotBlank() } ?: emptyList()
+        return when (raw) {
+            is String -> if (raw.isNotBlank()) listOf(raw) else emptyList()
+            is List<*> -> (raw as List<String>).filter { it.isNotBlank() }
+            else -> emptyList()
         }
     }
 
