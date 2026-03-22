@@ -194,6 +194,7 @@ class KPFunSpecBuilderTest : UnitSim() {
                         }
                     }
                 }.build()
+                println(spec.parameters)
                 spec.parameters.any { it.name == "name" }
             }
         }
