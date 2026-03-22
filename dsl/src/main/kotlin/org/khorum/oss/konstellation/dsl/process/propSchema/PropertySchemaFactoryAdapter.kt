@@ -4,6 +4,7 @@ import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.TypeName
 import org.khorum.oss.konstellation.dsl.domain.DefaultPropertyValue
+import org.khorum.oss.konstellation.dsl.domain.PropertyAnnotationMetadata
 import org.khorum.oss.konstellation.metaDsl.annotation.MapGroupType
 
 /**
@@ -30,6 +31,9 @@ interface PropertySchemaFactoryAdapter {
     // DSL property generation options
     val withVararg: Boolean get() = true
     val withProvider: Boolean get() = true
+
+    // Annotation metadata from new-style annotations
+    val annotationMetadata: PropertyAnnotationMetadata get() = PropertyAnnotationMetadata()
 
     fun mapDetails(): MapDetails? = null
 

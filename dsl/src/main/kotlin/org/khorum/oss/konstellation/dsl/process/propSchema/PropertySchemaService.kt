@@ -7,7 +7,9 @@ import org.khorum.oss.konstellation.dsl.domain.DefaultDomainProperty
 import org.khorum.oss.konstellation.dsl.domain.DefaultPropertyValue
 import org.khorum.oss.konstellation.dsl.domain.DomainConfig
 import org.khorum.oss.konstellation.dsl.domain.DomainProperty
+import org.khorum.oss.konstellation.dsl.domain.PropertyAnnotationMetadata
 import org.khorum.oss.konstellation.dsl.schema.DslPropSchema
+import org.khorum.oss.konstellation.dsl.utils.AnnotationLookup
 import org.khorum.oss.konstellation.dsl.utils.Colors
 import org.khorum.oss.konstellation.dsl.utils.VLoggable
 import org.khorum.oss.konstellation.metaDsl.annotation.DefaultValue
@@ -32,12 +34,30 @@ class DefaultPropertySchemaService(
 ) : PropertySchemaService<DefaultPropertySchemaFactoryAdapter, DefaultDomainProperty> {
     override fun getParamsFromDomain(domainConfig: DomainConfig): List<DslPropSchema> {
         val domain = domainConfig.domain
-        val lastIndex = domain.getAllProperties().count() - 1
+        val allProps = domain.getAllProperties().toList()
 
-        return domain
-            .getAllProperties()
+        // Filter out @TransientDsl properties
+        val nonTransientProps = allProps.filter { prop ->
+            val metadata = prop.extractAnnotationMetadata()
+            if (metadata.isTransient) {
+                logger.debug(
+                    "Property '${prop.simpleName.asString()}' is ${Colors.yellow("@TransientDsl")}" +
+                        (metadata.transientReason?.let { " (reason: $it)" } ?: "") +
+                        " — skipping",
+                    tier = 2, branch = true
+                )
+                false
+            } else {
+                true
+            }
+        }
+
+        val lastIndex = nonTransientProps.size - 1
+
+        return nonTransientProps
             .mapIndexed { i, prop ->
                 val defaultValue = prop.extractDefaultPropertyValue()
+                val annotationMetadata = prop.extractAnnotationMetadata()
 
                 if (defaultValue != null) logger.debug(
                     "Property '${prop.simpleName.asString()}' has ${Colors.yellow("@DefaultValue")}: $defaultValue",
@@ -48,7 +68,8 @@ class DefaultPropertySchemaService(
                     i, lastIndex,
                     prop,
                     domainConfig.singleEntryTransformByClassName,
-                    defaultValue
+                    defaultValue,
+                    annotationMetadata = annotationMetadata
                 )
             }
             .map(propertySchemaFactory::createPropertySchemaFactoryAdapter)
@@ -96,5 +117,67 @@ class DefaultPropertySchemaService(
         logger.debug("CodeBlock for default value: $cb", tier = 2)
 
         return DefaultPropertyValue(rawValue = raw, codeBlock = cb, packageName, className)
+    }
+
+    /**
+     * Extract metadata from new-style annotations (@TransientDsl, @DslDescription,
+     * @DslAlias, @DeprecatedDsl, @ValidateDsl) on a property declaration.
+     */
+    private fun KSPropertyDeclaration.extractAnnotationMetadata(): PropertyAnnotationMetadata {
+        val annotations = this.annotations
+
+        // @TransientDsl
+        val transientAnn = AnnotationLookup.findAnnotationByName(annotations, "TransientDsl")
+        val isTransient = transientAnn != null
+        val transientReason = transientAnn?.let {
+            AnnotationLookup.findArgumentValue<String>(it, "reason")?.takeIf { r -> r.isNotBlank() }
+        }
+
+        // @DslDescription
+        val descriptionAnn = AnnotationLookup.findAnnotationByName(annotations, "DslDescription")
+        val description = descriptionAnn?.let {
+            AnnotationLookup.findArgumentValue<String>(it, "value")?.takeIf { v -> v.isNotBlank() }
+        }
+
+        // @DslAlias
+        val aliasAnn = AnnotationLookup.findAnnotationByName(annotations, "DslAlias")
+        val aliases = aliasAnn?.let {
+            val singleValue = AnnotationLookup.findArgumentValue<String>(it, "value")
+            if (singleValue != null && singleValue.isNotBlank()) listOf(singleValue)
+            else {
+                @Suppress("UNCHECKED_CAST")
+                val listValue = AnnotationLookup.findArgumentValue<List<String>>(it, "value")
+                listValue?.filter { v -> v.isNotBlank() } ?: emptyList()
+            }
+        } ?: emptyList()
+
+        // @DeprecatedDsl
+        val deprecatedAnn = AnnotationLookup.findAnnotationByName(annotations, "DeprecatedDsl")
+        val deprecatedMessage = deprecatedAnn?.let {
+            AnnotationLookup.findArgumentValue<String>(it, "message")?.takeIf { m -> m.isNotBlank() }
+        }
+        val deprecatedReplaceWith = deprecatedAnn?.let {
+            AnnotationLookup.findArgumentValue<String>(it, "replaceWith")?.takeIf { r -> r.isNotBlank() }
+        }
+
+        // @ValidateDsl
+        val validateAnn = AnnotationLookup.findAnnotationByName(annotations, "ValidateDsl")
+        val validateExpression = validateAnn?.let {
+            AnnotationLookup.findArgumentValue<String>(it, "expression")?.takeIf { e -> e.isNotBlank() }
+        }
+        val validateMessage = validateAnn?.let {
+            AnnotationLookup.findArgumentValue<String>(it, "message")?.takeIf { m -> m.isNotBlank() }
+        }
+
+        return PropertyAnnotationMetadata(
+            isTransient = isTransient,
+            transientReason = transientReason,
+            description = description,
+            aliases = aliases,
+            deprecatedMessage = deprecatedMessage,
+            deprecatedReplaceWith = deprecatedReplaceWith,
+            validateExpression = validateExpression,
+            validateMessage = validateMessage,
+        )
     }
 }

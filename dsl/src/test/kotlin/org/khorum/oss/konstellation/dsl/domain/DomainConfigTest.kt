@@ -32,6 +32,7 @@ class DomainConfigTest : UnitSim() {
 
         every { mockDomain.toClassName() } returns ClassName("org.khorum.oss.test", "StarShip")
         every { mockDomain.containingFile } returns mockFile
+        every { mockDomain.annotations } returns emptySequence()
     }
 
     @AfterEach

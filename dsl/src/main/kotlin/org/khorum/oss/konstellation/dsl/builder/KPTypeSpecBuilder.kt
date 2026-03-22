@@ -12,6 +12,7 @@ import com.squareup.kotlinpoet.TypeSpec
  */
 @PicardDSLMarker
 class KPTypeSpecBuilder : DefaultKotlinPoetSpec() {
+    var kdocString: String? = null
     private var superInterface: TypeName? = null
     private var typeVariables: MutableList<TypeVariableName> = mutableListOf()
     private var annotationNames: MutableList<ClassName> = mutableListOf()
@@ -118,10 +119,18 @@ class KPTypeSpecBuilder : DefaultKotlinPoetSpec() {
      * annotations, properties, functions, and nested types.
      * @return A [TypeSpec] object representing the type.
      */
+    /**
+     * Sets the KDoc comment for the type.
+     */
+    fun kdoc(doc: String) {
+        kdocString = doc
+    }
+
     fun build(): TypeSpec {
         var typeBuilder = TypeSpec
             .classBuilder(requireNotNull(name) { "Type - name must be set" })
 
+        kdocString?.let { typeBuilder = typeBuilder.addKdoc("%L", it) }
         superInterface?.let { typeBuilder.addSuperinterface(it) }
 
         for (variable in typeVariables) {
