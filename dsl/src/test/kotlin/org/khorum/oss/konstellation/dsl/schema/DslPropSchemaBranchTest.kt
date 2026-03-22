@@ -850,4 +850,39 @@ class DslPropSchemaBranchTest : UnitSim() {
             whenever { param.toPropertySpec().kdoc.isEmpty() }
         }
     }
+
+    // --- default annotationMetadata ---
+
+    @Test
+    fun `DslPropSchema default annotationMetadata returns empty metadata`() = test {
+        given {
+            val param = object : DslPropSchema {
+                override val propName = "x"
+                override val propTypeName = STRING
+            }
+            expect { true }
+            whenever {
+                val meta = param.annotationMetadata
+                !meta.isTransient && meta.description == null && meta.aliases.isEmpty()
+            }
+        }
+    }
+
+    // --- propertyValueReturn with verifyNotEmpty but no iterable type (else branch) ---
+
+    @Test
+    fun `propertyValueReturn - non-nullable verifyNotEmpty true but no iterable returns propName`() = test {
+        given {
+            val param = object : DslPropSchema {
+                override val propName = "data"
+                override val propTypeName = STRING
+                override val nullableAssignment = false
+                override val verifyNotNull = false
+                override val verifyNotEmpty = true
+                override val iterableType: DslPropSchema.IterableType? = null
+            }
+            expect { "data" }
+            whenever { param.propertyValueReturn() }
+        }
+    }
 }

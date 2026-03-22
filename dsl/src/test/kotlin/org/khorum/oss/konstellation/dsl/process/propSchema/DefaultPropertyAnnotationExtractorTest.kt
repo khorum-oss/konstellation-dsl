@@ -293,4 +293,62 @@ class DefaultPropertyAnnotationExtractorTest : UnitSim() {
             }
         }
     }
+
+    @Test
+    fun `extract DslDescription with no value argument returns null`() = test {
+        given {
+            val ann = mockAnnotation("DslDescription", emptyList())
+            val extractor = DefaultPropertyAnnotationExtractor()
+
+            expect { null }
+            whenever { extractor.extract(sequenceOf(ann)).description }
+        }
+    }
+
+    @Test
+    fun `extract DeprecatedDsl with no arguments returns nulls`() = test {
+        given {
+            val ann = mockAnnotation("DeprecatedDsl", emptyList())
+            val extractor = DefaultPropertyAnnotationExtractor()
+            val result = extractor.extract(sequenceOf(ann))
+
+            expect { true }
+            whenever { result.deprecatedMessage == null && result.deprecatedReplaceWith == null }
+        }
+    }
+
+    @Test
+    fun `extract ValidateDsl with no arguments returns nulls`() = test {
+        given {
+            val ann = mockAnnotation("ValidateDsl", emptyList())
+            val extractor = DefaultPropertyAnnotationExtractor()
+            val result = extractor.extract(sequenceOf(ann))
+
+            expect { true }
+            whenever { result.validateExpression == null && result.validateMessage == null }
+        }
+    }
+
+    @Test
+    fun `extract ValidateDsl with only expression returns null message`() = test {
+        given {
+            val ann = mockAnnotation("ValidateDsl", listOf("expression" to "it > 0"))
+            val extractor = DefaultPropertyAnnotationExtractor()
+            val result = extractor.extract(sequenceOf(ann))
+
+            expect { true }
+            whenever { result.validateExpression == "it > 0" && result.validateMessage == null }
+        }
+    }
+
+    @Test
+    fun `extract DslAlias with no names argument returns empty list`() = test {
+        given {
+            val ann = mockAnnotation("DslAlias", emptyList())
+            val extractor = DefaultPropertyAnnotationExtractor()
+
+            expect { emptyList<String>() }
+            whenever { extractor.extract(sequenceOf(ann)).aliases }
+        }
+    }
 }

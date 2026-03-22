@@ -337,4 +337,24 @@ class KPTypeSpecBuilderTest : UnitSim() {
             }
         }
     }
+
+    @Test
+    fun `kdocString getter returns set value`() = test {
+        given {
+            expect { "type doc" }
+            whenever {
+                val builder = KPTypeSpecBuilder()
+                builder.kdoc("type doc")
+                builder.kdocString
+            }
+        }
+    }
+
+    @Test
+    fun `kdocString getter returns null when not set`() = test {
+        given {
+            expect { null }
+            whenever { KPTypeSpecBuilder().kdocString }
+        }
+    }
 }

@@ -4,7 +4,6 @@ import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.STRING
 import com.squareup.kotlinpoet.INT
-import com.squareup.kotlinpoet.PropertySpec
 import org.khorum.oss.geordi.UnitSim
 import org.khorum.oss.konstellation.dsl.exception.KonstellationException
 import org.junit.jupiter.api.Test
@@ -302,6 +301,43 @@ class KPPropertySpecBuilderTest : UnitSim() {
                     variable()
                 }.build()
                 spec.mutable
+            }
+        }
+    }
+
+    @Test
+    fun `kdocString getter returns set value`() = test {
+        given {
+            expect { "my doc" }
+            whenever {
+                val builder = KPPropertySpecBuilder()
+                builder.kdoc("my doc")
+                builder.kdocString
+            }
+        }
+    }
+
+    @Test
+    fun `kdocString getter returns null when not set`() = test {
+        given {
+            expect { null }
+            whenever { KPPropertySpecBuilder().kdocString }
+        }
+    }
+
+    @Test
+    fun `build with both initializer and kdoc includes both`() = test {
+        given {
+            expect { true }
+            whenever {
+                val spec = KPPropertySpecBuilder().apply {
+                    name = "myProp"
+                    type = STRING
+                    initializer("\"hello\"")
+                    kdoc("The greeting")
+                }.build()
+                spec.initializer.toString().contains("hello") &&
+                    spec.kdoc.toString().contains("The greeting")
             }
         }
     }
