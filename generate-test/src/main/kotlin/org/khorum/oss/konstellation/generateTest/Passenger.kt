@@ -1,12 +1,17 @@
 package org.khorum.oss.konstellation.generateTest
 
 import org.khorum.oss.konstellation.metaDsl.annotation.GeneratedDsl
+import org.khorum.oss.konstellation.metaDsl.annotation.PrivateDslProperty
+import org.khorum.oss.konstellation.metaDsl.annotation.PublicDslProperty
 
 @GeneratedDsl(
     withListGroup = true,
     withMapGroup = "SINGLE"
 )
-data class Passenger(val name: String, val rank: Rank) {
+data class Passenger(
+    val name: String,
+    val rank: Rank
+) {
 
     enum class Rank {
         CAPTAIN,

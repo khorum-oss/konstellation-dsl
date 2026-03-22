@@ -49,6 +49,7 @@ kover {
 detekt {
     buildUponDefaultConfig = true
     allRules = false
+    source.setFrom("src/main/kotlin")
 }
 
 tasks.withType<Detekt>().configureEach {
