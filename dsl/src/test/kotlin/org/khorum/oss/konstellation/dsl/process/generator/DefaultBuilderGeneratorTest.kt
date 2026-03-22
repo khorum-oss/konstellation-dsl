@@ -792,7 +792,8 @@ class DefaultBuilderGeneratorTest : UnitSim() {
             whenever {
                 generator.generate(codeGen, domain, config, emptyMap(), false)
                 val output = outputStream.toString()
-                output.contains("return StarShip()")
+                println(output)
+                output.contains("override fun build(): StarShip = StarShip()")
             }
         }
     }
