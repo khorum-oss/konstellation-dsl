@@ -313,6 +313,141 @@ class GenerateTest : UnitSim() {
         }
     }
 
+    // ========== Annotation Metadata Tests ==========
+
+    @Test
+    fun `DslAlias - active alias sets activated`() = test {
+        given {
+            expect {
+                StarShip(
+                    name = starShipName,
+                    commanderNames = listOf(rikerName),
+                    crewMap = mapOf(Passenger.Rank.CAPTAIN.name to picard),
+                    activated = true
+                )
+            }
+
+            whenever {
+                starShip {
+                    name = starShipName
+                    commanderNames(rikerName)
+                    crewMap { passenger(Passenger.Rank.CAPTAIN.name) { name = picardName; rank = Passenger.Rank.CAPTAIN } }
+                    active() // alias for activated()
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `DeprecatedDsl - docked accessor still works but is deprecated`() = test {
+        given {
+            expect {
+                StarShip(
+                    name = starShipName,
+                    commanderNames = listOf(rikerName),
+                    crewMap = mapOf(Passenger.Rank.CAPTAIN.name to picard),
+                    docked = true
+                )
+            }
+
+            @Suppress("DEPRECATION")
+            whenever {
+                starShip {
+                    name = starShipName
+                    commanderNames(rikerName)
+                    crewMap { passenger(Passenger.Rank.CAPTAIN.name) { name = picardName; rank = Passenger.Rank.CAPTAIN } }
+                    docked() // @DeprecatedDsl - still functional
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `DslDescription - maxWarpSpeed can be set`() = test {
+        given {
+            expect {
+                StarShip(
+                    name = starShipName,
+                    commanderNames = listOf(rikerName),
+                    crewMap = mapOf(Passenger.Rank.CAPTAIN.name to picard),
+                    maxWarpSpeed = 9.975f
+                )
+            }
+
+            whenever {
+                starShip {
+                    name = starShipName
+                    commanderNames(rikerName)
+                    crewMap { passenger(Passenger.Rank.CAPTAIN.name) { name = picardName; rank = Passenger.Rank.CAPTAIN } }
+                    maxWarpSpeed = 9.975f // has KDoc from @DslDescription
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `ValidateDsl - hullIntegrity validates positive`() = test<Unit> {
+        given {
+            wheneverThrows<IllegalArgumentException>(
+                "hullIntegrity must be positive"
+            ) {
+                starShip {
+                    name = starShipName
+                    commanderNames(rikerName)
+                    crewMap { passenger(Passenger.Rank.CAPTAIN.name) { name = picardName; rank = Passenger.Rank.CAPTAIN } }
+                    hullIntegrity = -1 // should fail validation
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `ValidateDsl - hullIntegrity allows positive value`() = test {
+        given {
+            expect {
+                StarShip(
+                    name = starShipName,
+                    commanderNames = listOf(rikerName),
+                    crewMap = mapOf(Passenger.Rank.CAPTAIN.name to picard),
+                    hullIntegrity = 100
+                )
+            }
+
+            whenever {
+                starShip {
+                    name = starShipName
+                    commanderNames(rikerName)
+                    crewMap { passenger(Passenger.Rank.CAPTAIN.name) { name = picardName; rank = Passenger.Rank.CAPTAIN } }
+                    hullIntegrity = 100
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `TransientDsl - internalTrackingId is excluded from builder`() = test {
+        given {
+            // internalTrackingId is @TransientDsl, so the builder can't set it
+            // The built StarShip will have internalTrackingId = null
+            expect {
+                StarShip(
+                    name = starShipName,
+                    commanderNames = listOf(rikerName),
+                    crewMap = mapOf(Passenger.Rank.CAPTAIN.name to picard)
+                )
+            }
+
+            whenever {
+                starShip {
+                    name = starShipName
+                    commanderNames(rikerName)
+                    crewMap { passenger(Passenger.Rank.CAPTAIN.name) { name = picardName; rank = Passenger.Rank.CAPTAIN } }
+                    // no way to set internalTrackingId — it's excluded by @TransientDsl
+                }
+            }
+        }
+    }
+
     @Test
     fun `DslProperty - combined usage with all configurations`() = test {
         given {

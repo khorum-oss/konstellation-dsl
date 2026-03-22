@@ -60,7 +60,7 @@ class KPParameterSpecBuilder : TypedSpec, DefaultKotlinPoetSpec() {
         fun param(
             block: KPParameterSpecBuilder.() -> Unit
         ): ParameterSpec {
-            return KPParameterSpecBuilder().apply(block).build()
+            return KPParameterSpecBuilder().apply(block).build().also { items.add(it) }
         }
 
         /**

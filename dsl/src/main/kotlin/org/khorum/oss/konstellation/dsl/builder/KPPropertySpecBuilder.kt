@@ -22,8 +22,20 @@ class KPPropertySpecBuilder : TypedSpec, MutabilitySpec, DefaultKotlinPoetSpec()
      */
     var initializer: CodeBlock? = null
 
+    /**
+     * KDoc comment for the property.
+     */
+    var kdocString: String? = null
+
     fun initializer(code: String) {
         initializer = CodeBlock.of(code)
+    }
+
+    /**
+     * Sets the KDoc comment for the property.
+     */
+    fun kdoc(doc: String) {
+        kdocString = doc
     }
 
     /**
@@ -48,6 +60,7 @@ class KPPropertySpecBuilder : TypedSpec, MutabilitySpec, DefaultKotlinPoetSpec()
             .mutable(mutable)
 
         spec = initializer?.let { spec.initializer(it) } ?: spec
+        spec = kdocString?.let { spec.addKdoc("%L", it) } ?: spec
 
         return spec.build()
     }

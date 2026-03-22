@@ -7,6 +7,7 @@ import com.squareup.kotlinpoet.TypeName
 import org.khorum.oss.konstellation.dsl.builder.kotlinPoet
 import org.khorum.oss.konstellation.dsl.builder.kpMapOf
 import org.khorum.oss.konstellation.dsl.builder.kpMutableMapOf
+import org.khorum.oss.konstellation.dsl.domain.PropertyAnnotationMetadata
 
 /**
  * Schema for a property that represents a map of items in the DSL.
@@ -18,6 +19,7 @@ import org.khorum.oss.konstellation.dsl.builder.kpMutableMapOf
  * @param withVararg Whether to generate a vararg function (default: true).
  * @param withProvider Whether to generate a provider function (default: true).
  */
+@Suppress("LongParameterList")
 class MapPropSchema(
     override val propName: String,
     val mapKeyType: TypeName = STRING,
@@ -25,6 +27,7 @@ class MapPropSchema(
     override val nullableAssignment: Boolean = true,
     val withVararg: Boolean = true,
     val withProvider: Boolean = true,
+    override val annotationMetadata: PropertyAnnotationMetadata = PropertyAnnotationMetadata()
 ) : DslPropSchema {
     override val propTypeName: TypeName = kpMapOf(mapKeyType, mapValueType, nullable = true)
     override val iterableType: DslPropSchema.IterableType = DslPropSchema.IterableType.COLLECTION

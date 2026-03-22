@@ -26,3 +26,7 @@ ksp {
     arg("dslBuilderClasspath", "org.khorum.oss.konstellation.generateTest")
     arg("dslMarkerClass", "org.khorum.oss.konstellation.generateTest.TestDslMarker")
 }
+
+tasks.named("compileTestKotlin") {
+    dependsOn("kspKotlin")
+}

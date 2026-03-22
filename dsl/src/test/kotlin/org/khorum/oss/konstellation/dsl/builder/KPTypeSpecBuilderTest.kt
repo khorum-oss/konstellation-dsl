@@ -1,7 +1,9 @@
 package org.khorum.oss.konstellation.dsl.builder
 
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.STRING
+import com.squareup.kotlinpoet.INT
 import com.squareup.kotlinpoet.TypeVariableName
 import org.khorum.oss.geordi.UnitSim
 import org.junit.jupiter.api.Test
@@ -178,6 +180,65 @@ class KPTypeSpecBuilderTest : UnitSim() {
     }
 
     @Test
+    fun `kdoc adds documentation to type`() = test {
+        given {
+            expect { true }
+
+            whenever {
+                val builder = KPTypeSpecBuilder().apply {
+                    name = "MyClass"
+                    kdoc("This is a documented class")
+                }
+
+                builder.build().toString().contains("This is a documented class")
+            }
+        }
+    }
+
+    @Test
+    fun `properties with list overload adds properties`() = test {
+        given {
+            expect { true }
+
+            whenever {
+                val propList = listOf(
+                    PropertySpec.builder("prop1", STRING).build(),
+                    PropertySpec.builder("prop2", INT).build()
+                )
+                val builder = KPTypeSpecBuilder().apply {
+                    name = "MyClass"
+                    properties(propList)
+                }
+
+                val output = builder.build().toString()
+                output.contains("prop1") && output.contains("prop2")
+            }
+        }
+    }
+
+    @Test
+    fun `nested called twice uses shared group`() = test {
+        given {
+            expect { true }
+
+            whenever {
+                val builder = KPTypeSpecBuilder().apply {
+                    name = "MyClass"
+                    nested {
+                        addType { name = "First" }
+                    }
+                    nested {
+                        addType { name = "Second" }
+                    }
+                }
+
+                val output = builder.build().toString()
+                output.contains("class First") && output.contains("class Second")
+            }
+        }
+    }
+
+    @Test
     fun `Group addType builds and adds TypeSpec`() = test {
         given {
             expect { 1 }
@@ -206,6 +267,94 @@ class KPTypeSpecBuilderTest : UnitSim() {
 
                 group.items.first().toString().contains("class GroupedClass")
             }
+        }
+    }
+
+    @Test
+    fun `build with all features combined`() = test {
+        given {
+            expect { true }
+            whenever {
+                val builder = KPTypeSpecBuilder().apply {
+                    name = "FullClass"
+                    kdoc("A fully featured class")
+                    annotation("com.example", "MyAnnotation")
+                    superInterface(ClassName("com.example", "MyInterface"))
+                    typeVariables("T")
+                    properties {
+                        add {
+                            name = "prop1"
+                            type = STRING
+                        }
+                    }
+                    functions {
+                        add {
+                            funName = "doStuff"
+                        }
+                    }
+                    nested {
+                        addType { name = "Inner" }
+                    }
+                }
+                val output = builder.build().toString()
+                output.contains("FullClass") &&
+                    output.contains("MyAnnotation") &&
+                    output.contains("MyInterface") &&
+                    output.contains("prop1") &&
+                    output.contains("doStuff") &&
+                    output.contains("class Inner")
+            }
+        }
+    }
+
+    @Test
+    fun `build without kdoc has no documentation`() = test {
+        given {
+            expect { true }
+            whenever {
+                val builder = KPTypeSpecBuilder().apply {
+                    name = "MyClass"
+                }
+                builder.build().kdoc.isEmpty()
+            }
+        }
+    }
+
+    @Test
+    fun `multiple annotations are all included`() = test {
+        given {
+            expect { true }
+            whenever {
+                val builder = KPTypeSpecBuilder().apply {
+                    name = "MyClass"
+                    annotations {
+                        annotation("com.a", "First")
+                        annotation("com.b", "Second")
+                    }
+                }
+                val output = builder.build().toString()
+                output.contains("First") && output.contains("Second")
+            }
+        }
+    }
+
+    @Test
+    fun `kdocString getter returns set value`() = test {
+        given {
+            expect { "type doc" }
+            whenever {
+                val builder = KPTypeSpecBuilder()
+                builder.kdoc("type doc")
+                builder.kdocString
+            }
+        }
+    }
+
+    @Test
+    fun `kdocString getter returns null when not set`() = test {
+        given {
+            expect { null }
+            whenever { KPTypeSpecBuilder().kdocString }
         }
     }
 }

@@ -3,6 +3,7 @@ package org.khorum.oss.konstellation.dsl.schema
 import com.squareup.kotlinpoet.STRING
 import org.junit.jupiter.api.Test
 import org.khorum.oss.geordi.UnitSim
+import org.khorum.oss.konstellation.dsl.domain.PropertyAnnotationMetadata
 
 /**
  * Tests for DslPropSchema interface default method branches,
@@ -698,6 +699,189 @@ class DslPropSchemaBranchTest : UnitSim() {
                 nullableAssignment = false
             )
             expect { "vRequireNotNull(::nested)" }
+            whenever { param.propertyValueReturn() }
+        }
+    }
+
+    // --- validationStatement ---
+
+    @Test
+    fun `validationStatement returns null when no validateExpression`() = test {
+        given {
+            val param = DefaultPropSchema("x", STRING)
+            expect { null }
+            whenever { param.validationStatement() }
+        }
+    }
+
+    @Test
+    fun `validationStatement returns require statement with expression and default message`() = test {
+        given {
+            val meta = PropertyAnnotationMetadata(
+                validateExpression = "it > 0",
+                validateMessage = null
+            )
+            val param = DefaultPropSchema("age", STRING, annotationMetadata = meta)
+            expect { "require(age > 0) { \"Validation failed for property 'age'\" }" }
+            whenever { param.validationStatement() }
+        }
+    }
+
+    @Test
+    fun `validationStatement returns require statement with custom message`() = test {
+        given {
+            val meta = PropertyAnnotationMetadata(
+                validateExpression = "it > 0",
+                validateMessage = "Must be positive"
+            )
+            val param = DefaultPropSchema("age", STRING, annotationMetadata = meta)
+            expect { "require(age > 0) { \"Must be positive\" }" }
+            whenever { param.validationStatement() }
+        }
+    }
+
+    // --- allAccessors with deprecated annotation ---
+
+    @Test
+    fun `allAccessors applies deprecated annotation to base accessors`() = test {
+        given {
+            val meta = PropertyAnnotationMetadata(deprecatedMessage = "Use newProp")
+            val param = ListPropSchema("items", STRING, annotationMetadata = meta)
+            expect { true }
+            whenever {
+                val accessors = param.allAccessors()
+                accessors.isNotEmpty() && accessors.all { funSpec ->
+                    funSpec.annotations.any { it.typeName.toString().contains("Deprecated") }
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `allAccessors generates alias functions from DslAlias`() = test {
+        given {
+            val meta = PropertyAnnotationMetadata(aliases = listOf("elements"))
+            val param = ListPropSchema("items", STRING, annotationMetadata = meta)
+            val baseCount = param.accessors().size
+            expect { true }
+            whenever {
+                val allAccessors = param.allAccessors()
+                allAccessors.size == baseCount * 2 &&
+                    allAccessors.any { it.name == "elements" }
+            }
+        }
+    }
+
+    @Test
+    fun `allAccessors with both deprecated and aliases applies deprecated to aliases too`() = test {
+        given {
+            val meta = PropertyAnnotationMetadata(
+                deprecatedMessage = "old",
+                aliases = listOf("els")
+            )
+            val param = ListPropSchema("items", STRING, annotationMetadata = meta)
+            expect { true }
+            whenever {
+                val allAccessors = param.allAccessors()
+                allAccessors.all { funSpec ->
+                    funSpec.annotations.any { it.typeName.toString().contains("Deprecated") }
+                }
+            }
+        }
+    }
+
+    // --- buildDeprecatedAnnotation ---
+
+    @Test
+    fun `buildDeprecatedAnnotation returns null when no deprecatedMessage`() = test {
+        given {
+            val param = DefaultPropSchema("x", STRING)
+            expect { null }
+            whenever { param.buildDeprecatedAnnotation() }
+        }
+    }
+
+    @Test
+    fun `buildDeprecatedAnnotation includes replaceWith when present`() = test {
+        given {
+            val meta = PropertyAnnotationMetadata(
+                deprecatedMessage = "old",
+                deprecatedReplaceWith = "newProp"
+            )
+            val param = DefaultPropSchema("x", STRING, annotationMetadata = meta)
+            expect { true }
+            whenever {
+                val ann = param.buildDeprecatedAnnotation()
+                ann != null && ann.toString().contains("ReplaceWith")
+            }
+        }
+    }
+
+    @Test
+    fun `buildDeprecatedAnnotation without replaceWith has only message`() = test {
+        given {
+            val meta = PropertyAnnotationMetadata(deprecatedMessage = "old")
+            val param = DefaultPropSchema("x", STRING, annotationMetadata = meta)
+            expect { true }
+            whenever {
+                val ann = param.buildDeprecatedAnnotation()
+                ann != null && !ann.toString().contains("ReplaceWith")
+            }
+        }
+    }
+
+    // --- toPropertySpec with DslDescription ---
+
+    @Test
+    fun `toPropertySpec includes kdoc from DslDescription`() = test {
+        given {
+            val meta = PropertyAnnotationMetadata(description = "The ship name")
+            val param = DefaultPropSchema("name", STRING, annotationMetadata = meta)
+            expect { true }
+            whenever { param.toPropertySpec().toString().contains("The ship name") }
+        }
+    }
+
+    @Test
+    fun `toPropertySpec without description has no kdoc`() = test {
+        given {
+            val param = DefaultPropSchema("name", STRING)
+            expect { true }
+            whenever { param.toPropertySpec().kdoc.isEmpty() }
+        }
+    }
+
+    // --- default annotationMetadata ---
+
+    @Test
+    fun `DslPropSchema default annotationMetadata returns empty metadata`() = test {
+        given {
+            val param = object : DslPropSchema {
+                override val propName = "x"
+                override val propTypeName = STRING
+            }
+            expect { true }
+            whenever {
+                val meta = param.annotationMetadata
+                !meta.isTransient && meta.description == null && meta.aliases.isEmpty()
+            }
+        }
+    }
+
+    // --- propertyValueReturn with verifyNotEmpty but no iterable type (else branch) ---
+
+    @Test
+    fun `propertyValueReturn - non-nullable verifyNotEmpty true but no iterable returns propName`() = test {
+        given {
+            val param = object : DslPropSchema {
+                override val propName = "data"
+                override val propTypeName = STRING
+                override val nullableAssignment = false
+                override val verifyNotNull = false
+                override val verifyNotEmpty = true
+                override val iterableType: DslPropSchema.IterableType? = null
+            }
+            expect { "data" }
             whenever { param.propertyValueReturn() }
         }
     }

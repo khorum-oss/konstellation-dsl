@@ -3,6 +3,7 @@ package org.khorum.oss.konstellation.dsl.schema
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.TypeName
 import org.khorum.oss.konstellation.dsl.domain.DefaultPropertyValue
+import org.khorum.oss.konstellation.dsl.domain.PropertyAnnotationMetadata
 import org.khorum.oss.konstellation.dsl.process.propSchema.PropertySchemaFactoryAdapter
 
 /**
@@ -12,7 +13,8 @@ class DefaultPropSchema(
     override val propName: String,
     actualPropTypeName: TypeName,
     override val nullableAssignment: Boolean = true,
-    override val defaultValue: DefaultPropertyValue? = null
+    override val defaultValue: DefaultPropertyValue? = null,
+    override val annotationMetadata: PropertyAnnotationMetadata = PropertyAnnotationMetadata()
 ) : DslPropSchema {
     override val propTypeName: TypeName = actualPropTypeName.copy(nullable = nullableAssignment)
 
@@ -22,6 +24,7 @@ class DefaultPropSchema(
     constructor(adapter: PropertySchemaFactoryAdapter) : this(
         adapter.propName,
         adapter.actualPropTypeName,
-        adapter.actualPropTypeName.isNullable
+        adapter.actualPropTypeName.isNullable,
+        annotationMetadata = adapter.annotationMetadata
     )
 }

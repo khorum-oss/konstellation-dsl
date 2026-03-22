@@ -708,4 +708,208 @@ class DefaultBuilderGeneratorTest : UnitSim() {
             // but we still exercise the branch paths up to the failure
         }
     }
+
+    @Test
+    fun `generate with DslDescription annotation adds kdoc to builder`() = test {
+        given {
+            val outputStream = ByteArrayOutputStream()
+            val codeGen: CodeGenerator = mockk()
+            io.mockk.every {
+                codeGen.createNewFile(any<Dependencies>(), any(), any(), any())
+            } returns outputStream
+
+            val config = mockBuilderConfig()
+
+            // Build a domain with DslDescription annotation
+            val domain: KSClassDeclaration = mockk()
+            io.mockk.every { domain.toClassName() } returns ClassName("org.test", "StarShip")
+            io.mockk.every { domain.packageName } returns mockKSName("org.test")
+            io.mockk.every { domain.simpleName } returns mockKSName("StarShip")
+            io.mockk.every { domain.containingFile } returns mockk<KSFile>()
+            io.mockk.every { domain.getAllProperties() } returns emptySequence()
+
+            // Mock two annotations: GeneratedDsl and DslDescription
+            val genAnn: KSAnnotation = mockk()
+            io.mockk.every { genAnn.shortName } returns mockKSName("GeneratedDsl")
+            io.mockk.every { genAnn.arguments } returns emptyList()
+
+            val descAnn: KSAnnotation = mockk()
+            io.mockk.every { descAnn.shortName } returns mockKSName("DslDescription")
+            val descArg: KSValueArgument = mockk()
+            io.mockk.every { descArg.name } returns mockKSName("value")
+            io.mockk.every { descArg.value } returns "A starship builder"
+            io.mockk.every { descAnn.arguments } returns listOf(descArg)
+
+            io.mockk.every { domain.annotations } returns sequenceOf(genAnn, descAnn)
+
+            val generator = DefaultBuilderGenerator()
+
+            expect { true }
+            whenever {
+                generator.generate(codeGen, domain, config, emptyMap(), false)
+                val output = outputStream.toString()
+                output.contains("A starship builder")
+            }
+        }
+    }
+
+    @Test
+    fun `generate output contains build function`() = test {
+        given {
+            val outputStream = ByteArrayOutputStream()
+            val codeGen: CodeGenerator = mockk()
+            io.mockk.every {
+                codeGen.createNewFile(any<Dependencies>(), any(), any(), any())
+            } returns outputStream
+
+            val config = mockBuilderConfig()
+            val domain = mockDomain(properties = listOf(mockProp("name")))
+            val generator = DefaultBuilderGenerator()
+
+            expect { true }
+            whenever {
+                generator.generate(codeGen, domain, config, emptyMap(), false)
+                val output = outputStream.toString()
+                output.contains("override fun build()") && output.contains("StarShip")
+            }
+        }
+    }
+
+    @Test
+    fun `generate with no properties produces empty constructor call`() = test {
+        given {
+            val outputStream = ByteArrayOutputStream()
+            val codeGen: CodeGenerator = mockk()
+            io.mockk.every {
+                codeGen.createNewFile(any<Dependencies>(), any(), any(), any())
+            } returns outputStream
+
+            val config = mockBuilderConfig()
+            val domain = mockDomain()
+            val generator = DefaultBuilderGenerator()
+
+            expect { true }
+            whenever {
+                generator.generate(codeGen, domain, config, emptyMap(), false)
+                val output = outputStream.toString()
+                println(output)
+                output.contains("override fun build(): StarShip = StarShip()")
+            }
+        }
+    }
+
+    @Test
+    fun `BuilderGenerator logId returns class simple name`() {
+        val generator = DefaultBuilderGenerator()
+        assert(generator.logId() == "BuilderGenerator")
+    }
+
+    @Test
+    fun `generate with ValidateDsl annotation emits require statement`() = test {
+        given {
+            val outputStream = ByteArrayOutputStream()
+            val codeGen: CodeGenerator = mockk()
+            io.mockk.every {
+                codeGen.createNewFile(any<Dependencies>(), any(), any(), any())
+            } returns outputStream
+
+            val config = mockBuilderConfig()
+
+            // Create a property with @ValidateDsl annotation
+            val typeRef: KSTypeReference = mockk()
+            io.mockk.every { typeRef.toTypeName() } returns INT
+            val resolvedType: KSType = mockk()
+            io.mockk.every { resolvedType.isMarkedNullable } returns false
+            val decl: KSClassDeclaration = mockk()
+            io.mockk.every { decl.toClassName() } returns ClassName("kotlin", "Int")
+            io.mockk.every { decl.annotations } returns emptySequence()
+            io.mockk.every { decl.qualifiedName } returns mockKSName("kotlin.Int")
+            io.mockk.every { resolvedType.declaration } returns decl
+            io.mockk.every { resolvedType.arguments } returns emptyList()
+            io.mockk.every { typeRef.resolve() } returns resolvedType
+
+            val validateAnn: KSAnnotation = mockk()
+            io.mockk.every { validateAnn.shortName } returns mockKSName("ValidateDsl")
+            val valAnnTypeRef: KSTypeReference = mockk()
+            val valAnnResolvedType: KSType = mockk()
+            val valAnnDecl: KSClassDeclaration = mockk()
+            io.mockk.every { valAnnDecl.qualifiedName } returns mockKSName("org.khorum.oss.konstellation.metaDsl.annotation.ValidateDsl")
+            io.mockk.every { valAnnResolvedType.declaration } returns valAnnDecl
+            io.mockk.every { valAnnTypeRef.resolve() } returns valAnnResolvedType
+            io.mockk.every { validateAnn.annotationType } returns valAnnTypeRef
+            val exprArg: KSValueArgument = mockk()
+            io.mockk.every { exprArg.name } returns mockKSName("expression")
+            io.mockk.every { exprArg.value } returns "it > 0"
+            val msgArg: KSValueArgument = mockk()
+            io.mockk.every { msgArg.name } returns mockKSName("message")
+            io.mockk.every { msgArg.value } returns "Must be positive"
+            io.mockk.every { validateAnn.arguments } returns listOf(exprArg, msgArg)
+
+            val prop: KSPropertyDeclaration = mockk()
+            io.mockk.every { prop.simpleName } returns mockKSName("age")
+            io.mockk.every { prop.type } returns typeRef
+            io.mockk.every { prop.annotations } returns sequenceOf(validateAnn)
+
+            val domain = mockDomain(properties = listOf(prop))
+            val generator = DefaultBuilderGenerator()
+
+            expect { true }
+            whenever {
+                generator.generate(codeGen, domain, config, emptyMap(), false)
+                val output = outputStream.toString()
+                output.contains("require(")
+            }
+        }
+    }
+
+    @Test
+    fun `generate with non-nullable list property exercises requireCollectionNotEmpty import`() = test {
+        given {
+            val outputStream = ByteArrayOutputStream()
+            val codeGen: CodeGenerator = mockk()
+            io.mockk.every {
+                codeGen.createNewFile(any<Dependencies>(), any(), any(), any())
+            } returns outputStream
+
+            val config = mockBuilderConfig()
+
+            val listType = LIST.parameterizedBy(STRING)
+            val typeRef: KSTypeReference = mockk()
+            io.mockk.every { typeRef.toTypeName() } returns listType
+            val resolvedType: KSType = mockk()
+            io.mockk.every { resolvedType.isMarkedNullable } returns false
+            val listDecl: KSClassDeclaration = mockk()
+            io.mockk.every { listDecl.toClassName() } returns ClassName("kotlin.collections", "List")
+            io.mockk.every { listDecl.annotations } returns emptySequence()
+            io.mockk.every { listDecl.qualifiedName } returns mockKSName("kotlin.collections.List")
+
+            val elemDecl: KSClassDeclaration = mockk()
+            io.mockk.every { elemDecl.toClassName() } returns ClassName("kotlin", "String")
+            io.mockk.every { elemDecl.annotations } returns emptySequence()
+            val elemType: KSType = mockk()
+            io.mockk.every { elemType.declaration } returns elemDecl
+            val elemTypeRef: KSTypeReference = mockk()
+            io.mockk.every { elemTypeRef.resolve() } returns elemType
+            val typeArg: com.google.devtools.ksp.symbol.KSTypeArgument = mockk()
+            io.mockk.every { typeArg.type } returns elemTypeRef
+            io.mockk.every { resolvedType.declaration } returns listDecl
+            io.mockk.every { resolvedType.arguments } returns listOf(typeArg)
+            io.mockk.every { typeRef.resolve() } returns resolvedType
+
+            val prop: KSPropertyDeclaration = mockk()
+            io.mockk.every { prop.simpleName } returns mockKSName("tags")
+            io.mockk.every { prop.type } returns typeRef
+            io.mockk.every { prop.annotations } returns emptySequence()
+
+            val domain = mockDomain(properties = listOf(prop))
+            val generator = DefaultBuilderGenerator()
+
+            expect { true }
+            whenever {
+                generator.generate(codeGen, domain, config, emptyMap(), false)
+                val output = outputStream.toString()
+                output.contains("vRequireCollectionNotEmpty")
+            }
+        }
+    }
 }

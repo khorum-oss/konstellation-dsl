@@ -5,6 +5,8 @@ import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.ksp.toClassName
+import org.khorum.oss.konstellation.dsl.utils.AnnotationLookup
+import org.khorum.oss.konstellation.metaDsl.annotation.GeneratedDsl
 
 /**
  * Configuration for a domain in the DSL.
@@ -38,11 +40,31 @@ open class DomainConfig(
     val packageName = domain.packageName.asString()
     val typeName = domain.simpleName.asString()
     val domainClassName: ClassName = domain.toClassName()
-    val builderName = "${typeName}$dslBuilderPostfix"
+
+    /**
+     * The custom name override from `@GeneratedDsl(name = "...")`.
+     * If provided and non-empty, this overrides the default builder name.
+     */
+    val customName: String? = resolveCustomName()
+
+    /**
+     * The base name used for the builder. If [customName] is provided, uses that;
+     * otherwise falls back to the class type name.
+     */
+    val builderBaseName: String = customName ?: typeName
+
+    val builderName = "${builderBaseName}$dslBuilderPostfix"
     val builderClassName = ClassName(packageName, builderName)
     val dslBuilderInterface = ClassName(builderConfig.dslBuilderClasspath, dslBuilderPostfix)
     val parameterizedDslBuilder = dslBuilderInterface.parameterizedBy(domainClassName)
 
-    open val fileClassName = ClassName(packageName, "${typeName}$dslBuildFilePostfix")
+    open val fileClassName = ClassName(packageName, "${builderBaseName}$dslBuildFilePostfix")
     val dependencies = Dependencies(aggregating = false, sources = listOfNotNull(domain.containingFile).toTypedArray())
+
+    private fun resolveCustomName(): String? {
+        val annotation = AnnotationLookup.findAnnotation(domain.annotations, GeneratedDsl::class)
+            ?: return null
+        val name = AnnotationLookup.findArgumentValue<String>(annotation, GeneratedDsl::name.name)
+        return name?.takeIf { it.isNotBlank() }
+    }
 }

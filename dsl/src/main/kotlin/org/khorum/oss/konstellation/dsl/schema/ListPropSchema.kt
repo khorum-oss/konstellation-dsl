@@ -7,6 +7,7 @@ import com.squareup.kotlinpoet.TypeName
 import org.khorum.oss.konstellation.dsl.builder.kotlinPoet
 import org.khorum.oss.konstellation.dsl.builder.kpListOf
 import org.khorum.oss.konstellation.dsl.builder.kpMutableListOf
+import org.khorum.oss.konstellation.dsl.domain.PropertyAnnotationMetadata
 
 /**
  * Schema for a property that represents a list of items in the DSL.
@@ -24,6 +25,7 @@ class ListPropSchema(
     override val nullableAssignment: Boolean = true,
     val withVararg: Boolean = true,
     val withProvider: Boolean = true,
+    override val annotationMetadata: PropertyAnnotationMetadata = PropertyAnnotationMetadata()
 ) : DslPropSchema {
     override val propTypeName: TypeName = kpListOf(collectionType, nullable = true)
     override val iterableType: DslPropSchema.IterableType = DslPropSchema.IterableType.COLLECTION

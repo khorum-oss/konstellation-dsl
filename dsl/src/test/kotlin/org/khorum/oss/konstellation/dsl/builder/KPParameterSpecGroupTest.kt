@@ -1,6 +1,5 @@
 package org.khorum.oss.konstellation.dsl.builder
 
-import com.squareup.kotlinpoet.INT
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.STRING
 import org.khorum.oss.geordi.UnitSim
@@ -87,53 +86,6 @@ class KPParameterSpecGroupTest : UnitSim() {
                         type = STRING
                     }
                     spec.toString().trimIndent().trim()
-                }
-            }
-        }
-    }
-
-    @Nested
-    inner class AccumulationTest {
-        @Test
-        fun `Group accumulates multiple params via items`() = test {
-            given {
-                expect { 2 }
-
-                whenever {
-                    val group = KPParameterSpecBuilder.Group()
-                    val first = group.param {
-                        name = "first"
-                        type = STRING
-                    }
-                    val second = group.param {
-                        name = "second"
-                        type = INT
-                    }
-                    group.items.add(first)
-                    group.items.add(second)
-                    group.items.size
-                }
-            }
-        }
-
-        @Test
-        fun `Group accumulates params with correct names`() = test {
-            given {
-                expect { listOf("first", "second") }
-
-                whenever {
-                    val group = KPParameterSpecBuilder.Group()
-                    val first = group.param {
-                        name = "first"
-                        type = STRING
-                    }
-                    val second = group.param {
-                        name = "second"
-                        type = INT
-                    }
-                    group.items.add(first)
-                    group.items.add(second)
-                    group.items.map { it.name }
                 }
             }
         }

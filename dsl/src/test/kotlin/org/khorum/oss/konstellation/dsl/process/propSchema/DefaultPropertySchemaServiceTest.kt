@@ -58,6 +58,7 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
             every { domain.packageName } returns mockKSName("org.test")
             every { domain.simpleName } returns mockKSName("TestClass")
             every { domain.containingFile } returns mockk<KSFile>()
+            every { domain.annotations } returns emptySequence()
             every { domain.getAllProperties() } returns properties
 
             val config = BuilderConfig(
@@ -122,6 +123,36 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
             if (className != null) args.add("className" to className)
             val ann = mockDefaultValueAnnotation(args)
             return mockPropWithAnnotations("testProp", sequenceOf(ann))
+        }
+
+        private fun mockAnnotation(
+            simpleName: String,
+            args: List<Pair<String, Any?>> = emptyList()
+        ): KSAnnotation {
+            val ann: KSAnnotation = mockk()
+            val shortName: KSName = mockk()
+            every { shortName.asString() } returns simpleName
+            every { ann.shortName } returns shortName
+
+            val annTypeRef: KSTypeReference = mockk()
+            val annResolvedType: KSType = mockk()
+            val annDecl: KSClassDeclaration = mockk()
+            val annQualName: KSName = mockk()
+            every { annQualName.asString() } returns "org.khorum.oss.konstellation.metaDsl.annotation.$simpleName"
+            every { annDecl.qualifiedName } returns annQualName
+            every { annResolvedType.declaration } returns annDecl
+            every { annTypeRef.resolve() } returns annResolvedType
+            every { ann.annotationType } returns annTypeRef
+
+            every { ann.arguments } returns args.map { (k, v) ->
+                val argName: KSName = mockk()
+                every { argName.asString() } returns k
+                val arg: KSValueArgument = mockk()
+                every { arg.name } returns argName
+                every { arg.value } returns v
+                arg
+            }
+            return ann
         }
 
         private fun mockPropWithAnnotations(
@@ -329,6 +360,258 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
                     service.logger.disableDebug()
                 }
             }
+        }
+    }
+
+    @Test
+    fun `extractAnnotationMetadata marks TransientDsl property as transient`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockAnnotation("TransientDsl", listOf("reason" to "not needed"))
+            val prop = mockPropWithAnnotations("transientField", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { 0 }
+            whenever { service.getParamsFromDomain(domainConfig).size }
+        }
+    }
+
+    @Test
+    fun `extractAnnotationMetadata marks TransientDsl with blank reason`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            service.logger.enableDebug()
+            val ann = mockAnnotation("TransientDsl", listOf("reason" to ""))
+            val prop = mockPropWithAnnotations("transientField", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { 0 }
+            whenever {
+                try {
+                    service.getParamsFromDomain(domainConfig).size
+                } finally {
+                    service.logger.disableDebug()
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `extractAnnotationMetadata extracts DslDescription`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockAnnotation("DslDescription", listOf("value" to "A helpful description"))
+            val prop = mockPropWithAnnotations("described", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { "A helpful description" }
+            whenever { service.getParamsFromDomain(domainConfig).first().annotationMetadata.description }
+        }
+    }
+
+    @Test
+    fun `extractAnnotationMetadata returns null description when blank`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockAnnotation("DslDescription", listOf("value" to ""))
+            val prop = mockPropWithAnnotations("described", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { null }
+            whenever { service.getParamsFromDomain(domainConfig).first().annotationMetadata.description }
+        }
+    }
+
+    @Test
+    fun `extractAnnotationMetadata extracts DslAlias single value`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockAnnotation("DslAlias", listOf("names" to "aliasName"))
+            val prop = mockPropWithAnnotations("aliased", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { listOf("aliasName") }
+            whenever { service.getParamsFromDomain(domainConfig).first().annotationMetadata.aliases }
+        }
+    }
+
+    @Test
+    fun `extractAnnotationMetadata returns empty aliases when no DslAlias`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val prop = mockPropWithAnnotations("noAlias", emptySequence())
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { emptyList<String>() }
+            whenever { service.getParamsFromDomain(domainConfig).first().annotationMetadata.aliases }
+        }
+    }
+
+    @Test
+    fun `extractAnnotationMetadata extracts DslAlias list value`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockAnnotation("DslAlias", listOf("names" to listOf("alias1", "alias2")))
+            val prop = mockPropWithAnnotations("aliased", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { listOf("alias1", "alias2") }
+            whenever { service.getParamsFromDomain(domainConfig).first().annotationMetadata.aliases }
+        }
+    }
+
+    @Test
+    fun `extractAnnotationMetadata extracts DeprecatedDsl message and replaceWith`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockAnnotation(
+                "DeprecatedDsl",
+                listOf("message" to "Use newProp", "replaceWith" to "newProp")
+            )
+            val prop = mockPropWithAnnotations("oldProp", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { "Use newProp" }
+            whenever { service.getParamsFromDomain(domainConfig).first().annotationMetadata.deprecatedMessage }
+        }
+    }
+
+    @Test
+    fun `extractAnnotationMetadata returns null deprecated fields when blank`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockAnnotation(
+                "DeprecatedDsl",
+                listOf("message" to "", "replaceWith" to "")
+            )
+            val prop = mockPropWithAnnotations("oldProp", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { null }
+            whenever { service.getParamsFromDomain(domainConfig).first().annotationMetadata.deprecatedMessage }
+        }
+    }
+
+    @Test
+    fun `extractAnnotationMetadata extracts ValidateDsl expression and message`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockAnnotation(
+                "ValidateDsl",
+                listOf("expression" to "it > 0", "message" to "Must be positive")
+            )
+            val prop = mockPropWithAnnotations("validated", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { "it > 0" }
+            whenever { service.getParamsFromDomain(domainConfig).first().annotationMetadata.validateExpression }
+        }
+    }
+
+    @Test
+    fun `extractAnnotationMetadata returns null validate fields when blank`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockAnnotation(
+                "ValidateDsl",
+                listOf("expression" to "", "message" to "")
+            )
+            val prop = mockPropWithAnnotations("validated", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { null }
+            whenever { service.getParamsFromDomain(domainConfig).first().annotationMetadata.validateExpression }
+        }
+    }
+
+    @Test
+    fun `extractAnnotationMetadata with multiple annotations on same property`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val descAnn = mockAnnotation("DslDescription", listOf("value" to "desc"))
+            val deprecAnn = mockAnnotation(
+                "DeprecatedDsl",
+                listOf("message" to "old", "replaceWith" to "new")
+            )
+            val validateAnn = mockAnnotation(
+                "ValidateDsl",
+                listOf("expression" to "it != null", "message" to "required")
+            )
+            val prop = mockPropWithAnnotations(
+                "multi", sequenceOf(descAnn, deprecAnn, validateAnn)
+            )
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                val meta = service.getParamsFromDomain(domainConfig).first().annotationMetadata
+                meta.description == "desc" &&
+                    meta.deprecatedMessage == "old" &&
+                    meta.deprecatedReplaceWith == "new" &&
+                    meta.validateExpression == "it != null" &&
+                    meta.validateMessage == "required"
+            }
+        }
+    }
+
+    @Test
+    fun `extractDefaultPropertyValue with empty className and packageName uses String template`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockDefaultValueAnnotation(
+                listOf("value" to "test", "packageName" to "", "className" to "")
+            )
+            val prop = mockPropWithAnnotations("emptyClass", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                val dv = service.getParamsFromDomain(domainConfig).first().defaultValue
+                dv != null && dv.rawValue == "test"
+            }
+        }
+    }
+
+    @Test
+    fun `PropertySchemaService logId returns class simple name`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            expect { "PropertySchemaService" }
+            whenever { service.logId() }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain with TransientDsl with reason and debug enabled exercises logging`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            service.logger.enableDebug()
+            val ann = mockAnnotation("TransientDsl", listOf("reason" to "not needed"))
+            val prop = mockPropWithAnnotations("transientField", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop), debug = true)
+
+            expect { 0 }
+            whenever {
+                try {
+                    service.getParamsFromDomain(domainConfig).size
+                } finally {
+                    service.logger.disableDebug()
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain with multiple properties filters only transient ones`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val transientAnn = mockAnnotation("TransientDsl", listOf("reason" to "skip"))
+            val transientProp = mockPropWithAnnotations("skip", sequenceOf(transientAnn))
+            val normalProp = mockSimpleProp("keep")
+            val domainConfig = mockDomainConfig(sequenceOf(transientProp, normalProp))
+
+            expect { 1 }
+            whenever { service.getParamsFromDomain(domainConfig).size }
         }
     }
 }

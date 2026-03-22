@@ -5,6 +5,7 @@ import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.TypeName
 import org.khorum.oss.konstellation.dsl.builder.kotlinPoet
 import org.khorum.oss.konstellation.dsl.domain.DefaultPropertyValue
+import org.khorum.oss.konstellation.dsl.domain.PropertyAnnotationMetadata
 
 /**
  * Schema for a boolean property in the DSL.
@@ -12,7 +13,8 @@ import org.khorum.oss.konstellation.dsl.domain.DefaultPropertyValue
 class BooleanPropSchema(
     override val propName: String,
     override val nullableAssignment: Boolean = true,
-    override val defaultValue: DefaultPropertyValue? = null
+    override val defaultValue: DefaultPropertyValue? = null,
+    override val annotationMetadata: PropertyAnnotationMetadata = PropertyAnnotationMetadata()
 ) : DslPropSchema {
     override val propTypeName: TypeName = BOOLEAN.copy(nullable = nullableAssignment) // Correctly use constructor arg
 
