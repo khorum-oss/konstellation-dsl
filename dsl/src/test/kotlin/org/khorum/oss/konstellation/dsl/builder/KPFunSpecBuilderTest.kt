@@ -188,7 +188,7 @@ class KPFunSpecBuilderTest : UnitSim() {
                 val spec = KPFunSpecBuilder().apply {
                     funName = "greet"
                     params {
-                        add {
+                        param {
                             name = "name"
                             type = STRING
                         }

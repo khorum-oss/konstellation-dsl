@@ -19,6 +19,7 @@ import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.STRING
 import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.toTypeName
+import io.mockk.any
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
