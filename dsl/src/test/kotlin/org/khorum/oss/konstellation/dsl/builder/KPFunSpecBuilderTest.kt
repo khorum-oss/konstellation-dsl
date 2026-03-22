@@ -1,5 +1,6 @@
 package org.khorum.oss.konstellation.dsl.builder
 
+import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.STRING
 import org.khorum.oss.geordi.UnitSim
@@ -143,6 +144,86 @@ class KPFunSpecBuilderTest : UnitSim() {
                 val spec1 = KPFunSpecBuilder().apply { funName = "a" }.build()
                 val spec2 = KPFunSpecBuilder().apply { funName = "b" }.build()
                 group.addAll(listOf(spec1, spec2))
+                group.items.size
+            }
+        }
+    }
+
+    @Test
+    fun `build with override false does not add OVERRIDE modifier`() = test {
+        given {
+            expect { true }
+            whenever {
+                val spec = KPFunSpecBuilder().apply {
+                    funName = "test"
+                    override(false)
+                }.build()
+                !spec.toString().contains("override")
+            }
+        }
+    }
+
+    @Test
+    fun `build with addAnnotationSpec adds pre-built annotation`() = test {
+        given {
+            expect { true }
+            whenever {
+                val annotationSpec = AnnotationSpec.builder(
+                    ClassName("org.test", "CustomAnnotation")
+                ).build()
+                val spec = KPFunSpecBuilder().apply {
+                    funName = "test"
+                    addAnnotationSpec(annotationSpec)
+                }.build()
+                spec.annotations.any { it.typeName.toString().contains("CustomAnnotation") }
+            }
+        }
+    }
+
+    @Test
+    fun `build with params adds parameters`() = test {
+        given {
+            expect { true }
+            whenever {
+                val spec = KPFunSpecBuilder().apply {
+                    funName = "greet"
+                    params {
+                        add {
+                            name = "name"
+                            type = STRING
+                        }
+                    }
+                }.build()
+                spec.parameters.any { it.name == "name" }
+            }
+        }
+    }
+
+    @Test
+    fun `Group add with block builds and adds function`() = test {
+        given {
+            expect { 1 }
+            whenever {
+                val group = KPFunSpecBuilder.Group()
+                group.add {
+                    funName = "myFun"
+                }
+                group.items.size
+            }
+        }
+    }
+
+    @Test
+    fun `Group addForEach extension transforms and adds all`() = test {
+        given {
+            expect { 2 }
+            whenever {
+                val group = KPFunSpecBuilder.Group()
+                with(group) {
+                    listOf("foo", "bar").addForEach { name ->
+                        listOf(KPFunSpecBuilder().apply { funName = name }.build())
+                    }
+                }
                 group.items.size
             }
         }

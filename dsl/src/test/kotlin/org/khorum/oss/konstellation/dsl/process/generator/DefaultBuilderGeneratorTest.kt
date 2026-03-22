@@ -708,4 +708,92 @@ class DefaultBuilderGeneratorTest : UnitSim() {
             // but we still exercise the branch paths up to the failure
         }
     }
+
+    @Test
+    fun `generate with DslDescription annotation adds kdoc to builder`() = test {
+        given {
+            val outputStream = ByteArrayOutputStream()
+            val codeGen: CodeGenerator = mockk()
+            every {
+                codeGen.createNewFile(any<Dependencies>(), any(), any(), any())
+            } returns outputStream
+
+            val config = mockBuilderConfig()
+
+            // Build a domain with DslDescription annotation
+            val domain: KSClassDeclaration = mockk()
+            every { domain.toClassName() } returns ClassName("org.test", "StarShip")
+            every { domain.packageName } returns mockKSName("org.test")
+            every { domain.simpleName } returns mockKSName("StarShip")
+            every { domain.containingFile } returns mockk<KSFile>()
+            every { domain.getAllProperties() } returns emptySequence()
+
+            // Mock two annotations: GeneratedDsl and DslDescription
+            val genAnn: KSAnnotation = mockk()
+            every { genAnn.shortName } returns mockKSName("GeneratedDsl")
+            every { genAnn.arguments } returns emptyList()
+
+            val descAnn: KSAnnotation = mockk()
+            every { descAnn.shortName } returns mockKSName("DslDescription")
+            val descArg: KSValueArgument = mockk()
+            every { descArg.name } returns mockKSName("value")
+            every { descArg.value } returns "A starship builder"
+            every { descAnn.arguments } returns listOf(descArg)
+
+            every { domain.annotations } returns sequenceOf(genAnn, descAnn)
+
+            val generator = DefaultBuilderGenerator()
+
+            expect { true }
+            whenever {
+                generator.generate(codeGen, domain, config, emptyMap(), false)
+                val output = outputStream.toString()
+                output.contains("A starship builder")
+            }
+        }
+    }
+
+    @Test
+    fun `generate output contains build function`() = test {
+        given {
+            val outputStream = ByteArrayOutputStream()
+            val codeGen: CodeGenerator = mockk()
+            every {
+                codeGen.createNewFile(any<Dependencies>(), any(), any(), any())
+            } returns outputStream
+
+            val config = mockBuilderConfig()
+            val domain = mockDomain(properties = listOf(mockProp("name")))
+            val generator = DefaultBuilderGenerator()
+
+            expect { true }
+            whenever {
+                generator.generate(codeGen, domain, config, emptyMap(), false)
+                val output = outputStream.toString()
+                output.contains("override fun build()") && output.contains("StarShip")
+            }
+        }
+    }
+
+    @Test
+    fun `generate with no properties produces empty constructor call`() = test {
+        given {
+            val outputStream = ByteArrayOutputStream()
+            val codeGen: CodeGenerator = mockk()
+            every {
+                codeGen.createNewFile(any<Dependencies>(), any(), any(), any())
+            } returns outputStream
+
+            val config = mockBuilderConfig()
+            val domain = mockDomain()
+            val generator = DefaultBuilderGenerator()
+
+            expect { true }
+            whenever {
+                generator.generate(codeGen, domain, config, emptyMap(), false)
+                val output = outputStream.toString()
+                output.contains("return StarShip()")
+            }
+        }
+    }
 }
