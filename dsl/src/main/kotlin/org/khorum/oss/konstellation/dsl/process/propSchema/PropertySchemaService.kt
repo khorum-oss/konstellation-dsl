@@ -9,7 +9,6 @@ import org.khorum.oss.konstellation.dsl.domain.DomainConfig
 import org.khorum.oss.konstellation.dsl.domain.DomainProperty
 import org.khorum.oss.konstellation.dsl.domain.PropertyAnnotationMetadata
 import org.khorum.oss.konstellation.dsl.schema.DslPropSchema
-import org.khorum.oss.konstellation.dsl.utils.AnnotationLookup
 import org.khorum.oss.konstellation.dsl.utils.Colors
 import org.khorum.oss.konstellation.dsl.utils.VLoggable
 import org.khorum.oss.konstellation.metaDsl.annotation.DefaultValue
@@ -30,7 +29,8 @@ interface PropertySchemaService<FACTORY_ADAPTER : PropertySchemaFactoryAdapter, 
  * It converts domain properties into DSL property schemas.
  */
 class DefaultPropertySchemaService(
-    private val propertySchemaFactory: DefaultPropertySchemaFactory = DefaultPropertySchemaFactory()
+    private val propertySchemaFactory: DefaultPropertySchemaFactory = DefaultPropertySchemaFactory(),
+    private val annotationExtractor: PropertyAnnotationExtractor = DefaultPropertyAnnotationExtractor()
 ) : PropertySchemaService<DefaultPropertySchemaFactoryAdapter, DefaultDomainProperty> {
     override fun getParamsFromDomain(domainConfig: DomainConfig): List<DslPropSchema> {
         val domain = domainConfig.domain
@@ -122,62 +122,9 @@ class DefaultPropertySchemaService(
     /**
      * Extract metadata from new-style annotations (@TransientDsl, @DslDescription,
      * @DslAlias, @DeprecatedDsl, @ValidateDsl) on a property declaration.
+     * Delegates to [PropertyAnnotationExtractor] for the actual extraction logic.
      */
     private fun KSPropertyDeclaration.extractAnnotationMetadata(): PropertyAnnotationMetadata {
-        val annotations = this.annotations
-
-        // @TransientDsl
-        val transientAnn = AnnotationLookup.findAnnotationByName(annotations, "TransientDsl")
-        val isTransient = transientAnn != null
-        val transientReason = transientAnn?.let {
-            AnnotationLookup.findArgumentValue<String>(it, "reason")?.takeIf { r -> r.isNotBlank() }
-        }
-
-        // @DslDescription
-        val descriptionAnn = AnnotationLookup.findAnnotationByName(annotations, "DslDescription")
-        val description = descriptionAnn?.let {
-            AnnotationLookup.findArgumentValue<String>(it, "value")?.takeIf { v -> v.isNotBlank() }
-        }
-
-        // @DslAlias
-        val aliasAnn = AnnotationLookup.findAnnotationByName(annotations, "DslAlias")
-        val aliases = aliasAnn?.let {
-            val singleValue = AnnotationLookup.findArgumentValue<String>(it, "value")
-            if (singleValue != null && singleValue.isNotBlank()) listOf(singleValue)
-            else {
-                @Suppress("UNCHECKED_CAST")
-                val listValue = AnnotationLookup.findArgumentValue<List<String>>(it, "value")
-                listValue?.filter { v -> v.isNotBlank() } ?: emptyList()
-            }
-        } ?: emptyList()
-
-        // @DeprecatedDsl
-        val deprecatedAnn = AnnotationLookup.findAnnotationByName(annotations, "DeprecatedDsl")
-        val deprecatedMessage = deprecatedAnn?.let {
-            AnnotationLookup.findArgumentValue<String>(it, "message")?.takeIf { m -> m.isNotBlank() }
-        }
-        val deprecatedReplaceWith = deprecatedAnn?.let {
-            AnnotationLookup.findArgumentValue<String>(it, "replaceWith")?.takeIf { r -> r.isNotBlank() }
-        }
-
-        // @ValidateDsl
-        val validateAnn = AnnotationLookup.findAnnotationByName(annotations, "ValidateDsl")
-        val validateExpression = validateAnn?.let {
-            AnnotationLookup.findArgumentValue<String>(it, "expression")?.takeIf { e -> e.isNotBlank() }
-        }
-        val validateMessage = validateAnn?.let {
-            AnnotationLookup.findArgumentValue<String>(it, "message")?.takeIf { m -> m.isNotBlank() }
-        }
-
-        return PropertyAnnotationMetadata(
-            isTransient = isTransient,
-            transientReason = transientReason,
-            description = description,
-            aliases = aliases,
-            deprecatedMessage = deprecatedMessage,
-            deprecatedReplaceWith = deprecatedReplaceWith,
-            validateExpression = validateExpression,
-            validateMessage = validateMessage,
-        )
+        return annotationExtractor.extract(this.annotations)
     }
 }
