@@ -714,7 +714,7 @@ class DefaultBuilderGeneratorTest : UnitSim() {
         given {
             val outputStream = ByteArrayOutputStream()
             val codeGen: CodeGenerator = mockk()
-            every {
+            io.mockk.every {
                 codeGen.createNewFile(any<Dependencies>(), any(), any(), any())
             } returns outputStream
 
@@ -722,25 +722,25 @@ class DefaultBuilderGeneratorTest : UnitSim() {
 
             // Build a domain with DslDescription annotation
             val domain: KSClassDeclaration = mockk()
-            every { domain.toClassName() } returns ClassName("org.test", "StarShip")
-            every { domain.packageName } returns mockKSName("org.test")
-            every { domain.simpleName } returns mockKSName("StarShip")
-            every { domain.containingFile } returns mockk<KSFile>()
-            every { domain.getAllProperties() } returns emptySequence()
+            io.mockk.every { domain.toClassName() } returns ClassName("org.test", "StarShip")
+            io.mockk.every { domain.packageName } returns mockKSName("org.test")
+            io.mockk.every { domain.simpleName } returns mockKSName("StarShip")
+            io.mockk.every { domain.containingFile } returns mockk<KSFile>()
+            io.mockk.every { domain.getAllProperties() } returns emptySequence()
 
             // Mock two annotations: GeneratedDsl and DslDescription
             val genAnn: KSAnnotation = mockk()
-            every { genAnn.shortName } returns mockKSName("GeneratedDsl")
-            every { genAnn.arguments } returns emptyList()
+            io.mockk.every { genAnn.shortName } returns mockKSName("GeneratedDsl")
+            io.mockk.every { genAnn.arguments } returns emptyList()
 
             val descAnn: KSAnnotation = mockk()
-            every { descAnn.shortName } returns mockKSName("DslDescription")
+            io.mockk.every { descAnn.shortName } returns mockKSName("DslDescription")
             val descArg: KSValueArgument = mockk()
-            every { descArg.name } returns mockKSName("value")
-            every { descArg.value } returns "A starship builder"
-            every { descAnn.arguments } returns listOf(descArg)
+            io.mockk.every { descArg.name } returns mockKSName("value")
+            io.mockk.every { descArg.value } returns "A starship builder"
+            io.mockk.every { descAnn.arguments } returns listOf(descArg)
 
-            every { domain.annotations } returns sequenceOf(genAnn, descAnn)
+            io.mockk.every { domain.annotations } returns sequenceOf(genAnn, descAnn)
 
             val generator = DefaultBuilderGenerator()
 
@@ -758,7 +758,7 @@ class DefaultBuilderGeneratorTest : UnitSim() {
         given {
             val outputStream = ByteArrayOutputStream()
             val codeGen: CodeGenerator = mockk()
-            every {
+            io.mockk.every {
                 codeGen.createNewFile(any<Dependencies>(), any(), any(), any())
             } returns outputStream
 
@@ -780,7 +780,7 @@ class DefaultBuilderGeneratorTest : UnitSim() {
         given {
             val outputStream = ByteArrayOutputStream()
             val codeGen: CodeGenerator = mockk()
-            every {
+            io.mockk.every {
                 codeGen.createNewFile(any<Dependencies>(), any(), any(), any())
             } returns outputStream
 

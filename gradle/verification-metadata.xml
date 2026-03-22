@@ -23,6 +23,7 @@
          <trust group="^com[.]soywiz($|([.].*))" regex="true"/>
          <trust group="^com[.]squareup($|([.].*))" regex="true"/>
          <trust group="^io[.]gitlab[.]arturbosch[.]detekt($|([.].*))" regex="true"/>
+         <trust group="^io[.]mockk" regex="true"/>
          <trust group="^org[.]jetbrains($|([.].*))" regex="true"/>
          <trust group="^org[.]junit($|([.].*))" regex="true"/>
          <trust group="^org[.]khorum($|([.].*))" regex="true"/>
