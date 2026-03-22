@@ -571,4 +571,47 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
             }
         }
     }
+
+    @Test
+    fun `PropertySchemaService logId returns class simple name`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            expect { "PropertySchemaService" }
+            whenever { service.logId() }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain with TransientDsl with reason and debug enabled exercises logging`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            service.logger.enableDebug()
+            val ann = mockAnnotation("TransientDsl", listOf("reason" to "not needed"))
+            val prop = mockPropWithAnnotations("transientField", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop), debug = true)
+
+            expect { 0 }
+            whenever {
+                try {
+                    service.getParamsFromDomain(domainConfig).size
+                } finally {
+                    service.logger.disableDebug()
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain with multiple properties filters only transient ones`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val transientAnn = mockAnnotation("TransientDsl", listOf("reason" to "skip"))
+            val transientProp = mockPropWithAnnotations("skip", sequenceOf(transientAnn))
+            val normalProp = mockSimpleProp("keep")
+            val domainConfig = mockDomainConfig(sequenceOf(transientProp, normalProp))
+
+            expect { 1 }
+            whenever { service.getParamsFromDomain(domainConfig).size }
+        }
+    }
 }

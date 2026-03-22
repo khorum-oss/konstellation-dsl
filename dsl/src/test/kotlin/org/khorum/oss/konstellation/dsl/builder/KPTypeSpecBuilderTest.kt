@@ -269,4 +269,72 @@ class KPTypeSpecBuilderTest : UnitSim() {
             }
         }
     }
+
+    @Test
+    fun `build with all features combined`() = test {
+        given {
+            expect { true }
+            whenever {
+                val builder = KPTypeSpecBuilder().apply {
+                    name = "FullClass"
+                    kdoc("A fully featured class")
+                    annotation("com.example", "MyAnnotation")
+                    superInterface(ClassName("com.example", "MyInterface"))
+                    typeVariables("T")
+                    properties {
+                        add {
+                            name = "prop1"
+                            type = STRING
+                        }
+                    }
+                    functions {
+                        add {
+                            funName = "doStuff"
+                        }
+                    }
+                    nested {
+                        addType { name = "Inner" }
+                    }
+                }
+                val output = builder.build().toString()
+                output.contains("FullClass") &&
+                    output.contains("MyAnnotation") &&
+                    output.contains("MyInterface") &&
+                    output.contains("prop1") &&
+                    output.contains("doStuff") &&
+                    output.contains("class Inner")
+            }
+        }
+    }
+
+    @Test
+    fun `build without kdoc has no documentation`() = test {
+        given {
+            expect { true }
+            whenever {
+                val builder = KPTypeSpecBuilder().apply {
+                    name = "MyClass"
+                }
+                builder.build().kdoc.isEmpty()
+            }
+        }
+    }
+
+    @Test
+    fun `multiple annotations are all included`() = test {
+        given {
+            expect { true }
+            whenever {
+                val builder = KPTypeSpecBuilder().apply {
+                    name = "MyClass"
+                    annotations {
+                        annotation("com.a", "First")
+                        annotation("com.b", "Second")
+                    }
+                }
+                val output = builder.build().toString()
+                output.contains("First") && output.contains("Second")
+            }
+        }
+    }
 }

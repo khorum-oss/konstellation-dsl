@@ -1,6 +1,5 @@
 package org.khorum.oss.konstellation.dsl.builder
 
-import com.squareup.kotlinpoet.INT
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.STRING
 import org.khorum.oss.geordi.UnitSim

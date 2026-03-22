@@ -6,6 +6,7 @@ import com.squareup.kotlinpoet.STRING
 import com.squareup.kotlinpoet.INT
 import com.squareup.kotlinpoet.PropertySpec
 import org.khorum.oss.geordi.UnitSim
+import org.khorum.oss.konstellation.dsl.exception.KonstellationException
 import org.junit.jupiter.api.Test
 
 class KPPropertySpecBuilderTest : UnitSim() {
@@ -241,6 +242,66 @@ class KPPropertySpecBuilderTest : UnitSim() {
                     }
                 }
                 group.items.size
+            }
+        }
+    }
+
+    @Test
+    fun `build with private modifier includes PRIVATE`() = test {
+        given {
+            expect { true }
+            whenever {
+                val spec = KPPropertySpecBuilder().apply {
+                    name = "myProp"
+                    type = STRING
+                    private()
+                }.build()
+                spec.modifiers.contains(KModifier.PRIVATE)
+            }
+        }
+    }
+
+    @Test
+    fun `build with protected modifier includes PROTECTED`() = test {
+        given {
+            expect { true }
+            whenever {
+                val spec = KPPropertySpecBuilder().apply {
+                    name = "myProp"
+                    type = STRING
+                    protected()
+                }.build()
+                spec.modifiers.contains(KModifier.PROTECTED)
+            }
+        }
+    }
+
+    @Test
+    fun `setting two access modifiers throws exception`() {
+        try {
+            KPPropertySpecBuilder().apply {
+                name = "myProp"
+                type = STRING
+                public()
+                private()
+            }.build()
+            assert(false) { "Expected KonstellationException" }
+        } catch (e: KonstellationException) {
+            assert(e.message!!.contains("access modifier already set"))
+        }
+    }
+
+    @Test
+    fun `build with variable makes property mutable`() = test {
+        given {
+            expect { true }
+            whenever {
+                val spec = KPPropertySpecBuilder().apply {
+                    name = "myProp"
+                    type = STRING
+                    variable()
+                }.build()
+                spec.mutable
             }
         }
     }
