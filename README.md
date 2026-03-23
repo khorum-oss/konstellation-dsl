@@ -2,7 +2,7 @@
 
 A robust Kotlin Symbol Processing (KSP) library for automatically generating type-safe Kotlin DSLs from annotated data classes.
 
-> ⚠️ **This project is currently in active development and APIs may change.**
+> **This project is currently in active development and APIs may change.**
 
 ## Overview
 
@@ -10,11 +10,11 @@ Konstellation eliminates the boilerplate of creating Kotlin DSLs by automaticall
 
 ## Features
 
-- 🚀 **Zero Runtime Overhead** - Pure compile-time code generation
-- 🛡️ **Type Safety** - Generated DSLs maintain full type safety
-- 🎯 **Minimal Setup** - Just add annotations to existing classes
-- 📊 **Rich Logging** - Tiered debug output for development insights
-- 🔧 **Flexible Configuration** - Customizable through KSP arguments
+- **Zero Runtime Overhead** - Pure compile-time code generation
+- **Type Safety** - Generated DSLs maintain full type safety
+- **Minimal Setup** - Just add annotations to existing classes
+- **Rich Logging** - Tiered debug output for development insights
+- **Flexible Configuration** - Customizable through KSP arguments
 
 ## Quick Start
 
@@ -51,7 +51,7 @@ ksp {
 ### 3. Annotate Your Classes
 
 ```kotlin
-@GenerateDSL
+@GeneratedDsl
 data class DatabaseConfig(
     val host: String,
     val port: Int,
@@ -71,24 +71,74 @@ val config = databaseConfig {
 }
 ```
 
+## Annotations
+
+Konstellation provides a comprehensive set of annotations to control DSL generation. Here is a quick overview; for full details and examples see [docs/ANNOTATION_REFERENCE.md](docs/ANNOTATION_REFERENCE.md).
+
+### Class-Level
+
+| Annotation | Purpose |
+|---|---|
+| `@GeneratedDsl` | Core entry point — marks a data class for DSL builder generation |
+
+### Property-Level
+
+| Annotation | Purpose |
+|---|---|
+| `@RootDsl` | Generates a top-level DSL entry-point function for the property's type, with optional custom `name` and `alias` |
+| `@DefaultValue` | Sets the builder property's initial value instead of `null` |
+| `@ListDsl` | Configures list properties: size constraints, `uniqueElements`, `sorted`, accessor control |
+| `@MapDsl` | Configures map properties: size constraints, accessor control |
+| `@DslDescription` | Adds KDoc comments to generated builder properties and accessors |
+| `@DslAlias` | Creates alternative accessor function names for a property |
+| `@DeprecatedDsl` | Marks generated accessors as `@Deprecated` with optional `replaceWith` |
+| `@ValidateDsl` | Generates a `require()` check in the `build()` method |
+| `@TransientDsl` | Excludes a property from the generated builder entirely |
+| `@DslProperty` | Controls vararg/provider accessor generation (superseded by `@ListDsl`/`@MapDsl`) |
+| `@PublicDslProperty` | Controls accessor visibility for public properties |
+| `@PrivateDslProperty` | Controls accessor visibility for private properties |
+| `@SingleEntryTransformDsl` | Generates a convenience transform function |
+
 ## Real-World Example
 
-Here's a more complex example showing nested configuration:
-
 ```kotlin
-@GenerateDSL
-data class BloomBuildPlannerQueue(
-    val maxQueuedTasksPerTenant: Int,
-    val storeTasksOnDisk: Boolean,
-    val tasksDiskDirectory: String,
-    val cleanTasksDirectory: Boolean
-)
-
-@GenerateDSL
+@GeneratedDsl
 data class ServiceConfig(
     val name: String,
-    val queue: BloomBuildPlannerQueue,
-    val timeout: Duration = Duration.ofSeconds(30)
+
+    @DslDescription("Maximum warp speed")
+    val maxWarpSpeed: Float? = null,
+
+    @DslAlias(names = ["active"])
+    val activated: Boolean? = null,
+
+    @DeprecatedDsl(message = "Use 'activated' instead", replaceWith = "activated")
+    val docked: Boolean? = null,
+
+    @ValidateDsl(expression = "it?.let { v -> v > 0 } ?: true", message = "must be positive")
+    val capacity: Int? = null,
+
+    @ListDsl(minSize = 1, maxSize = 10, uniqueElements = true, sorted = true)
+    val tags: List<String>,
+
+    @MapDsl(minSize = 1, maxSize = 5)
+    val metadata: Map<String, String>,
+
+    @DefaultValue("DEFAULT")
+    val region: String = "DEFAULT",
+
+    @TransientDsl(reason = "Internal tracking only")
+    val internalId: String? = null,
+
+    val nested: DatabaseConfig? = null
+)
+
+@GeneratedDsl
+data class DatabaseConfig(
+    val host: String,
+    @DefaultValue("5432")
+    val port: Int = 5432,
+    val database: String
 )
 ```
 
@@ -97,41 +147,44 @@ Generated usage:
 ```kotlin
 val service = serviceConfig {
     name = "data-processor"
-    queue {
-        maxQueuedTasksPerTenant = 100
-        storeTasksOnDisk = true
-        tasksDiskDirectory = "/tmp/tasks"
-        cleanTasksDirectory = true
+    maxWarpSpeed = 9.5f           // KDoc: "Maximum warp speed"
+    activated = true
+    active(true)                   // alias for 'activated'
+    capacity = 100                 // validated: must be positive
+    tags("alpha", "beta")          // vararg; distinct + sorted + min 1, max 10
+    metadata("key" to "value")     // vararg; min 1, max 5
+
+    nested {                       // nested DSL block
+        host = "localhost"
+        database = "myapp"
     }
-    timeout = Duration.ofMinutes(5)
 }
 ```
 
 ## Configuration Options
 
 | KSP Argument | Description | Example |
-|--------------|-------------|---------|
+|---|---|---|
 | `projectRootClasspath` | Root package for your project | `com.yourcompany.project` |
 | `dslBuilderClasspath` | Package where builders are generated | `com.yourcompany.project.dsl` |
 | `dslMarkerClass` | Custom DSL marker annotation class | `com.yourcompany.project.MyDSL` |
+| `enableDebugLogging` | Enable debug logging during generation | `true` |
 
 ## Development & Debugging
 
-In order to run debug, you can use `./gradlew clean build -Ddebug=true`
-
-Konstellation includes sophisticated logging to help you understand the generation process. 
+Run with debug logging: `./gradlew clean build -Ddebug=true`
 
 ```
-konstellation DEBUG [····DSL_BUILDER] *>> +++ DOMAIN: BloomBuildPlannerQueue +++
-konstellation DEBUG [····DSL_BUILDER] *>>   |__ package: io.violabs.konstellation.example
-konstellation DEBUG [····DSL_BUILDER] *>>   |__ type: BloomBuildPlannerQueue
-konstellation DEBUG [····DSL_BUILDER] *>>   |__ builder: BloomBuildPlannerQueueBuilder
+konstellation DEBUG [····DSL_BUILDER] *>> +++ DOMAIN: DatabaseConfig +++
+konstellation DEBUG [····DSL_BUILDER] *>>   |__ package: com.yourcompany.project
+konstellation DEBUG [····DSL_BUILDER] *>>   |__ type: DatabaseConfig
+konstellation DEBUG [····DSL_BUILDER] *>>   |__ builder: DatabaseConfigBuilder
 konstellation DEBUG [····DSL_BUILDER] *>>   |__ Properties added
-konstellation DEBUG [····DSL_BUILDER] *>>       |__ maxQueuedTasksPerTenant
-konstellation DEBUG [····DSL_BUILDER] *>>       |   |__ type: kotlin.Int
+konstellation DEBUG [····DSL_BUILDER] *>>       |__ host
+konstellation DEBUG [····DSL_BUILDER] *>>       |   |__ type: kotlin.String
 ```
 
-To enable debug logging in your KSP processor, add:
+Or configure in `build.gradle.kts`:
 
 ```kotlin
 ksp {
@@ -144,16 +197,23 @@ ksp {
 ```
 konstellation/
 ├── meta-dsl/          # Annotations for consumers
-├── dsl/              # KSP processor implementation
-├── examples/         # Usage examples
-└── docs/            # Additional documentation
+├── dsl/               # KSP processor implementation
+├── core-test/         # Shared testing framework (Geordi)
+├── generate-test/     # Integration tests with generated DSL
+└── docs/              # Additional documentation
 ```
+
+## Documentation
+
+- [Annotation Reference](docs/ANNOTATION_REFERENCE.md) - Complete guide to all annotations with examples
+- [Implementation Guide](docs/IMPLEMENTATION_GUIDE.md) - KSP processor implementation details
 
 ## Requirements
 
-- Kotlin 1.9.0+
-- KSP 1.9.0-1.0.13+
-- Gradle 7.0+
+- Kotlin 2.1+
+- KSP 2.1+
+- Gradle 8.0+
+- JDK 21+
 
 ## Contributing
 
@@ -161,8 +221,8 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 
 ## Roadmap
 
+- [ ] Change `@RootDsl` target from `PROPERTY` to `CLASS` in meta-dsl
 - [ ] Support for generic types
-- [ ] Validation DSL generation
 - [ ] Fix logging issues
 
 ## License
@@ -171,8 +231,8 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 ## Support
 
-- 🐛 [Issue Tracker](https://github.com/khorum-oss/konstellation-dsl/issues)
+- [Issue Tracker](https://github.com/khorum-oss/konstellation-dsl/issues)
 
 ---
 
-*Built with ❤️ by the Khorum OSS team*
+*Built by the Khorum OSS team*

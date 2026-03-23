@@ -10,10 +10,11 @@ import org.khorum.oss.konstellation.dsl.domain.BuilderConfig
 /**
  * Interface for generating the root DSL function.
  */
-fun interface RootFunctionGenerator {
+interface RootFunctionGenerator {
     fun generate(
         domain: KSClassDeclaration,
-        builderConfig: BuilderConfig
+        builderConfig: BuilderConfig,
+        customName: String? = null
     ): FunSpec
 }
 
@@ -24,13 +25,14 @@ fun interface RootFunctionGenerator {
 class DefaultRootFunctionGenerator : RootFunctionGenerator {
     override fun generate(
         domain: KSClassDeclaration,
-        builderConfig: BuilderConfig
+        builderConfig: BuilderConfig,
+        customName: String?
     ): FunSpec = kotlinPoet {
         function {
             val domainClassName = domain.toClassName()
             val domainBuilderClassName =
                 ClassName(domainClassName.packageName, "${domainClassName.simpleName}DslBuilder")
-            funName = domain.simpleName.asString().replaceFirstChar { it.lowercase() }
+            funName = customName ?: domain.simpleName.asString().replaceFirstChar { it.lowercase() }
 
             param {
                 lambdaType {

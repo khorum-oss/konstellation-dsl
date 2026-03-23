@@ -12,6 +12,8 @@ import org.khorum.oss.konstellation.dsl.domain.PropertyAnnotationMetadata
 /**
  * Represents a property in a generated DSL builder.
  */
+private const val DSL_VALIDATION_CLASS = "org.khorum.oss.konstellation.metaDsl.DslValidation"
+
 interface DslPropSchema {
     val propName: String
     val functionName: String get() = propName
@@ -122,6 +124,53 @@ interface DslPropSchema {
         val message = annotationMetadata.validateMessage
             ?: "Validation failed for property '$propName'"
         return "require($resolvedExpression) { \"$message\" }"
+    }
+
+    /**
+     * Returns all build-time statements for this property:
+     * transformations (distinct, sorted), size validations (@ListDsl/@MapDsl),
+     * and custom validations (@ValidateDsl).
+     */
+    fun buildStatements(): List<String> {
+        val statements = mutableListOf<String>()
+
+        // @ListDsl transformations
+        if (annotationMetadata.listDslUniqueElements || annotationMetadata.listDslSorted) {
+            val transforms = buildList {
+                if (annotationMetadata.listDslUniqueElements) add("distinct()")
+                if (annotationMetadata.listDslSorted) add("sorted()")
+            }.joinToString("?.")
+            statements.add("$propName = $propName?.${transforms}")
+        }
+
+        // @ListDsl size constraints
+        annotationMetadata.listDslMinSize?.let { min ->
+            val call = DSL_VALIDATION_CLASS +
+                ".requireMinSize(it, $min, \"$propName\")"
+            statements.add("$propName?.let { $call }")
+        }
+        annotationMetadata.listDslMaxSize?.let { max ->
+            val call = DSL_VALIDATION_CLASS +
+                ".requireMaxSize(it, $max, \"$propName\")"
+            statements.add("$propName?.let { $call }")
+        }
+
+        // @MapDsl size constraints
+        annotationMetadata.mapDslMinSize?.let { min ->
+            val call = DSL_VALIDATION_CLASS +
+                ".requireMinSize(it, $min, \"$propName\")"
+            statements.add("$propName?.let { $call }")
+        }
+        annotationMetadata.mapDslMaxSize?.let { max ->
+            val call = DSL_VALIDATION_CLASS +
+                ".requireMaxSize(it, $max, \"$propName\")"
+            statements.add("$propName?.let { $call }")
+        }
+
+        // @ValidateDsl
+        validationStatement()?.let { statements.add(it) }
+
+        return statements
     }
 
     /**

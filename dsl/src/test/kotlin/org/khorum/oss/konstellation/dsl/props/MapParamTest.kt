@@ -59,19 +59,19 @@ class MapParamTest : UnitSim() {
     }
 
     @Test
-    fun `isCollection returns true for map iterableType`() = test {
+    fun `isCollection returns false for map iterableType`() = test {
         given {
             val param = MapPropSchema("test", STRING, INT)
-            expect { true }
+            expect { false }
             whenever { param.isCollection() }
         }
     }
 
     @Test
-    fun `isMap returns false for map with COLLECTION iterableType`() = test {
+    fun `isMap returns true for map with MAP iterableType`() = test {
         given {
             val param = MapPropSchema("test", STRING, INT)
-            expect { false }
+            expect { true }
             whenever { param.isMap() }
         }
     }
@@ -86,10 +86,10 @@ class MapParamTest : UnitSim() {
     }
 
     @Test
-    fun `propertyValueReturn - non-nullable returns vRequireCollectionNotEmpty`() = test {
+    fun `propertyValueReturn - non-nullable returns vRequireMapNotEmpty`() = test {
         given {
             val param = MapPropSchema("codes", STRING, INT, nullableAssignment = false)
-            expect { "vRequireCollectionNotEmpty(::codes)" }
+            expect { "vRequireMapNotEmpty(::codes)" }
             whenever { param.propertyValueReturn() }
         }
     }

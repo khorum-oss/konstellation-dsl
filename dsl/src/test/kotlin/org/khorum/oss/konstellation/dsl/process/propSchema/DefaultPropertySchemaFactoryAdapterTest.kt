@@ -424,4 +424,84 @@ class DefaultPropertySchemaFactoryAdapterTest : UnitSim() {
             whenever { adapter.transformType }
         }
     }
+
+    // --- withVararg/withProvider from ListDsl/MapDsl annotation metadata ---
+
+    @Test
+    fun `withVararg from listDslWithVararg takes precedence over DslProperty`() = test {
+        given {
+            val ann = mockDslPropertyAnnotation(withVararg = true, withProvider = true)
+            val meta = org.khorum.oss.konstellation.dsl.domain.PropertyAnnotationMetadata(
+                listDslWithVararg = false
+            )
+            val adapter = DefaultPropertySchemaFactoryAdapter(
+                mockProp(annotations = sequenceOf(ann)), null,
+                annotationMetadata = meta
+            )
+            expect { false }
+            whenever { adapter.withVararg }
+        }
+    }
+
+    @Test
+    fun `withProvider from listDslWithProvider takes precedence over DslProperty`() = test {
+        given {
+            val ann = mockDslPropertyAnnotation(withVararg = true, withProvider = true)
+            val meta = org.khorum.oss.konstellation.dsl.domain.PropertyAnnotationMetadata(
+                listDslWithProvider = false
+            )
+            val adapter = DefaultPropertySchemaFactoryAdapter(
+                mockProp(annotations = sequenceOf(ann)), null,
+                annotationMetadata = meta
+            )
+            expect { false }
+            whenever { adapter.withProvider }
+        }
+    }
+
+    @Test
+    fun `withVararg from mapDslWithVararg takes precedence when no listDsl`() = test {
+        given {
+            val meta = org.khorum.oss.konstellation.dsl.domain.PropertyAnnotationMetadata(
+                mapDslWithVararg = false
+            )
+            val adapter = DefaultPropertySchemaFactoryAdapter(
+                mockProp(), null,
+                annotationMetadata = meta
+            )
+            expect { false }
+            whenever { adapter.withVararg }
+        }
+    }
+
+    @Test
+    fun `withProvider from mapDslWithProvider takes precedence when no listDsl`() = test {
+        given {
+            val meta = org.khorum.oss.konstellation.dsl.domain.PropertyAnnotationMetadata(
+                mapDslWithProvider = false
+            )
+            val adapter = DefaultPropertySchemaFactoryAdapter(
+                mockProp(), null,
+                annotationMetadata = meta
+            )
+            expect { false }
+            whenever { adapter.withProvider }
+        }
+    }
+
+    @Test
+    fun `withVararg listDsl takes precedence over mapDsl`() = test {
+        given {
+            val meta = org.khorum.oss.konstellation.dsl.domain.PropertyAnnotationMetadata(
+                listDslWithVararg = true,
+                mapDslWithVararg = false
+            )
+            val adapter = DefaultPropertySchemaFactoryAdapter(
+                mockProp(), null,
+                annotationMetadata = meta
+            )
+            expect { true }
+            whenever { adapter.withVararg }
+        }
+    }
 }

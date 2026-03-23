@@ -30,7 +30,7 @@ class MapPropSchema(
     override val annotationMetadata: PropertyAnnotationMetadata = PropertyAnnotationMetadata()
 ) : DslPropSchema {
     override val propTypeName: TypeName = kpMapOf(mapKeyType, mapValueType, nullable = true)
-    override val iterableType: DslPropSchema.IterableType = DslPropSchema.IterableType.COLLECTION
+    override val iterableType: DslPropSchema.IterableType = DslPropSchema.IterableType.MAP
 
     override val verifyNotNull: Boolean = false
     override val verifyNotEmpty: Boolean = true

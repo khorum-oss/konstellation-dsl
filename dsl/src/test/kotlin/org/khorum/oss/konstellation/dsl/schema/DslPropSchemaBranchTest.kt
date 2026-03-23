@@ -22,11 +22,11 @@ class DslPropSchemaBranchTest : UnitSim() {
         }
 
     @Test
-    fun `propertyValueReturn - non-nullable map collection returns vRequireCollectionNotEmpty`() = test {
+    fun `propertyValueReturn - non-nullable map returns vRequireMapNotEmpty`() = test {
         given {
-            // MapPropSchema uses IterableType.COLLECTION (collection of pairs)
+            // MapPropSchema uses IterableType.MAP
             val param = MapPropSchema("entries", STRING, STRING, nullableAssignment = false)
-            expect { "vRequireCollectionNotEmpty(::entries)" }
+            expect { "vRequireMapNotEmpty(::entries)" }
             whenever { param.propertyValueReturn() }
         }
     }
@@ -74,9 +74,8 @@ class DslPropSchemaBranchTest : UnitSim() {
     @Test
     fun `isCollection returns false for MapPropSchema`() = test {
         given {
-            // MapPropSchema uses IterableType.COLLECTION too (it's a collection of pairs)
-            // so isCollection should be true, isMap false for MapPropSchema
-            expect { true }
+            // MapPropSchema uses IterableType.MAP
+            expect { false }
             whenever { MapPropSchema("x", STRING, STRING).isCollection() }
         }
     }
@@ -439,9 +438,9 @@ class DslPropSchemaBranchTest : UnitSim() {
     }
 
     @Test
-    fun `isMap returns false for MapPropSchema which has COLLECTION iterableType`() = test {
+    fun `isMap returns true for MapPropSchema which has MAP iterableType`() = test {
         given {
-            expect { false }
+            expect { true }
             whenever { MapPropSchema("x", STRING, STRING).isMap() }
         }
     }
@@ -883,6 +882,153 @@ class DslPropSchemaBranchTest : UnitSim() {
             }
             expect { "data" }
             whenever { param.propertyValueReturn() }
+        }
+    }
+
+    // --- buildStatements ---
+
+    @Test
+    fun `buildStatements returns empty list when no annotations`() = test {
+        given {
+            val param = DefaultPropSchema("x", STRING)
+            expect { emptyList<String>() }
+            whenever { param.buildStatements() }
+        }
+    }
+
+    @Test
+    fun `buildStatements with uniqueElements adds distinct transformation`() = test {
+        given {
+            val meta = PropertyAnnotationMetadata(listDslUniqueElements = true)
+            val param = ListPropSchema("items", STRING, annotationMetadata = meta)
+            expect { true }
+            whenever {
+                val stmts = param.buildStatements()
+                stmts.any { it.contains("distinct()") }
+            }
+        }
+    }
+
+    @Test
+    fun `buildStatements with sorted adds sorted transformation`() = test {
+        given {
+            val meta = PropertyAnnotationMetadata(listDslSorted = true)
+            val param = ListPropSchema("items", STRING, annotationMetadata = meta)
+            expect { true }
+            whenever {
+                val stmts = param.buildStatements()
+                stmts.any { it.contains("sorted()") }
+            }
+        }
+    }
+
+    @Test
+    fun `buildStatements with both uniqueElements and sorted chains both`() = test {
+        given {
+            val meta = PropertyAnnotationMetadata(listDslUniqueElements = true, listDslSorted = true)
+            val param = ListPropSchema("items", STRING, annotationMetadata = meta)
+            expect { true }
+            whenever {
+                val stmts = param.buildStatements()
+                stmts.any { it.contains("distinct()") && it.contains("sorted()") }
+            }
+        }
+    }
+
+    @Test
+    fun `buildStatements with listDslMinSize adds min size validation`() = test {
+        given {
+            val meta = PropertyAnnotationMetadata(listDslMinSize = 2)
+            val param = ListPropSchema("items", STRING, annotationMetadata = meta)
+            expect { true }
+            whenever {
+                val stmts = param.buildStatements()
+                stmts.any { it.contains("requireMinSize") && it.contains("2") }
+            }
+        }
+    }
+
+    @Test
+    fun `buildStatements with listDslMaxSize adds max size validation`() = test {
+        given {
+            val meta = PropertyAnnotationMetadata(listDslMaxSize = 5)
+            val param = ListPropSchema("items", STRING, annotationMetadata = meta)
+            expect { true }
+            whenever {
+                val stmts = param.buildStatements()
+                stmts.any { it.contains("requireMaxSize") && it.contains("5") }
+            }
+        }
+    }
+
+    @Test
+    fun `buildStatements with mapDslMinSize adds min size validation`() = test {
+        given {
+            val meta = PropertyAnnotationMetadata(mapDslMinSize = 1)
+            val param = MapPropSchema("entries", STRING, STRING, annotationMetadata = meta)
+            expect { true }
+            whenever {
+                val stmts = param.buildStatements()
+                stmts.any { it.contains("requireMinSize") && it.contains("1") }
+            }
+        }
+    }
+
+    @Test
+    fun `buildStatements with mapDslMaxSize adds max size validation`() = test {
+        given {
+            val meta = PropertyAnnotationMetadata(mapDslMaxSize = 10)
+            val param = MapPropSchema("entries", STRING, STRING, annotationMetadata = meta)
+            expect { true }
+            whenever {
+                val stmts = param.buildStatements()
+                stmts.any { it.contains("requireMaxSize") && it.contains("10") }
+            }
+        }
+    }
+
+    @Test
+    fun `buildStatements with validateExpression adds require statement`() = test {
+        given {
+            val meta = PropertyAnnotationMetadata(
+                validateExpression = "it > 0",
+                validateMessage = "Must be positive"
+            )
+            val param = DefaultPropSchema("age", STRING, annotationMetadata = meta)
+            expect { true }
+            whenever {
+                val stmts = param.buildStatements()
+                stmts.any { it.contains("require(age > 0)") }
+            }
+        }
+    }
+
+    @Test
+    fun `buildStatements combines transformations, size constraints, and validation`() = test {
+        given {
+            val meta = PropertyAnnotationMetadata(
+                listDslUniqueElements = true,
+                listDslMinSize = 1,
+                listDslMaxSize = 10,
+                validateExpression = "it != null",
+                validateMessage = "required"
+            )
+            val param = ListPropSchema("items", STRING, annotationMetadata = meta)
+            expect { 4 }
+            whenever { param.buildStatements().size }
+        }
+    }
+
+    @Test
+    fun `buildStatements with both list and map size constraints`() = test {
+        given {
+            val meta = PropertyAnnotationMetadata(
+                listDslMinSize = 1,
+                mapDslMaxSize = 5
+            )
+            val param = DefaultPropSchema("data", STRING, annotationMetadata = meta)
+            expect { 2 }
+            whenever { param.buildStatements().size }
         }
     }
 }

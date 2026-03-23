@@ -614,4 +614,140 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
             whenever { service.getParamsFromDomain(domainConfig).size }
         }
     }
+
+    @Test
+    fun `extractDefaultPropertyValue with inferType true and primitive type uses literal template`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            // Create a prop whose type resolves to kotlin.Int with empty packageName/className
+            val ann = mockDefaultValueAnnotation(
+                listOf(
+                    "value" to "42",
+                    "packageName" to "",
+                    "className" to "",
+                    "inferType" to true
+                )
+            )
+
+            // Need to mock a property whose resolved type is kotlin.Int
+            val typeRef: KSTypeReference = mockk()
+            every { typeRef.toTypeName() } returns com.squareup.kotlinpoet.INT
+
+            val classDecl: KSClassDeclaration = mockk()
+            every { classDecl.toClassName() } returns ClassName("kotlin", "Int")
+            every { classDecl.annotations } returns emptySequence()
+            every { classDecl.qualifiedName } returns mockKSName("kotlin.Int")
+
+            val resolvedType: KSType = mockk()
+            every { resolvedType.isMarkedNullable } returns false
+            every { resolvedType.declaration } returns classDecl
+            every { resolvedType.arguments } returns emptyList()
+            every { typeRef.resolve() } returns resolvedType
+
+            val prop: KSPropertyDeclaration = mockk()
+            every { prop.simpleName } returns mockKSName("intField")
+            every { prop.type } returns typeRef
+            every { prop.annotations } returns sequenceOf(ann)
+
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                val dv = service.getParamsFromDomain(domainConfig).first().defaultValue
+                dv != null && dv.rawValue == "42"
+            }
+        }
+    }
+
+    @Test
+    fun `extractDefaultPropertyValue with inferType false uses String template`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockDefaultValueAnnotation(
+                listOf(
+                    "value" to "42",
+                    "packageName" to "",
+                    "className" to "",
+                    "inferType" to false
+                )
+            )
+            val prop = mockPropWithAnnotations("noInfer", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                val dv = service.getParamsFromDomain(domainConfig).first().defaultValue
+                dv != null && dv.rawValue == "42"
+            }
+        }
+    }
+
+    @Test
+    fun `extractDefaultPropertyValue with inferType true and non-primitive type uses string template`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            // String is not in PRIMITIVE_TYPE_NAMES, so isLiteral=false, isStringClass=true
+            val ann = mockDefaultValueAnnotation(
+                listOf(
+                    "value" to "hello",
+                    "packageName" to "",
+                    "className" to "",
+                    "inferType" to true
+                )
+            )
+            // mockPropWithAnnotations already uses kotlin.String as the resolved type
+            val prop = mockPropWithAnnotations("strField", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                val dv = service.getParamsFromDomain(domainConfig).first().defaultValue
+                dv != null && dv.rawValue == "hello"
+            }
+        }
+    }
+
+    @Test
+    fun `extractDefaultPropertyValue with className String uses string template`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockDefaultValueAnnotation(
+                listOf(
+                    "value" to "test",
+                    "packageName" to "kotlin",
+                    "className" to "String"
+                )
+            )
+            val prop = mockPropWithAnnotations("strField", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                val dv = service.getParamsFromDomain(domainConfig).first().defaultValue
+                dv != null && dv.rawValue == "test"
+            }
+        }
+    }
+
+    @Test
+    fun `extractDefaultPropertyValue with non-empty packageName and className uses literal template`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockDefaultValueAnnotation(
+                listOf(
+                    "value" to "MyEnum.VALUE",
+                    "packageName" to "org.test",
+                    "className" to "MyEnum"
+                )
+            )
+            val prop = mockPropWithAnnotations("enumField", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                val dv = service.getParamsFromDomain(domainConfig).first().defaultValue
+                dv != null && dv.rawValue == "MyEnum.VALUE" && dv.className == "MyEnum"
+            }
+        }
+    }
 }

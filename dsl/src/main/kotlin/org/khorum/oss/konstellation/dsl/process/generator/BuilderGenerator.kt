@@ -174,10 +174,10 @@ class DefaultBuilderGenerator(
                     returns = domainClassName
 
                     statements {
-                        // Emit @ValidateDsl validation statements before construction
-                        val validationStatements = params.mapNotNull { it.validationStatement() }
-                        for (validation in validationStatements) {
-                            addLine(validation)
+                        // Emit all build-time statements (transformations, validations)
+                        val allBuildStatements = params.flatMap { it.buildStatements() }
+                        for (statement in allBuildStatements) {
+                            addLine(statement)
                         }
 
                         val constructorParams = params

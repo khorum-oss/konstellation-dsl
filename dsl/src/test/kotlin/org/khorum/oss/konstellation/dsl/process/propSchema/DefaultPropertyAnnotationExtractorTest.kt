@@ -351,4 +351,270 @@ class DefaultPropertyAnnotationExtractorTest : UnitSim() {
             whenever { extractor.extract(sequenceOf(ann)).aliases }
         }
     }
+
+    // --- ListDsl extraction ---
+
+    @Test
+    fun `extract ListDsl with all arguments`() = test {
+        given {
+            val ann = mockAnnotation(
+                "ListDsl",
+                listOf(
+                    "minSize" to 1,
+                    "maxSize" to 10,
+                    "uniqueElements" to true,
+                    "sorted" to true,
+                    "withVararg" to false,
+                    "withProvider" to false
+                )
+            )
+            val extractor = DefaultPropertyAnnotationExtractor()
+            val result = extractor.extract(sequenceOf(ann))
+
+            expect { true }
+            whenever {
+                result.hasListDsl &&
+                    result.listDslMinSize == 1 &&
+                    result.listDslMaxSize == 10 &&
+                    result.listDslUniqueElements &&
+                    result.listDslSorted &&
+                    result.listDslWithVararg == false &&
+                    result.listDslWithProvider == false
+            }
+        }
+    }
+
+    @Test
+    fun `extract ListDsl with negative sizes returns null sizes`() = test {
+        given {
+            val ann = mockAnnotation(
+                "ListDsl",
+                listOf(
+                    "minSize" to -1,
+                    "maxSize" to -1,
+                    "uniqueElements" to false,
+                    "sorted" to false,
+                    "withVararg" to true,
+                    "withProvider" to true
+                )
+            )
+            val extractor = DefaultPropertyAnnotationExtractor()
+            val result = extractor.extract(sequenceOf(ann))
+
+            expect { true }
+            whenever {
+                result.hasListDsl &&
+                    result.listDslMinSize == null &&
+                    result.listDslMaxSize == null &&
+                    !result.listDslUniqueElements &&
+                    !result.listDslSorted
+            }
+        }
+    }
+
+    @Test
+    fun `extract ListDsl with zero sizes returns zero`() = test {
+        given {
+            val ann = mockAnnotation(
+                "ListDsl",
+                listOf("minSize" to 0, "maxSize" to 0)
+            )
+            val extractor = DefaultPropertyAnnotationExtractor()
+            val result = extractor.extract(sequenceOf(ann))
+
+            expect { true }
+            whenever {
+                result.hasListDsl &&
+                    result.listDslMinSize == 0 &&
+                    result.listDslMaxSize == 0
+            }
+        }
+    }
+
+    @Test
+    fun `extract ListDsl with no arguments uses defaults`() = test {
+        given {
+            val ann = mockAnnotation("ListDsl", emptyList())
+            val extractor = DefaultPropertyAnnotationExtractor()
+            val result = extractor.extract(sequenceOf(ann))
+
+            expect { true }
+            whenever {
+                result.hasListDsl &&
+                    result.listDslMinSize == null &&
+                    result.listDslMaxSize == null &&
+                    !result.listDslUniqueElements &&
+                    !result.listDslSorted &&
+                    result.listDslWithVararg == true &&
+                    result.listDslWithProvider == true
+            }
+        }
+    }
+
+    @Test
+    fun `extract with no ListDsl annotation returns hasListDsl false`() = test {
+        given {
+            val extractor = DefaultPropertyAnnotationExtractor()
+            val result = extractor.extract(emptySequence())
+
+            expect { false }
+            whenever { result.hasListDsl }
+        }
+    }
+
+    @Test
+    fun `extract with no ListDsl annotation returns null listDsl fields`() = test {
+        given {
+            val extractor = DefaultPropertyAnnotationExtractor()
+            val result = extractor.extract(emptySequence())
+
+            expect { true }
+            whenever {
+                result.listDslMinSize == null &&
+                    result.listDslMaxSize == null &&
+                    result.listDslWithVararg == null &&
+                    result.listDslWithProvider == null
+            }
+        }
+    }
+
+    // --- MapDsl extraction ---
+
+    @Test
+    fun `extract MapDsl with all arguments`() = test {
+        given {
+            val ann = mockAnnotation(
+                "MapDsl",
+                listOf(
+                    "minSize" to 2,
+                    "maxSize" to 5,
+                    "withVararg" to false,
+                    "withProvider" to true
+                )
+            )
+            val extractor = DefaultPropertyAnnotationExtractor()
+            val result = extractor.extract(sequenceOf(ann))
+
+            expect { true }
+            whenever {
+                result.hasMapDsl &&
+                    result.mapDslMinSize == 2 &&
+                    result.mapDslMaxSize == 5 &&
+                    result.mapDslWithVararg == false &&
+                    result.mapDslWithProvider == true
+            }
+        }
+    }
+
+    @Test
+    fun `extract MapDsl with negative sizes returns null sizes`() = test {
+        given {
+            val ann = mockAnnotation(
+                "MapDsl",
+                listOf(
+                    "minSize" to -1,
+                    "maxSize" to -1,
+                    "withVararg" to true,
+                    "withProvider" to true
+                )
+            )
+            val extractor = DefaultPropertyAnnotationExtractor()
+            val result = extractor.extract(sequenceOf(ann))
+
+            expect { true }
+            whenever {
+                result.hasMapDsl &&
+                    result.mapDslMinSize == null &&
+                    result.mapDslMaxSize == null
+            }
+        }
+    }
+
+    @Test
+    fun `extract MapDsl with no arguments uses defaults`() = test {
+        given {
+            val ann = mockAnnotation("MapDsl", emptyList())
+            val extractor = DefaultPropertyAnnotationExtractor()
+            val result = extractor.extract(sequenceOf(ann))
+
+            expect { true }
+            whenever {
+                result.hasMapDsl &&
+                    result.mapDslMinSize == null &&
+                    result.mapDslMaxSize == null &&
+                    result.mapDslWithVararg == true &&
+                    result.mapDslWithProvider == true
+            }
+        }
+    }
+
+    @Test
+    fun `extract with no MapDsl annotation returns hasMapDsl false`() = test {
+        given {
+            val extractor = DefaultPropertyAnnotationExtractor()
+            val result = extractor.extract(emptySequence())
+
+            expect { false }
+            whenever { result.hasMapDsl }
+        }
+    }
+
+    @Test
+    fun `extract with no MapDsl annotation returns null mapDsl fields`() = test {
+        given {
+            val extractor = DefaultPropertyAnnotationExtractor()
+            val result = extractor.extract(emptySequence())
+
+            expect { true }
+            whenever {
+                result.mapDslMinSize == null &&
+                    result.mapDslMaxSize == null &&
+                    result.mapDslWithVararg == null &&
+                    result.mapDslWithProvider == null
+            }
+        }
+    }
+
+    @Test
+    fun `extract MapDsl with zero sizes returns zero`() = test {
+        given {
+            val ann = mockAnnotation(
+                "MapDsl",
+                listOf("minSize" to 0, "maxSize" to 0)
+            )
+            val extractor = DefaultPropertyAnnotationExtractor()
+            val result = extractor.extract(sequenceOf(ann))
+
+            expect { true }
+            whenever {
+                result.hasMapDsl &&
+                    result.mapDslMinSize == 0 &&
+                    result.mapDslMaxSize == 0
+            }
+        }
+    }
+
+    @Test
+    fun `extract both ListDsl and MapDsl annotations`() = test {
+        given {
+            val listAnn = mockAnnotation(
+                "ListDsl",
+                listOf("minSize" to 1, "uniqueElements" to true)
+            )
+            val mapAnn = mockAnnotation(
+                "MapDsl",
+                listOf("maxSize" to 5)
+            )
+            val extractor = DefaultPropertyAnnotationExtractor()
+            val result = extractor.extract(sequenceOf(listAnn, mapAnn))
+
+            expect { true }
+            whenever {
+                result.hasListDsl && result.hasMapDsl &&
+                    result.listDslMinSize == 1 &&
+                    result.listDslUniqueElements &&
+                    result.mapDslMaxSize == 5
+            }
+        }
+    }
 }
