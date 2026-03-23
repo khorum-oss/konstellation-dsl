@@ -143,26 +143,26 @@ interface DslPropSchema {
 
         // @ListDsl size constraints
         annotationMetadata.listDslMinSize?.let { min ->
-            statements.add(
-                "$propName?.let { org.khorum.oss.konstellation.metaDsl.DslValidation.requireMinSize(it, $min, \"$propName\") }"
-            )
+            val call = "org.khorum.oss.konstellation.metaDsl.DslValidation" +
+                ".requireMinSize(it, $min, \"$propName\")"
+            statements.add("$propName?.let { $call }")
         }
         annotationMetadata.listDslMaxSize?.let { max ->
-            statements.add(
-                "$propName?.let { org.khorum.oss.konstellation.metaDsl.DslValidation.requireMaxSize(it, $max, \"$propName\") }"
-            )
+            val call = "org.khorum.oss.konstellation.metaDsl.DslValidation" +
+                ".requireMaxSize(it, $max, \"$propName\")"
+            statements.add("$propName?.let { $call }")
         }
 
         // @MapDsl size constraints
         annotationMetadata.mapDslMinSize?.let { min ->
-            statements.add(
-                "$propName?.let { org.khorum.oss.konstellation.metaDsl.DslValidation.requireMinSize(it, $min, \"$propName\") }"
-            )
+            val call = "org.khorum.oss.konstellation.metaDsl.DslValidation" +
+                ".requireMinSize(it, $min, \"$propName\")"
+            statements.add("$propName?.let { $call }")
         }
         annotationMetadata.mapDslMaxSize?.let { max ->
-            statements.add(
-                "$propName?.let { org.khorum.oss.konstellation.metaDsl.DslValidation.requireMaxSize(it, $max, \"$propName\") }"
-            )
+            val call = "org.khorum.oss.konstellation.metaDsl.DslValidation" +
+                ".requireMaxSize(it, $max, \"$propName\")"
+            statements.add("$propName?.let { $call }")
         }
 
         // @ValidateDsl
