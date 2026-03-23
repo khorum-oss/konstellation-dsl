@@ -12,6 +12,8 @@ import org.khorum.oss.konstellation.dsl.domain.PropertyAnnotationMetadata
 /**
  * Represents a property in a generated DSL builder.
  */
+private const val DSL_VALIDATION_CLASS = "org.khorum.oss.konstellation.metaDsl.DslValidation"
+
 interface DslPropSchema {
     val propName: String
     val functionName: String get() = propName
@@ -143,24 +145,24 @@ interface DslPropSchema {
 
         // @ListDsl size constraints
         annotationMetadata.listDslMinSize?.let { min ->
-            val call = "org.khorum.oss.konstellation.metaDsl.DslValidation" +
+            val call = DSL_VALIDATION_CLASS +
                 ".requireMinSize(it, $min, \"$propName\")"
             statements.add("$propName?.let { $call }")
         }
         annotationMetadata.listDslMaxSize?.let { max ->
-            val call = "org.khorum.oss.konstellation.metaDsl.DslValidation" +
+            val call = DSL_VALIDATION_CLASS +
                 ".requireMaxSize(it, $max, \"$propName\")"
             statements.add("$propName?.let { $call }")
         }
 
         // @MapDsl size constraints
         annotationMetadata.mapDslMinSize?.let { min ->
-            val call = "org.khorum.oss.konstellation.metaDsl.DslValidation" +
+            val call = DSL_VALIDATION_CLASS +
                 ".requireMinSize(it, $min, \"$propName\")"
             statements.add("$propName?.let { $call }")
         }
         annotationMetadata.mapDslMaxSize?.let { max ->
-            val call = "org.khorum.oss.konstellation.metaDsl.DslValidation" +
+            val call = DSL_VALIDATION_CLASS +
                 ".requireMaxSize(it, $max, \"$propName\")"
             statements.add("$propName?.let { $call }")
         }

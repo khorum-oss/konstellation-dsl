@@ -683,6 +683,53 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
     }
 
     @Test
+    fun `extractDefaultPropertyValue with inferType true and non-primitive type uses string template`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            // String is not in PRIMITIVE_TYPE_NAMES, so isLiteral=false, isStringClass=true
+            val ann = mockDefaultValueAnnotation(
+                listOf(
+                    "value" to "hello",
+                    "packageName" to "",
+                    "className" to "",
+                    "inferType" to true
+                )
+            )
+            // mockPropWithAnnotations already uses kotlin.String as the resolved type
+            val prop = mockPropWithAnnotations("strField", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                val dv = service.getParamsFromDomain(domainConfig).first().defaultValue
+                dv != null && dv.rawValue == "hello"
+            }
+        }
+    }
+
+    @Test
+    fun `extractDefaultPropertyValue with className String uses string template`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockDefaultValueAnnotation(
+                listOf(
+                    "value" to "test",
+                    "packageName" to "kotlin",
+                    "className" to "String"
+                )
+            )
+            val prop = mockPropWithAnnotations("strField", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                val dv = service.getParamsFromDomain(domainConfig).first().defaultValue
+                dv != null && dv.rawValue == "test"
+            }
+        }
+    }
+
+    @Test
     fun `extractDefaultPropertyValue with non-empty packageName and className uses literal template`() = test {
         given {
             val service = DefaultPropertySchemaService()

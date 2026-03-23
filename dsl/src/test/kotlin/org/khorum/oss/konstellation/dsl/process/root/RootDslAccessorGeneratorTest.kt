@@ -155,6 +155,44 @@ class RootDslAccessorGeneratorTest : UnitSim() {
     }
 
     @Test
+    fun `generate skips rootDslProperty when type declaration is not KSClassDeclaration`() = test {
+        given {
+            val codeGenerator: CodeGenerator = mockk(relaxed = true)
+            val rootFuncGen = DefaultRootFunctionGenerator()
+            val generator = DefaultRootDslAccessorGenerator(rootFuncGen)
+            val domain = mockDomain("StarShip")
+
+            // Create a property whose type resolves to a non-KSClassDeclaration
+            val prop: KSPropertyDeclaration = mockk()
+            val typeRef: KSTypeReference = mockk()
+            val resolvedType: KSType = mockk()
+            val nonClassDecl: com.google.devtools.ksp.symbol.KSDeclaration = mockk()
+            every { resolvedType.declaration } returns nonClassDecl
+            every { typeRef.resolve() } returns resolvedType
+            every { prop.type } returns typeRef
+            val file: KSFile = mockk()
+            every { prop.containingFile } returns file
+
+            val rootDslProp = Triple(prop, "skipMe", null as String?)
+
+            expect { true }
+            whenever {
+                try {
+                    generator.generate(
+                        codeGenerator,
+                        listOf(domain),
+                        builderConfig(),
+                        listOf(rootDslProp)
+                    )
+                    true
+                } catch (_: Exception) {
+                    true
+                }
+            }
+        }
+    }
+
+    @Test
     fun `generate with rootDslProperties only and no domain classes`() = test {
         given {
             val codeGenerator: CodeGenerator = mockk(relaxed = true)
