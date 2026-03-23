@@ -71,4 +71,25 @@ class RootFunctionGeneratorTest : UnitSim() {
             whenever { generator.generate(domain, builderConfig()).body.toString().contains("builder.build()") }
         }
     }
+
+    @Test
+    fun `generate with customName uses custom name instead of class name`() = test {
+        given {
+            expect { true }
+            whenever {
+                // Call without customName first to satisfy @BeforeEach mock stubs
+                generator.generate(domain, builderConfig())
+                // Now verify customName overrides the generated function name
+                generator.generate(domain, builderConfig(), "myCustomName").name == "myCustomName"
+            }
+        }
+    }
+
+    @Test
+    fun `generate with null customName uses lowercase class name`() = test {
+        given {
+            expect { "starShip" }
+            whenever { generator.generate(domain, builderConfig(), null).name }
+        }
+    }
 }

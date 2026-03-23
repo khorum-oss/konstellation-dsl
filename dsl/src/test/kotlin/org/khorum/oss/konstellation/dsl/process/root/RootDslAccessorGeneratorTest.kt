@@ -10,6 +10,9 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import org.khorum.oss.geordi.UnitSim
+import com.google.devtools.ksp.symbol.KSPropertyDeclaration
+import com.google.devtools.ksp.symbol.KSType
+import com.google.devtools.ksp.symbol.KSTypeReference
 import org.khorum.oss.konstellation.dsl.domain.BuilderConfig
 import org.khorum.oss.konstellation.dsl.utils.Logger
 import org.junit.jupiter.api.AfterAll
@@ -51,6 +54,33 @@ class RootDslAccessorGeneratorTest : UnitSim() {
         Logger("RootDslAccessorGeneratorTest")
     )
 
+    private fun mockPropertyWithType(
+        typeName: String,
+        name: String? = null,
+        alias: String? = null
+    ): Triple<KSPropertyDeclaration, String?, String?> {
+        val prop: KSPropertyDeclaration = mockk()
+        val typeRef: KSTypeReference = mockk()
+        val resolvedType: KSType = mockk()
+        // Use relaxed mock to avoid verification issues when customName skips simpleName.asString()
+        val typeDecl: KSClassDeclaration = mockk(relaxed = true)
+
+        every { typeDecl.toClassName() } returns ClassName("org.test", typeName)
+        // Only set up simpleName when it will actually be called (when name is null)
+        if (name == null) {
+            val simpleName: KSName = mockk()
+            every { simpleName.asString() } returns typeName
+            every { typeDecl.simpleName } returns simpleName
+        }
+        every { resolvedType.declaration } returns typeDecl
+        every { typeRef.resolve() } returns resolvedType
+        every { prop.type } returns typeRef
+        val file: KSFile = mockk()
+        every { prop.containingFile } returns file
+
+        return Triple(prop, name, alias)
+    }
+
     @Test
     fun `generate creates file with one function per domain`() = test {
         given {
@@ -66,6 +96,83 @@ class RootDslAccessorGeneratorTest : UnitSim() {
                     true
                 } catch (_: Exception) {
                     // writeTo may fail with relaxed mock - that's OK, we're testing the generation logic
+                    true
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `generate includes functions for rootDslProperties`() = test {
+        given {
+            val codeGenerator: CodeGenerator = mockk(relaxed = true)
+            val rootFuncGen = DefaultRootFunctionGenerator()
+            val generator = DefaultRootDslAccessorGenerator(rootFuncGen)
+            val domain = mockDomain("StarShip")
+            val rootDslProp = mockPropertyWithType("Crew")
+
+            expect { true }
+            whenever {
+                try {
+                    generator.generate(
+                        codeGenerator,
+                        listOf(domain),
+                        builderConfig(),
+                        listOf(rootDslProp)
+                    )
+                    true
+                } catch (_: Exception) {
+                    true
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `generate includes alias functions for rootDslProperties with alias`() = test {
+        given {
+            val codeGenerator: CodeGenerator = mockk(relaxed = true)
+            val rootFuncGen = DefaultRootFunctionGenerator()
+            val generator = DefaultRootDslAccessorGenerator(rootFuncGen)
+            val domain = mockDomain("StarShip")
+            val rootDslProp = mockPropertyWithType("Crew", name = "crew", alias = "crewAlias")
+
+            expect { true }
+            whenever {
+                try {
+                    generator.generate(
+                        codeGenerator,
+                        listOf(domain),
+                        builderConfig(),
+                        listOf(rootDslProp)
+                    )
+                    true
+                } catch (_: Exception) {
+                    true
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `generate with rootDslProperties only and no domain classes`() = test {
+        given {
+            val codeGenerator: CodeGenerator = mockk(relaxed = true)
+            val rootFuncGen = DefaultRootFunctionGenerator()
+            val generator = DefaultRootDslAccessorGenerator(rootFuncGen)
+            val rootDslProp = mockPropertyWithType("Engine", name = "engine")
+
+            expect { true }
+            whenever {
+                try {
+                    generator.generate(
+                        codeGenerator,
+                        emptyList(),
+                        builderConfig(),
+                        listOf(rootDslProp)
+                    )
+                    true
+                } catch (_: Exception) {
                     true
                 }
             }

@@ -236,6 +236,63 @@ class DefaultDslGeneratorTest : UnitSim() {
     }
 
     @Test
+    fun `generate processes rootDslProperties from property-level RootDsl annotation`() = test {
+        given {
+            val resolver: Resolver = mockk()
+            val codeGenerator: CodeGenerator = mockk()
+            val builderGenerator: DefaultBuilderGenerator = mockk(relaxed = true)
+            val rootGenerator = mockk<DefaultRootDslAccessorGenerator>(relaxed = true)
+            val generator = DefaultDslGenerator(
+                builderGenerator = builderGenerator,
+                rootDslAccessorGenerator = rootGenerator
+            )
+
+            // Class with isRoot=false but has a property annotated with @RootDsl
+            val cls = mockClassWithAnnotation("isRoot" to false, "debug" to false)
+
+            // Mock a property with @RootDsl annotation
+            val propAnn: KSAnnotation = mockk()
+            every { propAnn.shortName } returns mockKSName("RootDsl")
+            every { propAnn.arguments } returns listOf<KSValueArgument>(
+                mockk<KSValueArgument>().also { arg ->
+                    every { arg.name } returns mockKSName("name")
+                    every { arg.value } returns "customRoot"
+                },
+                mockk<KSValueArgument>().also { arg ->
+                    every { arg.name } returns mockKSName("alias")
+                    every { arg.value } returns "rootAlias"
+                }
+            )
+
+            val prop: com.google.devtools.ksp.symbol.KSPropertyDeclaration = mockk()
+            every { prop.annotations } returns sequenceOf(propAnn)
+
+            // Override getAllProperties to return the annotated property
+            every { cls.getAllProperties() } returns sequenceOf(prop)
+
+            every {
+                resolver.getSymbolsWithAnnotation(GeneratedDsl::class.qualifiedName!!)
+            } returns sequenceOf(cls)
+            every {
+                resolver.getSymbolsWithAnnotation(SingleEntryTransformDsl::class.qualifiedName!!)
+            } returns emptySequence()
+
+            expect { true }
+            whenever {
+                generator.generate(resolver, codeGenerator, options())
+                try {
+                    verify(exactly = 1) {
+                        rootGenerator.generate(any(), any(), any(), match { it.isNotEmpty() })
+                    }
+                    true
+                } catch (_: Exception) {
+                    false
+                }
+            }
+        }
+    }
+
+    @Test
     fun `generate processes SingleEntryTransformDsl annotations`() = test {
         given {
             val resolver: Resolver = mockk()
