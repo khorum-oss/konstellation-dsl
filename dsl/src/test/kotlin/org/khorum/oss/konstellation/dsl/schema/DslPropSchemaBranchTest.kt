@@ -22,11 +22,11 @@ class DslPropSchemaBranchTest : UnitSim() {
         }
 
     @Test
-    fun `propertyValueReturn - non-nullable map collection returns vRequireCollectionNotEmpty`() = test {
+    fun `propertyValueReturn - non-nullable map returns vRequireMapNotEmpty`() = test {
         given {
-            // MapPropSchema uses IterableType.COLLECTION (collection of pairs)
+            // MapPropSchema uses IterableType.MAP
             val param = MapPropSchema("entries", STRING, STRING, nullableAssignment = false)
-            expect { "vRequireCollectionNotEmpty(::entries)" }
+            expect { "vRequireMapNotEmpty(::entries)" }
             whenever { param.propertyValueReturn() }
         }
     }
@@ -74,9 +74,8 @@ class DslPropSchemaBranchTest : UnitSim() {
     @Test
     fun `isCollection returns false for MapPropSchema`() = test {
         given {
-            // MapPropSchema uses IterableType.COLLECTION too (it's a collection of pairs)
-            // so isCollection should be true, isMap false for MapPropSchema
-            expect { true }
+            // MapPropSchema uses IterableType.MAP
+            expect { false }
             whenever { MapPropSchema("x", STRING, STRING).isCollection() }
         }
     }
@@ -439,9 +438,9 @@ class DslPropSchemaBranchTest : UnitSim() {
     }
 
     @Test
-    fun `isMap returns false for MapPropSchema which has COLLECTION iterableType`() = test {
+    fun `isMap returns true for MapPropSchema which has MAP iterableType`() = test {
         given {
-            expect { false }
+            expect { true }
             whenever { MapPropSchema("x", STRING, STRING).isMap() }
         }
     }

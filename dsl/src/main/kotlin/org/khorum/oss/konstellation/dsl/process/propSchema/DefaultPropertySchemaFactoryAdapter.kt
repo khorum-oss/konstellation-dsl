@@ -32,14 +32,20 @@ class DefaultPropertySchemaFactoryAdapter(
     override val actualPropTypeName: TypeName = prop.type.toTypeName()
     override val hasSingleEntryTransform: Boolean = singleEntryTransform != null
 
-    // DslProperty annotation for controlling list/map accessor generation
+    // @ListDsl/@MapDsl take precedence over @DslProperty for withVararg/withProvider
     private val dslPropertyAnnotation = AnnotationLookup.findAnnotation(prop.annotations, DslProperty::class)
 
     override val withVararg: Boolean =
-        AnnotationLookup.findArgumentValue<Boolean>(dslPropertyAnnotation, DslProperty::withVararg.name) ?: true
+        annotationMetadata.listDslWithVararg
+            ?: annotationMetadata.mapDslWithVararg
+            ?: AnnotationLookup.findArgumentValue<Boolean>(dslPropertyAnnotation, DslProperty::withVararg.name)
+            ?: true
 
     override val withProvider: Boolean =
-        AnnotationLookup.findArgumentValue<Boolean>(dslPropertyAnnotation, DslProperty::withProvider.name) ?: true
+        annotationMetadata.listDslWithProvider
+            ?: annotationMetadata.mapDslWithProvider
+            ?: AnnotationLookup.findArgumentValue<Boolean>(dslPropertyAnnotation, DslProperty::withProvider.name)
+            ?: true
 
     constructor(propertyAdapter: DefaultDomainProperty) : this(
         propertyAdapter.prop,

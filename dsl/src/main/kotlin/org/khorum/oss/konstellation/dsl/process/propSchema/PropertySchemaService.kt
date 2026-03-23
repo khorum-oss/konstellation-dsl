@@ -92,7 +92,7 @@ class DefaultPropertySchemaService(
             ?.firstOrNull { it.name?.asString() == DefaultValue::value.name }
             ?.value as? String
 
-        if (raw != null) logger.debug("Raw default value from annotation: '$raw'", tier = 2)
+        if (raw != null) logger.debug("Raw default value from annotation: ‘$raw’", tier = 2)
 
         val packageName = ann?.arguments
             ?.firstOrNull { it.name?.asString() == DefaultValue::packageName.name }
@@ -104,19 +104,42 @@ class DefaultPropertySchemaService(
             ?.value
             ?.toString()
 
+        val inferType = ann?.arguments
+            ?.firstOrNull { it.name?.asString() == "inferType" }
+            ?.value as? Boolean ?: true
+
         if (raw == null || packageName == null || className == null) return null
 
         logger.debug("Class reference: $packageName.$className", tier = 2)
 
-        // decide whether this raw should be a literal or raw code:
-        // here we assume it’s raw Kotlin snippet (e.g. "listOf(1,2,3)"); adjust to %S if literal
-        val isStringClass = className == "String" || (className.isEmpty() && packageName.isEmpty())
-        logger.debug("Is String class: $isStringClass", tier = 2)
-        val template = if (isStringClass) "%S" else "%L"
+        // When inferType is true and no explicit className/packageName, check the property type
+        val isLiteral = if (inferType && className.isEmpty() && packageName.isEmpty()) {
+            val propTypeName = type.resolve().declaration.qualifiedName?.asString()
+            propTypeName in PRIMITIVE_TYPE_NAMES
+        } else {
+            false
+        }
+
+        val isStringClass = !isLiteral && (
+            className == "String" || (className.isEmpty() && packageName.isEmpty())
+        )
+
+        logger.debug("Is String class: $isStringClass, is literal: $isLiteral", tier = 2)
+        val template = when {
+            isStringClass -> "%S"
+            else -> "%L"
+        }
         val cb = CodeBlock.of(template, raw)
         logger.debug("CodeBlock for default value: $cb", tier = 2)
 
         return DefaultPropertyValue(rawValue = raw, codeBlock = cb, packageName, className)
+    }
+
+    companion object {
+        private val PRIMITIVE_TYPE_NAMES = setOf(
+            "kotlin.Int", "kotlin.Long", "kotlin.Short", "kotlin.Byte",
+            "kotlin.Float", "kotlin.Double", "kotlin.Boolean", "kotlin.Char"
+        )
     }
 
     /**

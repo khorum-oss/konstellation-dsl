@@ -19,6 +19,7 @@ import org.khorum.oss.konstellation.dsl.domain.PropertyAnnotationMetadata
  * @param withVararg Whether to generate a vararg function (default: true).
  * @param withProvider Whether to generate a provider function (default: true).
  */
+@Suppress("LongParameterList")
 class ListPropSchema(
     override val propName: String,
     val collectionType: TypeName = STRING,

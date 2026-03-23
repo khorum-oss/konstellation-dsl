@@ -55,6 +55,8 @@ class DefaultDslGeneratorTest : UnitSim() {
             every { cls.annotations } returns sequenceOf(ann)
             every { cls.simpleName } returns mockKSName("TestDomain")
             every { cls.toClassName() } returns com.squareup.kotlinpoet.ClassName("org.test", "TestDomain")
+            // Return empty properties for @RootDsl scanning
+            every { cls.getAllProperties() } returns emptySequence()
             return cls
         }
     }
@@ -111,7 +113,7 @@ class DefaultDslGeneratorTest : UnitSim() {
             whenever {
                 generator.generate(resolver, codeGenerator, options())
                 try {
-                    verify(exactly = 0) { rootGenerator.generate(any(), any(), any()) }
+                    verify(exactly = 0) { rootGenerator.generate(any(), any(), any(), any()) }
                     true
                 } catch (_: Exception) {
                     false
@@ -150,7 +152,7 @@ class DefaultDslGeneratorTest : UnitSim() {
                 generator.generate(resolver, codeGenerator, options())
                 try {
                     verify(exactly = 1) { builderGenerator.generate(any(), eq(nonRootClass), any(), any(), eq(false)) }
-                    verify(exactly = 0) { rootGenerator.generate(any(), any(), any()) }
+                    verify(exactly = 0) { rootGenerator.generate(any(), any(), any(), any()) }
                     true
                 } catch (_: Exception) {
                     false
@@ -188,7 +190,7 @@ class DefaultDslGeneratorTest : UnitSim() {
                 generator.generate(resolver, codeGenerator, options())
                 try {
                     verify(exactly = 1) { builderGenerator.generate(any(), eq(rootClass), any(), any(), eq(true)) }
-                    verify(exactly = 1) { rootGenerator.generate(any(), match { it.contains(rootClass) }, any()) }
+                    verify(exactly = 1) { rootGenerator.generate(any(), match { it.contains(rootClass) }, any(), any()) }
                     true
                 } catch (_: Exception) {
                     false
@@ -224,7 +226,7 @@ class DefaultDslGeneratorTest : UnitSim() {
                 generator.generate(resolver, codeGenerator, options())
                 try {
                     verify(exactly = 2) { builderGenerator.generate(any(), any(), any(), any(), any()) }
-                    verify(exactly = 1) { rootGenerator.generate(any(), match { it.size == 1 }, any()) }
+                    verify(exactly = 1) { rootGenerator.generate(any(), match { it.size == 1 }, any(), any()) }
                     true
                 } catch (_: Exception) {
                     false

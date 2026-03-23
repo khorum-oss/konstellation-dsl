@@ -125,6 +125,53 @@ interface DslPropSchema {
     }
 
     /**
+     * Returns all build-time statements for this property:
+     * transformations (distinct, sorted), size validations (@ListDsl/@MapDsl),
+     * and custom validations (@ValidateDsl).
+     */
+    fun buildStatements(): List<String> {
+        val statements = mutableListOf<String>()
+
+        // @ListDsl transformations
+        if (annotationMetadata.listDslUniqueElements || annotationMetadata.listDslSorted) {
+            val transforms = buildList {
+                if (annotationMetadata.listDslUniqueElements) add("distinct()")
+                if (annotationMetadata.listDslSorted) add("sorted()")
+            }.joinToString("?.")
+            statements.add("$propName = $propName?.${transforms}")
+        }
+
+        // @ListDsl size constraints
+        annotationMetadata.listDslMinSize?.let { min ->
+            statements.add(
+                "$propName?.let { org.khorum.oss.konstellation.metaDsl.DslValidation.requireMinSize(it, $min, \"$propName\") }"
+            )
+        }
+        annotationMetadata.listDslMaxSize?.let { max ->
+            statements.add(
+                "$propName?.let { org.khorum.oss.konstellation.metaDsl.DslValidation.requireMaxSize(it, $max, \"$propName\") }"
+            )
+        }
+
+        // @MapDsl size constraints
+        annotationMetadata.mapDslMinSize?.let { min ->
+            statements.add(
+                "$propName?.let { org.khorum.oss.konstellation.metaDsl.DslValidation.requireMinSize(it, $min, \"$propName\") }"
+            )
+        }
+        annotationMetadata.mapDslMaxSize?.let { max ->
+            statements.add(
+                "$propName?.let { org.khorum.oss.konstellation.metaDsl.DslValidation.requireMaxSize(it, $max, \"$propName\") }"
+            )
+        }
+
+        // @ValidateDsl
+        validationStatement()?.let { statements.add(it) }
+
+        return statements
+    }
+
+    /**
      * Provide the code snippet used when returning this parameter's value.
      */
     fun propertyValueReturn(): String {

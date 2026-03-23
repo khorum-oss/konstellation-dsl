@@ -13,4 +13,18 @@ data class PropertyAnnotationMetadata(
     val deprecatedReplaceWith: String? = null,
     val validateExpression: String? = null,
     val validateMessage: String? = null,
+    // @ListDsl metadata
+    val listDslMinSize: Int? = null,
+    val listDslMaxSize: Int? = null,
+    val listDslUniqueElements: Boolean = false,
+    val listDslSorted: Boolean = false,
+    val hasListDsl: Boolean = false,
+    val listDslWithVararg: Boolean? = null,
+    val listDslWithProvider: Boolean? = null,
+    // @MapDsl metadata
+    val mapDslMinSize: Int? = null,
+    val mapDslMaxSize: Int? = null,
+    val hasMapDsl: Boolean = false,
+    val mapDslWithVararg: Boolean? = null,
+    val mapDslWithProvider: Boolean? = null,
 )

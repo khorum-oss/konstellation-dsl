@@ -25,6 +25,8 @@ class DefaultPropertyAnnotationExtractor : PropertyAnnotationExtractor {
         val aliases = extractAliases(annotations)
         val deprecated = extractDeprecated(annotations)
         val validate = extractValidate(annotations)
+        val listDsl = extractListDsl(annotations)
+        val mapDsl = extractMapDsl(annotations)
 
         return PropertyAnnotationMetadata(
             isTransient = transient.first,
@@ -35,6 +37,18 @@ class DefaultPropertyAnnotationExtractor : PropertyAnnotationExtractor {
             deprecatedReplaceWith = deprecated.second,
             validateExpression = validate.first,
             validateMessage = validate.second,
+            listDslMinSize = listDsl?.minSize,
+            listDslMaxSize = listDsl?.maxSize,
+            listDslUniqueElements = listDsl?.uniqueElements ?: false,
+            listDslSorted = listDsl?.sorted ?: false,
+            hasListDsl = listDsl != null,
+            listDslWithVararg = listDsl?.withVararg,
+            listDslWithProvider = listDsl?.withProvider,
+            mapDslMinSize = mapDsl?.minSize,
+            mapDslMaxSize = mapDsl?.maxSize,
+            hasMapDsl = mapDsl != null,
+            mapDslWithVararg = mapDsl?.withVararg,
+            mapDslWithProvider = mapDsl?.withProvider,
         )
     }
 
@@ -84,4 +98,54 @@ class DefaultPropertyAnnotationExtractor : PropertyAnnotationExtractor {
             ?.takeIf { it.isNotBlank() }
         return expression to message
     }
+
+    private fun extractListDsl(annotations: Sequence<KSAnnotation>): ListDslMetadata? {
+        val ann = AnnotationLookup.findAnnotationByName(annotations, "ListDsl")
+            ?: return null
+        val minSize = AnnotationLookup.findArgumentValue<Int>(ann, "minSize") ?: -1
+        val maxSize = AnnotationLookup.findArgumentValue<Int>(ann, "maxSize") ?: -1
+        val uniqueElements = AnnotationLookup.findArgumentValue<Boolean>(ann, "uniqueElements") ?: false
+        val sorted = AnnotationLookup.findArgumentValue<Boolean>(ann, "sorted") ?: false
+        val withVararg = AnnotationLookup.findArgumentValue<Boolean>(ann, "withVararg") ?: true
+        val withProvider = AnnotationLookup.findArgumentValue<Boolean>(ann, "withProvider") ?: true
+        return ListDslMetadata(
+            minSize = minSize.takeIf { it >= 0 },
+            maxSize = maxSize.takeIf { it >= 0 },
+            uniqueElements = uniqueElements,
+            sorted = sorted,
+            withVararg = withVararg,
+            withProvider = withProvider
+        )
+    }
+
+    private fun extractMapDsl(annotations: Sequence<KSAnnotation>): MapDslMetadata? {
+        val ann = AnnotationLookup.findAnnotationByName(annotations, "MapDsl")
+            ?: return null
+        val minSize = AnnotationLookup.findArgumentValue<Int>(ann, "minSize") ?: -1
+        val maxSize = AnnotationLookup.findArgumentValue<Int>(ann, "maxSize") ?: -1
+        val withVararg = AnnotationLookup.findArgumentValue<Boolean>(ann, "withVararg") ?: true
+        val withProvider = AnnotationLookup.findArgumentValue<Boolean>(ann, "withProvider") ?: true
+        return MapDslMetadata(
+            minSize = minSize.takeIf { it >= 0 },
+            maxSize = maxSize.takeIf { it >= 0 },
+            withVararg = withVararg,
+            withProvider = withProvider
+        )
+    }
+
+    private data class ListDslMetadata(
+        val minSize: Int?,
+        val maxSize: Int?,
+        val uniqueElements: Boolean,
+        val sorted: Boolean,
+        val withVararg: Boolean,
+        val withProvider: Boolean
+    )
+
+    private data class MapDslMetadata(
+        val minSize: Int?,
+        val maxSize: Int?,
+        val withVararg: Boolean,
+        val withProvider: Boolean
+    )
 }

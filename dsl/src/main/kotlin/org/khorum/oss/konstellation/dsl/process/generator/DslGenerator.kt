@@ -107,11 +107,30 @@ class DefaultDslGenerator(
             .filter { it.isRootDsl() }
             .toList()
 
-        if (rootClasses.isEmpty()) {
+        // Also find properties with @RootDsl annotation across all @GeneratedDsl classes
+        val rootDslProperties = generatedBuilderDSL.flatMap { domain ->
+            domain.getAllProperties()
+                .filter { prop ->
+                    AnnotationLookup.findAnnotationByName(prop.annotations, "RootDsl") != null
+                }
+                .map { prop ->
+                    val ann = AnnotationLookup.findAnnotationByName(prop.annotations, "RootDsl")!!
+                    val name = AnnotationLookup.findArgumentValue<String>(ann, "name")
+                        ?.takeIf { it.isNotBlank() }
+                    val alias = AnnotationLookup.findArgumentValue<String>(ann, "alias")
+                        ?.takeIf { it.isNotBlank() }
+                    Triple(prop, name, alias)
+                }
+                .toList()
+        }
+
+        if (rootClasses.isEmpty() && rootDslProperties.isEmpty()) {
             logger.debug("No root classes found.")
             return
         }
-        rootDslAccessorGenerator.generate(codeGenerator, rootClasses, builderConfig)
+        rootDslAccessorGenerator.generate(
+            codeGenerator, rootClasses, builderConfig, rootDslProperties
+        )
     }
 
     /**
