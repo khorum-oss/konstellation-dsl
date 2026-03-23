@@ -55,13 +55,15 @@ The meta-dsl library defines **annotations** (compile-time metadata) and **runti
 
 ### `@RootDsl` (property-level) — Root Entry Point
 
-Replaces `@GeneratedDsl(isRoot = true)`. Marks a property as the root DSL entry point with more control.
+> **Note:** A future meta-dsl release will change `@RootDsl` to `@Target(CLASS)` so it can be applied directly on the `@GeneratedDsl` class. The processor already supports both class-level and property-level scanning. Once the annotation target is updated, users should migrate from property-level to class-level usage.
+
+Replaces `@GeneratedDsl(isRoot = true)`. Marks a property whose type should become a root DSL entry point, with more control over function naming.
 
 **Parameters:**
-- `name: String = ""` — custom name for the root DSL function (defaults to camelCase of class name)
-- `alias: String = ""` — optional alias that creates a separate builder entry point
+- `name: String = ""` — custom name for the root DSL function (defaults to camelCase of the property's type name)
+- `alias: String = ""` — optional alias that creates a second builder entry point function
 
-**Effect:** When present, the processor should generate a top-level DSL function at the root classpath. If `name` is provided, use it instead of the class name. If `alias` is provided, generate a second function under that name.
+**Effect:** When present on a property, the processor generates a top-level DSL function for the property's type at the root classpath. If `name` is provided, use it instead of the default camelCase type name. If `alias` is provided, generate a second function under that name.
 
 ```kotlin
 @GeneratedDsl
@@ -425,7 +427,7 @@ The following old annotations have been replaced. The processor should support b
 | `@ListConfig` | `@ListDsl` | Now includes `withVararg`/`withProvider` (previously on `@DslProperty`) |
 | `@MapConfig` | `@MapDsl` | Now includes `withVararg`/`withProvider` (previously on `@DslProperty`) |
 | `@DslProperty` | `@ListDsl`/`@MapDsl`/`@PublicDslProperty`/`@PrivateDslProperty` | Functionality split across new annotations |
-| `@GeneratedDsl(isRoot=true)` | `@RootDsl` | More control via `name` and `alias` parameters |
+| `@GeneratedDsl(isRoot=true)` | `@RootDsl` | More control via `name` and `alias` parameters. Currently property-level; will move to class-level in a future meta-dsl release. |
 
 ---
 
