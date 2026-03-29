@@ -817,6 +817,255 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
         }
     }
 
+    @Test
+    fun `extractDefaultPropertyValue with inferType true and non-empty className skips literal check`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            // inferType=true but className is non-empty, so the literal check is skipped
+            val ann = mockDefaultValueAnnotation(
+                listOf(
+                    "value" to "MyEnum.A",
+                    "packageName" to "org.test",
+                    "className" to "MyEnum",
+                    "inferType" to true
+                )
+            )
+            val prop = mockPropWithAnnotations("enumField", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                val dv = service.getParamsFromDomain(domainConfig).first().defaultValue
+                dv != null && dv.rawValue == "MyEnum.A" && dv.importString() == "org.test.MyEnum"
+            }
+        }
+    }
+
+    @Test
+    fun `extractDefaultPropertyValue with inferType true and non-empty packageName only skips literal check`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            // packageName non-empty, className empty → skips literal check, isStringClass = true (empty className + empty packageName is false here since packageName is non-empty, but className is empty)
+            val ann = mockDefaultValueAnnotation(
+                listOf(
+                    "value" to "test",
+                    "packageName" to "org.test",
+                    "className" to "",
+                    "inferType" to true
+                )
+            )
+            val prop = mockPropWithAnnotations("field", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                val dv = service.getParamsFromDomain(domainConfig).first().defaultValue
+                dv != null && dv.rawValue == "test"
+            }
+        }
+    }
+
+    @Test
+    fun `extractDefaultPropertyValue without inferType argument defaults to true`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            // No inferType argument at all → defaults to true
+            val ann = mockDefaultValueAnnotation(
+                listOf(
+                    "value" to "hello",
+                    "packageName" to "",
+                    "className" to ""
+                )
+            )
+            val prop = mockPropWithAnnotations("noInferArg", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                val dv = service.getParamsFromDomain(domainConfig).first().defaultValue
+                dv != null && dv.rawValue == "hello"
+            }
+        }
+    }
+
+    @Test
+    fun `extractDefaultPropertyValue with non-String non-empty className uses literal template`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            // className is non-empty and not "String" → isStringClass = false, isLiteral = false (inferType short-circuits)
+            val ann = mockDefaultValueAnnotation(
+                listOf(
+                    "value" to "Color.RED",
+                    "packageName" to "com.example",
+                    "className" to "Color",
+                    "inferType" to false
+                )
+            )
+            val prop = mockPropWithAnnotations("colorField", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                val dv = service.getParamsFromDomain(domainConfig).first().defaultValue
+                dv != null && dv.rawValue == "Color.RED" && dv.importString() == "com.example.Color"
+            }
+        }
+    }
+
+    @Test
+    fun `extractDefaultPropertyValue with raw null but annotation present returns null`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            // Annotation exists but the "value" argument is missing
+            val ann = mockDefaultValueAnnotation(
+                listOf("packageName" to "kotlin", "className" to "String")
+            )
+            val prop = mockPropWithAnnotations("noRaw", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { null }
+            whenever { service.getParamsFromDomain(domainConfig).first().defaultValue }
+        }
+    }
+
+    @Test
+    fun `extractDefaultPropertyValue with inferType false and empty classNames uses string template`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            // inferType = false, empty packageName/className → isLiteral stays false, isStringClass = true
+            val ann = mockDefaultValueAnnotation(
+                listOf(
+                    "value" to "defaultVal",
+                    "packageName" to "",
+                    "className" to "",
+                    "inferType" to false
+                )
+            )
+            val prop = mockPropWithAnnotations("strField", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                val dv = service.getParamsFromDomain(domainConfig).first().defaultValue
+                // With inferType=false, className and packageName empty → isStringClass = true → %S template
+                dv != null && dv.rawValue == "defaultVal"
+            }
+        }
+    }
+
+    @Test
+    fun `extractDefaultPropertyValue with debug enabled and no annotation exercises null path`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            service.logger.enableDebug()
+            // No DefaultValue annotation → ann is null, all ?.chains short-circuit
+            val prop = mockPropWithAnnotations("noAnn", emptySequence())
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { null }
+            whenever {
+                try {
+                    service.getParamsFromDomain(domainConfig).first().defaultValue
+                } finally {
+                    service.logger.disableDebug()
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `extractDefaultPropertyValue with inferType true and non-primitive non-String uses string template`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            // inferType=true, empty className/packageName, but property type is NOT primitive (it's kotlin.String which is NOT in PRIMITIVE_TYPE_NAMES)
+            // → isLiteral=false, isStringClass=true (because both className and packageName are empty)
+            val ann = mockDefaultValueAnnotation(
+                listOf(
+                    "value" to "someValue",
+                    "packageName" to "",
+                    "className" to "",
+                    "inferType" to true
+                )
+            )
+            // Default mock prop type is kotlin.String which is not in PRIMITIVE_TYPE_NAMES
+            val prop = mockPropWithAnnotations("nonPrimField", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                val dv = service.getParamsFromDomain(domainConfig).first().defaultValue
+                dv != null && dv.rawValue == "someValue"
+            }
+        }
+    }
+
+    @Test
+    fun `extractDefaultPropertyValue with annotation but empty args returns null`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            // @DefaultValue annotation exists but has no arguments at all
+            val ann = mockDefaultValueAnnotation(emptyList())
+            val prop = mockPropWithAnnotations("emptyArgs", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { null }
+            whenever { service.getParamsFromDomain(domainConfig).first().defaultValue }
+        }
+    }
+
+    @Test
+    fun `extractDefaultPropertyValue with annotation value and packageName but missing className`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockDefaultValueAnnotation(
+                listOf("value" to "test", "packageName" to "com.test")
+            )
+            val prop = mockPropWithAnnotations("missingClass", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { null }
+            whenever { service.getParamsFromDomain(domainConfig).first().defaultValue }
+        }
+    }
+
+    @Test
+    fun `extractDefaultPropertyValue with annotation value and className but missing packageName`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockDefaultValueAnnotation(
+                listOf("value" to "test", "className" to "MyClass")
+            )
+            val prop = mockPropWithAnnotations("missingPkg", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { null }
+            whenever { service.getParamsFromDomain(domainConfig).first().defaultValue }
+        }
+    }
+
+    @Test
+    fun `extractDefaultPropertyValue with inferType non-boolean value defaults to true`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            // inferType argument exists but isn't a Boolean → as? Boolean returns null → ?: true
+            val ann = mockDefaultValueAnnotation(
+                listOf(
+                    "value" to "hello",
+                    "packageName" to "",
+                    "className" to "",
+                    "inferType" to "notABoolean"
+                )
+            )
+            val prop = mockPropWithAnnotations("badInfer", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                service.getParamsFromDomain(domainConfig).first().defaultValue != null
+            }
+        }
+    }
+
     // --- @DefaultState tests ---
 
     @Test

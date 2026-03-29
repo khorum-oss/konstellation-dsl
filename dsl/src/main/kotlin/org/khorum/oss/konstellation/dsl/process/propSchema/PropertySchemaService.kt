@@ -4,6 +4,7 @@ import com.google.devtools.ksp.symbol.KSAnnotation
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSType
+import com.google.devtools.ksp.symbol.KSValueArgument
 import com.squareup.kotlinpoet.CodeBlock
 import org.khorum.oss.konstellation.dsl.domain.DefaultDomainProperty
 import org.khorum.oss.konstellation.dsl.domain.DefaultPropertyValue
@@ -177,37 +178,28 @@ class DefaultPropertySchemaService(
         prop: KSPropertyDeclaration,
         annotations: List<KSAnnotation>
     ): DefaultPropertyValue? {
-        // find annotation
-        val ann: KSAnnotation? = annotations.firstOrNull {
+        val ann: KSAnnotation = annotations.firstOrNull {
             it.annotationType.resolve().declaration.qualifiedName?.asString() == DefaultValue::class.qualifiedName
-        }
+        } ?: return null
 
-        // get the String argument
-        val raw = ann?.arguments
-            ?.firstOrNull { it.name?.asString() == DefaultValue::value.name }
-            ?.value as? String
+        return buildDefaultPropertyValue(prop, ann)
+    }
 
-        if (raw != null) logger.debug("Raw default value from annotation: '$raw'", tier = 2)
-
-        val packageName = ann?.arguments
-            ?.firstOrNull { it.name?.asString() == DefaultValue::packageName.name }
-            ?.value
-            ?.toString()
-
-        val className = ann?.arguments
-            ?.firstOrNull { it.name?.asString() == DefaultValue::className.name }
-            ?.value
-            ?.toString()
-
-        val inferType = ann?.arguments
-            ?.firstOrNull { it.name?.asString() == "inferType" }
-            ?.value as? Boolean ?: true
+    private fun buildDefaultPropertyValue(
+        prop: KSPropertyDeclaration,
+        ann: KSAnnotation
+    ): DefaultPropertyValue? {
+        val args = ann.arguments
+        val raw = args.findArgValue(DefaultValue::value.name) as? String
+        val packageName = args.findArgValue(DefaultValue::packageName.name)?.toString()
+        val className = args.findArgValue(DefaultValue::className.name)?.toString()
+        val inferType = args.findArgValue("inferType") as? Boolean ?: true
 
         if (raw == null || packageName == null || className == null) return null
 
+        logger.debug("Raw default value from annotation: '$raw'", tier = 2)
         logger.debug("Class reference: $packageName.$className", tier = 2)
 
-        // When inferType is true and no explicit className/packageName, check the property type
         val isLiteral = if (inferType && className.isEmpty() && packageName.isEmpty()) {
             val propTypeName = prop.type.resolve().declaration.qualifiedName?.asString()
             propTypeName in PRIMITIVE_TYPE_NAMES
@@ -220,15 +212,15 @@ class DefaultPropertySchemaService(
         )
 
         logger.debug("Is String class: $isStringClass, is literal: $isLiteral", tier = 2)
-        val template = when {
-            isStringClass -> "%S"
-            else -> "%L"
-        }
+        val template = if (isStringClass) "%S" else "%L"
         val cb = CodeBlock.of(template, raw)
         logger.debug("CodeBlock for default value: $cb", tier = 2)
 
         return DefaultPropertyValue(rawValue = raw, codeBlock = cb, packageName, className)
     }
+
+    private fun List<KSValueArgument>.findArgValue(name: String): Any? =
+        firstOrNull { it.name?.asString() == name }?.value
 
     companion object {
         private val PRIMITIVE_TYPE_NAMES = setOf(
