@@ -105,6 +105,57 @@ val version: Version = Version.V1
 
 ---
 
+## `@DefaultState` (property-level)
+
+Specifies a predefined default state for a property using the `DefaultStateType` enum. Preferred over `@DefaultValue` for common defaults (empty string, zero, empty collections, booleans) to avoid string-escaping issues.
+
+**Mutual exclusivity:** A property must not have both `@DefaultState` and `@DefaultValue`. If both are present, `@DefaultState` takes precedence and a warning is emitted.
+
+**Parameters:**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `type` | `DefaultStateType` | *required* | The predefined default state to apply |
+
+**`DefaultStateType` values:**
+
+| Entry | Code Snippet | Category |
+|---|---|---|
+| `EMPTY_STRING` | `""` | String |
+| `ZERO_INT` | `0` | Numeric |
+| `ZERO_LONG` | `0L` | Numeric |
+| `ZERO_DOUBLE` | `0.0` | Numeric |
+| `ZERO_FLOAT` | `0.0f` | Numeric |
+| `EMPTY_LIST` | `mutableListOf()` | Collection |
+| `EMPTY_MAP` | `mutableMapOf()` | Collection |
+| `TRUE` | `true` | Boolean |
+| `FALSE` | `false` | Boolean |
+
+```kotlin
+@GeneratedDsl
+data class SensorConfig(
+    @DefaultState(DefaultStateType.EMPTY_STRING)
+    val sensorName: String,
+
+    @DefaultState(DefaultStateType.ZERO_INT)
+    val retryCount: Int,
+
+    @DefaultState(DefaultStateType.EMPTY_LIST)
+    val tags: MutableList<String>,
+
+    @DefaultState(DefaultStateType.FALSE)
+    val enabled: Boolean
+)
+
+// Generated builder properties:
+// var sensorName: String? = ""
+// var retryCount: Int? = 0
+// var tags: MutableList<String>? = mutableListOf()
+// var enabled: Boolean? = false
+```
+
+---
+
 ## `@ListDsl` (property-level)
 
 Configures list property behavior: size constraints, element transformations, and accessor generation.
@@ -368,12 +419,13 @@ fun timeout(value: Long) { this.timeout = Duration.ofMillis(value) }
 When multiple annotations affect the same property:
 
 1. `@TransientDsl` — if present, the property is skipped entirely
-2. `@ListDsl` / `@MapDsl` — controls `withVararg`/`withProvider` (takes precedence over `@DslProperty`)
-3. `@DslProperty` — fallback for `withVararg`/`withProvider`
-4. `@DeprecatedDsl` — applied to all generated accessors (including aliases)
-5. `@DslAlias` — generates additional accessor functions mirroring the primary pattern
-6. `@ValidateDsl` — emits validation in `build()`
-7. `@DslDescription` — adds KDoc
+2. `@DefaultState` / `@DefaultValue` — sets the builder property initial value (`@DefaultState` takes precedence if both present)
+3. `@ListDsl` / `@MapDsl` — controls `withVararg`/`withProvider` (takes precedence over `@DslProperty`)
+4. `@DslProperty` — fallback for `withVararg`/`withProvider`
+5. `@DeprecatedDsl` — applied to all generated accessors (including aliases)
+6. `@DslAlias` — generates additional accessor functions mirroring the primary pattern
+7. `@ValidateDsl` — emits validation in `build()`
+8. `@DslDescription` — adds KDoc
 
 ---
 

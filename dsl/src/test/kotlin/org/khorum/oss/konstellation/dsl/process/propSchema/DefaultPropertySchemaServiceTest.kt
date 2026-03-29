@@ -20,7 +20,6 @@ import org.khorum.oss.geordi.UnitSim
 import org.khorum.oss.konstellation.dsl.domain.BuilderConfig
 import org.khorum.oss.konstellation.dsl.domain.DomainConfig
 import org.khorum.oss.konstellation.dsl.utils.Logger
-import org.khorum.oss.konstellation.dsl.utils.VLoggable
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -123,6 +122,73 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
             if (className != null) args.add("className" to className)
             val ann = mockDefaultValueAnnotation(args)
             return mockPropWithAnnotations("testProp", sequenceOf(ann))
+        }
+
+        /**
+         * Mocks a @DefaultState annotation where the enum entry value is a KSClassDeclaration
+         * (the actual KSP behavior for enum annotation values).
+         */
+        private fun mockDefaultStateAnnotation(enumEntryName: String): KSAnnotation {
+            val annTypeRef: KSTypeReference = mockk()
+            val annResolvedType: KSType = mockk()
+            val annDecl: KSClassDeclaration = mockk()
+            val annQualName: KSName = mockk()
+            every { annQualName.asString() } returns "org.khorum.oss.konstellation.metaDsl.annotation.DefaultState"
+            every { annDecl.qualifiedName } returns annQualName
+            every { annResolvedType.declaration } returns annDecl
+            every { annTypeRef.resolve() } returns annResolvedType
+
+            val ann: KSAnnotation = mockk()
+            every { ann.annotationType } returns annTypeRef
+            val shortName: KSName = mockk()
+            every { shortName.asString() } returns "DefaultState"
+            every { ann.shortName } returns shortName
+
+            // KSP represents enum annotation values as KSClassDeclaration (enum entry)
+            val enumEntryDecl: KSClassDeclaration = mockk()
+            every { enumEntryDecl.simpleName } returns mockKSName(enumEntryName)
+
+            every { ann.arguments } returns listOf(
+                mockk<KSValueArgument>().also { arg ->
+                    every { arg.name } returns mockKSName("type")
+                    every { arg.value } returns enumEntryDecl
+                }
+            )
+            return ann
+        }
+
+        /**
+         * Mocks a @DefaultState annotation where the enum entry value is a KSType
+         * (alternative KSP representation for some KSP implementations).
+         */
+        private fun mockDefaultStateAnnotationWithKSType(enumEntryName: String): KSAnnotation {
+            val annTypeRef: KSTypeReference = mockk()
+            val annResolvedType: KSType = mockk()
+            val annDecl: KSClassDeclaration = mockk()
+            val annQualName: KSName = mockk()
+            every { annQualName.asString() } returns "org.khorum.oss.konstellation.metaDsl.annotation.DefaultState"
+            every { annDecl.qualifiedName } returns annQualName
+            every { annResolvedType.declaration } returns annDecl
+            every { annTypeRef.resolve() } returns annResolvedType
+
+            val ann: KSAnnotation = mockk()
+            every { ann.annotationType } returns annTypeRef
+            val shortName: KSName = mockk()
+            every { shortName.asString() } returns "DefaultState"
+            every { ann.shortName } returns shortName
+
+            val enumEntryType: KSType = mockk()
+            val enumEntryTypeDecl: KSClassDeclaration = mockk()
+            every { enumEntryTypeDecl.simpleName } returns mockKSName(enumEntryName)
+            every { enumEntryType.declaration } returns enumEntryTypeDecl
+
+            every { ann.arguments } returns listOf(
+                mockk<KSValueArgument>().also { arg ->
+                    every { arg.name } returns mockKSName("type")
+                    every { arg.value } returns enumEntryType
+                }
+            )
+            return ann
         }
 
         private fun mockAnnotation(
@@ -747,6 +813,214 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
             whenever {
                 val dv = service.getParamsFromDomain(domainConfig).first().defaultValue
                 dv != null && dv.rawValue == "MyEnum.VALUE" && dv.className == "MyEnum"
+            }
+        }
+    }
+
+    // --- @DefaultState tests ---
+
+    @Test
+    fun `getParamsFromDomain extracts DefaultState EMPTY_STRING`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockDefaultStateAnnotation("EMPTY_STRING")
+            val prop = mockPropWithAnnotations("name", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                val dv = service.getParamsFromDomain(domainConfig).first().defaultValue
+                dv != null && dv.rawValue == "\"\"" && dv.packageName == "" && dv.className == ""
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain extracts DefaultState ZERO_INT`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockDefaultStateAnnotation("ZERO_INT")
+            val prop = mockPropWithAnnotations("count", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                val dv = service.getParamsFromDomain(domainConfig).first().defaultValue
+                dv != null && dv.rawValue == "0"
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain extracts DefaultState ZERO_LONG`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockDefaultStateAnnotation("ZERO_LONG")
+            val prop = mockPropWithAnnotations("timestamp", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { "0L" }
+            whenever {
+                service.getParamsFromDomain(domainConfig).first().defaultValue?.rawValue
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain extracts DefaultState ZERO_DOUBLE`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockDefaultStateAnnotation("ZERO_DOUBLE")
+            val prop = mockPropWithAnnotations("rate", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { "0.0" }
+            whenever {
+                service.getParamsFromDomain(domainConfig).first().defaultValue?.rawValue
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain extracts DefaultState ZERO_FLOAT`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockDefaultStateAnnotation("ZERO_FLOAT")
+            val prop = mockPropWithAnnotations("weight", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { "0.0f" }
+            whenever {
+                service.getParamsFromDomain(domainConfig).first().defaultValue?.rawValue
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain extracts DefaultState EMPTY_LIST`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockDefaultStateAnnotation("EMPTY_LIST")
+            val prop = mockPropWithAnnotations("tags", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { "mutableListOf()" }
+            whenever {
+                service.getParamsFromDomain(domainConfig).first().defaultValue?.rawValue
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain extracts DefaultState EMPTY_MAP`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockDefaultStateAnnotation("EMPTY_MAP")
+            val prop = mockPropWithAnnotations("metadata", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { "mutableMapOf()" }
+            whenever {
+                service.getParamsFromDomain(domainConfig).first().defaultValue?.rawValue
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain extracts DefaultState TRUE`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockDefaultStateAnnotation("TRUE")
+            val prop = mockPropWithAnnotations("enabled", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { "true" }
+            whenever {
+                service.getParamsFromDomain(domainConfig).first().defaultValue?.rawValue
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain extracts DefaultState FALSE`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockDefaultStateAnnotation("FALSE")
+            val prop = mockPropWithAnnotations("active", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { "false" }
+            whenever {
+                service.getParamsFromDomain(domainConfig).first().defaultValue?.rawValue
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain DefaultState has no import string`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockDefaultStateAnnotation("EMPTY_STRING")
+            val prop = mockPropWithAnnotations("name", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { null }
+            whenever {
+                service.getParamsFromDomain(domainConfig).first().defaultValue?.importString()
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain DefaultState takes precedence when both DefaultState and DefaultValue present`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val stateAnn = mockDefaultStateAnnotation("EMPTY_STRING")
+            val valueAnn = mockDefaultValueAnnotation(
+                listOf("value" to "hello", "packageName" to "kotlin", "className" to "String")
+            )
+            val prop = mockPropWithAnnotations("conflict", sequenceOf(stateAnn, valueAnn))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { "\"\"" }
+            whenever {
+                service.getParamsFromDomain(domainConfig).first().defaultValue?.rawValue
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain extracts DefaultState via KSType representation`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockDefaultStateAnnotationWithKSType("ZERO_INT")
+            val prop = mockPropWithAnnotations("count", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { "0" }
+            whenever {
+                service.getParamsFromDomain(domainConfig).first().defaultValue?.rawValue
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain DefaultState with debug enabled exercises logging`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            service.logger.enableDebug()
+            val ann = mockDefaultStateAnnotation("ZERO_INT")
+            val prop = mockPropWithAnnotations("count", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                try {
+                    val dv = service.getParamsFromDomain(domainConfig).first().defaultValue
+                    dv != null && dv.rawValue == "0"
+                } finally {
+                    service.logger.disableDebug()
+                }
             }
         }
     }

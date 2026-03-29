@@ -130,6 +130,28 @@ Controls how generated accessors behave for **private** properties. Key differen
 
 ---
 
+### `@DefaultState` (property-level) — Predefined Default States
+
+**Effect:** Set the builder property's initial value using a predefined `DefaultStateType` enum constant. Preferred over `@DefaultValue` for standard defaults.
+
+**Mutual exclusivity:** If both `@DefaultState` and `@DefaultValue` are present on the same property, `@DefaultState` takes precedence and a warning is emitted during KSP processing.
+
+**Processing logic:**
+1. Extract the `DefaultStateType` enum entry from the annotation argument (KSP represents enum annotation values as `KSClassDeclaration`)
+2. Use `DefaultStateType.codeSnippet` as a literal `CodeBlock` initializer for the builder property
+3. No import is needed — all code snippets are built-in Kotlin literals
+
+```kotlin
+// Annotation:
+@DefaultState(DefaultStateType.EMPTY_STRING)
+val name: String
+
+// Generated builder property:
+var name: String? = ""
+```
+
+---
+
 ### `@DefaultValue` (property-level) — Builder Default Values
 
 **Effect:** Set the builder property's initial value instead of `null`.
