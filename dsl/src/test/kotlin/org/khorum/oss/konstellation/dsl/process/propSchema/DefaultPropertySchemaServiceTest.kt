@@ -1005,6 +1005,128 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
     }
 
     @Test
+    fun `getParamsFromDomain DefaultState returns null when type is unknown enum entry`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockDefaultStateAnnotation("NONEXISTENT_TYPE")
+            val prop = mockPropWithAnnotations("badType", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { null }
+            whenever { service.getParamsFromDomain(domainConfig).first().defaultValue }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain DefaultState resolves from string toString fallback`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            // Create a @DefaultState annotation where the type argument is a plain String (fallback branch)
+            val annTypeRef: KSTypeReference = mockk()
+            val annResolvedType: KSType = mockk()
+            val annDecl: KSClassDeclaration = mockk()
+            val annQualName: KSName = mockk()
+            every { annQualName.asString() } returns "org.khorum.oss.konstellation.metaDsl.annotation.DefaultState"
+            every { annDecl.qualifiedName } returns annQualName
+            every { annResolvedType.declaration } returns annDecl
+            every { annTypeRef.resolve() } returns annResolvedType
+
+            val ann: KSAnnotation = mockk()
+            every { ann.annotationType } returns annTypeRef
+            val shortName: KSName = mockk()
+            every { shortName.asString() } returns "DefaultState"
+            every { ann.shortName } returns shortName
+            // Return a plain String as the value (not KSClassDeclaration or KSType)
+            every { ann.arguments } returns listOf(
+                mockk<KSValueArgument>().also { arg ->
+                    every { arg.name } returns mockKSName("type")
+                    every { arg.value } returns "DefaultStateType.ZERO_INT"
+                }
+            )
+
+            val prop = mockPropWithAnnotations("stringFallback", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { "0" }
+            whenever { service.getParamsFromDomain(domainConfig).first().defaultValue?.rawValue }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain DefaultState returns null when no type argument exists`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            // Create a @DefaultState annotation with no arguments at all
+            val annTypeRef: KSTypeReference = mockk()
+            val annResolvedType: KSType = mockk()
+            val annDecl: KSClassDeclaration = mockk()
+            val annQualName: KSName = mockk()
+            every { annQualName.asString() } returns "org.khorum.oss.konstellation.metaDsl.annotation.DefaultState"
+            every { annDecl.qualifiedName } returns annQualName
+            every { annResolvedType.declaration } returns annDecl
+            every { annTypeRef.resolve() } returns annResolvedType
+
+            val ann: KSAnnotation = mockk()
+            every { ann.annotationType } returns annTypeRef
+            val shortName: KSName = mockk()
+            every { shortName.asString() } returns "DefaultState"
+            every { ann.shortName } returns shortName
+            every { ann.arguments } returns emptyList()
+
+            val prop = mockPropWithAnnotations("noArgs", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { null }
+            whenever { service.getParamsFromDomain(domainConfig).first().defaultValue }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain DefaultState returns null default when annotation has wrong argument name`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            // Annotation with a "wrongName" argument instead of "type"
+            val annTypeRef: KSTypeReference = mockk()
+            val annResolvedType: KSType = mockk()
+            val annDecl: KSClassDeclaration = mockk()
+            val annQualName: KSName = mockk()
+            every { annQualName.asString() } returns "org.khorum.oss.konstellation.metaDsl.annotation.DefaultState"
+            every { annDecl.qualifiedName } returns annQualName
+            every { annResolvedType.declaration } returns annDecl
+            every { annTypeRef.resolve() } returns annResolvedType
+
+            val ann: KSAnnotation = mockk()
+            every { ann.annotationType } returns annTypeRef
+            val shortName: KSName = mockk()
+            every { shortName.asString() } returns "DefaultState"
+            every { ann.shortName } returns shortName
+            every { ann.arguments } returns listOf(
+                mockk<KSValueArgument>(relaxed = true).also { arg ->
+                    every { arg.name } returns mockKSName("wrongName")
+                }
+            )
+
+            val prop = mockPropWithAnnotations("wrongArg", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { null }
+            whenever { service.getParamsFromDomain(domainConfig).first().defaultValue }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain returns null default when neither DefaultState nor DefaultValue present`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val prop = mockPropWithAnnotations("plain", emptySequence())
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { null }
+            whenever { service.getParamsFromDomain(domainConfig).first().defaultValue }
+        }
+    }
+
+    @Test
     fun `getParamsFromDomain DefaultState with debug enabled exercises logging`() = test {
         given {
             val service = DefaultPropertySchemaService()
