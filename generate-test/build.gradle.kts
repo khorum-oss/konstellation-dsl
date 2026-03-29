@@ -5,7 +5,7 @@ plugins {
 val metaDslVersion: String by rootProject.extra
 
 dependencies {
-    ksp(project(":dsl"))
+    ksp(project(":konstellation-dsl"))
     implementation(rootProject.libs.konstellation.meta.dsl)
     implementation(rootProject.libs.kotlin.test.junit5)
     testImplementation(project(":core-test"))
