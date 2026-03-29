@@ -70,7 +70,7 @@ tasks.register("koverMergedReport") {
     group = "verification"
     description = "Generates coverage report for the dsl module"
 
-    dependsOn(project(":dsl").tasks.named("koverXmlReport"))
+    dependsOn(project(":konstellation-dsl").tasks.named("koverXmlReport"))
 }
 
 sonar {
@@ -80,7 +80,7 @@ sonar {
         property("sonar.host.url", "https://sonarcloud.io")
         property(
             "sonar.coverage.jacoco.xmlReportPaths",
-            "${project(":dsl").layout.buildDirectory.get()}/reports/kover/report.xml"
+            "${project(":konstellation-dsl").layout.buildDirectory.get()}/reports/kover/report.xml"
         )
     }
 }
