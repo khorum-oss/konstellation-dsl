@@ -10,7 +10,7 @@ pluginManagement {
 
 includeModules(
     "core-test",
-    "dsl",
+    "konstellation-dsl",
     "generate-test"
 )
 
