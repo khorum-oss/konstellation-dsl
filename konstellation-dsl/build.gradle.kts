@@ -49,6 +49,7 @@ kover {
 detekt {
     buildUponDefaultConfig = true
     allRules = false
+    config.setFrom("$projectDir/detekt.yml")
     source.setFrom("src/main/kotlin")
 }
 

@@ -148,7 +148,8 @@ class DefaultPropertySchemaService(
         } ?: return null
 
         logger.debug(
-            "Property '$propName' has shorthand ${Colors.yellow("@Default*")} → ${stateType.name}: ${stateType.codeSnippet}",
+            "Property '$propName' has shorthand ${Colors.yellow("@Default*")} " +
+                "→ ${stateType.name}: ${stateType.codeSnippet}",
             tier = 2
         )
         return buildDefaultStateValue(stateType)
