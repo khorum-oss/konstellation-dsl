@@ -79,7 +79,7 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
             val annResolvedType: KSType = mockk()
             val annDecl: KSClassDeclaration = mockk()
             val annQualName: KSName = mockk()
-            every { annQualName.asString() } returns "org.khorum.oss.konstellation.metaDsl.annotation.DefaultValue"
+            every { annQualName.asString() } returns "org.khorum.oss.konstellation.metaDsl.annotation.defaults.DefaultValue"
             every { annDecl.qualifiedName } returns annQualName
             every { annResolvedType.declaration } returns annDecl
             every { annTypeRef.resolve() } returns annResolvedType
@@ -133,7 +133,7 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
             val annResolvedType: KSType = mockk()
             val annDecl: KSClassDeclaration = mockk()
             val annQualName: KSName = mockk()
-            every { annQualName.asString() } returns "org.khorum.oss.konstellation.metaDsl.annotation.DefaultState"
+            every { annQualName.asString() } returns "org.khorum.oss.konstellation.metaDsl.annotation.defaults.state.DefaultState"
             every { annDecl.qualifiedName } returns annQualName
             every { annResolvedType.declaration } returns annDecl
             every { annTypeRef.resolve() } returns annResolvedType
@@ -166,7 +166,7 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
             val annResolvedType: KSType = mockk()
             val annDecl: KSClassDeclaration = mockk()
             val annQualName: KSName = mockk()
-            every { annQualName.asString() } returns "org.khorum.oss.konstellation.metaDsl.annotation.DefaultState"
+            every { annQualName.asString() } returns "org.khorum.oss.konstellation.metaDsl.annotation.defaults.state.DefaultState"
             every { annDecl.qualifiedName } returns annQualName
             every { annResolvedType.declaration } returns annDecl
             every { annTypeRef.resolve() } returns annResolvedType
@@ -218,6 +218,30 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
                 every { arg.value } returns v
                 arg
             }
+            return ann
+        }
+
+        /**
+         * Mocks a shorthand default annotation (e.g. @DefaultEmptyString, @DefaultZeroInt).
+         * The qualified name follows the convention: ...defaults.state.standard.<simpleName>
+         */
+        private fun mockShorthandDefaultAnnotation(simpleName: String): KSAnnotation {
+            val ann: KSAnnotation = mockk()
+            val shortName: KSName = mockk()
+            every { shortName.asString() } returns simpleName
+            every { ann.shortName } returns shortName
+
+            val annTypeRef: KSTypeReference = mockk()
+            val annResolvedType: KSType = mockk()
+            val annDecl: KSClassDeclaration = mockk()
+            val annQualName: KSName = mockk()
+            every { annQualName.asString() } returns
+                "org.khorum.oss.konstellation.metaDsl.annotation.defaults.state.standard.$simpleName"
+            every { annDecl.qualifiedName } returns annQualName
+            every { annResolvedType.declaration } returns annDecl
+            every { annTypeRef.resolve() } returns annResolvedType
+            every { ann.annotationType } returns annTypeRef
+            every { ann.arguments } returns emptyList()
             return ann
         }
 
@@ -1252,7 +1276,7 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
             val annResolvedType: KSType = mockk()
             val annDecl: KSClassDeclaration = mockk()
             val annQualName: KSName = mockk()
-            every { annQualName.asString() } returns "org.khorum.oss.konstellation.metaDsl.annotation.DefaultState"
+            every { annQualName.asString() } returns "org.khorum.oss.konstellation.metaDsl.annotation.defaults.state.DefaultState"
             every { annDecl.qualifiedName } returns annQualName
             every { annResolvedType.declaration } returns annDecl
             every { annTypeRef.resolve() } returns annResolvedType
@@ -1287,7 +1311,7 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
             val annResolvedType: KSType = mockk()
             val annDecl: KSClassDeclaration = mockk()
             val annQualName: KSName = mockk()
-            every { annQualName.asString() } returns "org.khorum.oss.konstellation.metaDsl.annotation.DefaultState"
+            every { annQualName.asString() } returns "org.khorum.oss.konstellation.metaDsl.annotation.defaults.state.DefaultState"
             every { annDecl.qualifiedName } returns annQualName
             every { annResolvedType.declaration } returns annDecl
             every { annTypeRef.resolve() } returns annResolvedType
@@ -1316,7 +1340,7 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
             val annResolvedType: KSType = mockk()
             val annDecl: KSClassDeclaration = mockk()
             val annQualName: KSName = mockk()
-            every { annQualName.asString() } returns "org.khorum.oss.konstellation.metaDsl.annotation.DefaultState"
+            every { annQualName.asString() } returns "org.khorum.oss.konstellation.metaDsl.annotation.defaults.state.DefaultState"
             every { annDecl.qualifiedName } returns annQualName
             every { annResolvedType.declaration } returns annDecl
             every { annTypeRef.resolve() } returns annResolvedType
@@ -1345,6 +1369,71 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
         given {
             val service = DefaultPropertySchemaService()
             val prop = mockPropWithAnnotations("plain", emptySequence())
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { null }
+            whenever { service.getParamsFromDomain(domainConfig).first().defaultValue }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain resolves shorthand DefaultEmptyString annotation`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockShorthandDefaultAnnotation("DefaultEmptyString")
+            val prop = mockPropWithAnnotations("label", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { "\"\"" }
+            whenever { service.getParamsFromDomain(domainConfig).first().defaultValue?.rawValue }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain resolves shorthand DefaultZeroInt annotation`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockShorthandDefaultAnnotation("DefaultZeroInt")
+            val prop = mockPropWithAnnotations("count", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { "0" }
+            whenever { service.getParamsFromDomain(domainConfig).first().defaultValue?.rawValue }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain resolves shorthand DefaultTrue annotation`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockShorthandDefaultAnnotation("DefaultTrue")
+            val prop = mockPropWithAnnotations("enabled", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { "true" }
+            whenever { service.getParamsFromDomain(domainConfig).first().defaultValue?.rawValue }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain resolves shorthand DefaultEmptyList annotation`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockShorthandDefaultAnnotation("DefaultEmptyList")
+            val prop = mockPropWithAnnotations("items", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { "mutableListOf()" }
+            whenever { service.getParamsFromDomain(domainConfig).first().defaultValue?.rawValue }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain ignores unknown shorthand annotation`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockShorthandDefaultAnnotation("DefaultUnknown")
+            val prop = mockPropWithAnnotations("x", sequenceOf(ann))
             val domainConfig = mockDomainConfig(sequenceOf(prop))
 
             expect { null }
