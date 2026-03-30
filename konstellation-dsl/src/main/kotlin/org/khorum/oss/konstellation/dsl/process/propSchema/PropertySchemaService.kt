@@ -13,9 +13,9 @@ import org.khorum.oss.konstellation.dsl.schema.DslPropSchema
 import org.khorum.oss.konstellation.dsl.utils.AnnotationLookup
 import org.khorum.oss.konstellation.dsl.utils.Colors
 import org.khorum.oss.konstellation.dsl.utils.VLoggable
-import org.khorum.oss.konstellation.metaDsl.annotation.DefaultState
-import org.khorum.oss.konstellation.metaDsl.annotation.DefaultStateType
-import org.khorum.oss.konstellation.metaDsl.annotation.DefaultValue
+import org.khorum.oss.konstellation.metaDsl.annotation.defaults.DefaultValue
+import org.khorum.oss.konstellation.metaDsl.annotation.defaults.state.DefaultState
+import org.khorum.oss.konstellation.metaDsl.annotation.defaults.state.DefaultStateType
 
 /**
  * Service to handle the conversion of domain properties into DSL property schemas.
@@ -125,25 +125,42 @@ class DefaultPropertySchemaService(
         prop: KSPropertyDeclaration,
         annotations: List<KSAnnotation>
     ): DefaultPropertyValue? {
-        val ann: KSAnnotation = annotations.firstOrNull {
-            it.annotationType.resolve().declaration.qualifiedName?.asString() == DefaultState::class.qualifiedName
-        } ?: return null
+        val defaultStateQualName = DefaultState::class.qualifiedName
+
+        // Direct @DefaultState on the property
+        val ann: KSAnnotation? = annotations.firstOrNull {
+            it.annotationType.resolve().declaration.qualifiedName?.asString() == defaultStateQualName
+        }
 
         val propName = prop.simpleName.asString()
 
-        return resolveDefaultStateType(ann, propName)?.let { stateType ->
-            val codeSnippet = stateType.codeSnippet
-            logger.debug(
-                "Property '$propName' has ${Colors.yellow("@DefaultState")}(${stateType.name}): $codeSnippet",
-                tier = 2
-            )
-            DefaultPropertyValue(
-                rawValue = codeSnippet,
-                codeBlock = CodeBlock.of("%L", codeSnippet),
-                packageName = "",
-                className = ""
-            )
+        // If found directly, resolve via the annotation's type argument
+        if (ann != null) {
+            return resolveDefaultStateType(ann, propName)?.let(::buildDefaultStateValue)
         }
+
+        // Otherwise, check for shorthand annotations (e.g. @DefaultEmptyString → EMPTY_STRING).
+        // These are meta-annotated with @DefaultState in source, but since @DefaultState has SOURCE
+        // retention, the meta-annotation is stripped from the compiled JAR. We resolve by qualified name.
+        val stateType = annotations.firstNotNullOfOrNull { outerAnn ->
+            val qualName = outerAnn.annotationType.resolve().declaration.qualifiedName?.asString()
+            qualName?.let { SHORTHAND_ANNOTATION_MAP[it] }
+        } ?: return null
+
+        logger.debug(
+            "Property '$propName' has shorthand ${Colors.yellow("@Default*")} → ${stateType.name}: ${stateType.codeSnippet}",
+            tier = 2
+        )
+        return buildDefaultStateValue(stateType)
+    }
+
+    private fun buildDefaultStateValue(stateType: DefaultStateType): DefaultPropertyValue {
+        return DefaultPropertyValue(
+            rawValue = stateType.codeSnippet,
+            codeBlock = CodeBlock.of("%L", stateType.codeSnippet),
+            packageName = "",
+            className = ""
+        )
     }
 
     /**
@@ -223,6 +240,24 @@ class DefaultPropertySchemaService(
             "kotlin.Int", "kotlin.Long", "kotlin.Short", "kotlin.Byte",
             "kotlin.Float", "kotlin.Double", "kotlin.Boolean", "kotlin.Char"
         )
+
+        private const val SHORTHAND_PKG =
+            "org.khorum.oss.konstellation.metaDsl.annotation.defaults.state.standard"
+
+        /**
+         * Maps shorthand default-state annotation qualified names to their [DefaultStateType].
+         * These annotations are meta-annotated with @DefaultState in source, but since @DefaultState
+         * has SOURCE retention, the meta-annotation is not available in compiled bytecode.
+         */
+        private val SHORTHAND_ANNOTATION_MAP: Map<String, DefaultStateType> = DefaultStateType.entries
+            .associateBy { entry ->
+                val annotationName = entry.name
+                    .lowercase()
+                    .split("_")
+                    .joinToString("") { it.replaceFirstChar(Char::uppercaseChar) }
+                    .let { "Default$it" }
+                "$SHORTHAND_PKG.$annotationName"
+            }
     }
 
 }

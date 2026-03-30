@@ -426,7 +426,7 @@ class DefaultBuilderGeneratorTest : UnitSim() {
             val annResolvedType: KSType = mockk()
             val annDecl: KSClassDeclaration = mockk()
             val annQualName: KSName = mockk()
-            every { annQualName.asString() } returns "org.khorum.oss.konstellation.metaDsl.annotation.DefaultValue"
+            every { annQualName.asString() } returns "org.khorum.oss.konstellation.metaDsl.annotation.defaults.DefaultValue"
             every { annDecl.qualifiedName } returns annQualName
             every { annResolvedType.declaration } returns annDecl
             every { annTypeRef.resolve() } returns annResolvedType

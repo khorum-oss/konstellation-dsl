@@ -1,8 +1,8 @@
 package org.khorum.oss.konstellation.generateTest
 
-import org.khorum.oss.konstellation.metaDsl.annotation.DefaultState
-import org.khorum.oss.konstellation.metaDsl.annotation.DefaultStateType
 import org.khorum.oss.konstellation.metaDsl.annotation.GeneratedDsl
+import org.khorum.oss.konstellation.metaDsl.annotation.defaults.state.DefaultState
+import org.khorum.oss.konstellation.metaDsl.annotation.defaults.state.DefaultStateType
 
 /**
  * Domain class demonstrating @DefaultState annotation usage for all DefaultStateType values.
