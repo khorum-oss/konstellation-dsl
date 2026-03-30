@@ -121,6 +121,7 @@ class DefaultPropertySchemaService(
      * are represented as [KSClassDeclaration] (enum entry), not [KSType]. We extract the entry's
      * simple name and map it to the corresponding [DefaultStateType.codeSnippet].
      */
+    @Suppress("ReturnCount")
     private fun extractDefaultState(
         prop: KSPropertyDeclaration,
         annotations: List<KSAnnotation>
@@ -148,7 +149,8 @@ class DefaultPropertySchemaService(
         } ?: return null
 
         logger.debug(
-            "Property '$propName' has shorthand ${Colors.yellow("@Default*")} → ${stateType.name}: ${stateType.codeSnippet}",
+            "Property '$propName' has shorthand ${Colors.yellow("@Default*")} " +
+                "→ ${stateType.name}: ${stateType.codeSnippet}",
             tier = 2
         )
         return buildDefaultStateValue(stateType)
