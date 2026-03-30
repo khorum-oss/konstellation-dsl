@@ -121,7 +121,6 @@ class DefaultPropertySchemaService(
      * are represented as [KSClassDeclaration] (enum entry), not [KSType]. We extract the entry's
      * simple name and map it to the corresponding [DefaultStateType.codeSnippet].
      */
-    @Suppress("ReturnCount")
     private fun extractDefaultState(
         prop: KSPropertyDeclaration,
         annotations: List<KSAnnotation>
