@@ -15,7 +15,7 @@ import org.khorum.oss.konstellation.metaDsl.annotation.defaults.state.standard.D
  * Domain class demonstrating shorthand default state annotations.
  * These are equivalent to @DefaultState(DefaultStateType.X) but more concise.
  */
-@GeneratedDsl
+@GeneratedDsl(isRoot = true)
 data class NavigationConfig(
     @DefaultEmptyString
     val routeName: String,
@@ -39,8 +39,8 @@ data class NavigationConfig(
     val collisionAvoidance: Boolean,
 
     @DefaultEmptyList
-    val waypoints: MutableList<String>,
+    val waypoints: MutableList<String> = mutableListOf(),
 
     @DefaultEmptyMap
-    val sectorData: MutableMap<String, String>
+    val sectorData: MutableMap<String, String> = mutableMapOf()
 )

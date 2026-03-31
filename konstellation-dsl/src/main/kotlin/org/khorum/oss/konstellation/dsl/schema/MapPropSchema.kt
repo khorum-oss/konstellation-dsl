@@ -7,6 +7,7 @@ import com.squareup.kotlinpoet.TypeName
 import org.khorum.oss.konstellation.dsl.builder.kotlinPoet
 import org.khorum.oss.konstellation.dsl.builder.kpMapOf
 import org.khorum.oss.konstellation.dsl.builder.kpMutableMapOf
+import org.khorum.oss.konstellation.dsl.domain.DefaultPropertyValue
 import org.khorum.oss.konstellation.dsl.domain.PropertyAnnotationMetadata
 
 /**
@@ -27,13 +28,14 @@ class MapPropSchema(
     override val nullableAssignment: Boolean = true,
     val withVararg: Boolean = true,
     val withProvider: Boolean = true,
+    override val defaultValue: DefaultPropertyValue? = null,
     override val annotationMetadata: PropertyAnnotationMetadata = PropertyAnnotationMetadata()
 ) : DslPropSchema {
     override val propTypeName: TypeName = kpMapOf(mapKeyType, mapValueType, nullable = true)
     override val iterableType: DslPropSchema.IterableType = DslPropSchema.IterableType.MAP
 
-    override val verifyNotNull: Boolean = false
-    override val verifyNotEmpty: Boolean = true
+    override val verifyNotNull: Boolean = defaultValue != null
+    override val verifyNotEmpty: Boolean = defaultValue == null
 
     override fun toPropertySpec(): PropertySpec = kotlinPoet {
         property {
@@ -42,7 +44,7 @@ class MapPropSchema(
             name = propName
             type(propTypeName)
 
-            initNullValue()
+            defaultValue?.codeBlock?.let { initializer = it } ?: initNullValue()
         }
     }
 
