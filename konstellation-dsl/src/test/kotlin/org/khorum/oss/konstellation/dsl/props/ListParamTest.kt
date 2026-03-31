@@ -1,7 +1,9 @@
 package org.khorum.oss.konstellation.dsl.props
 
+import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.STRING
 import org.khorum.oss.geordi.UnitSim
+import org.khorum.oss.konstellation.dsl.domain.DefaultPropertyValue
 import org.khorum.oss.konstellation.dsl.schema.ListPropSchema
 import org.junit.jupiter.api.Test
 
@@ -124,7 +126,7 @@ class ListParamTest : UnitSim() {
     }
 
     @Test
-    fun `verifyNotEmpty is true`() = test {
+    fun `verifyNotEmpty is true when no defaultValue`() = test {
         given {
             val param = ListPropSchema("test", STRING)
             expect { true }
@@ -133,11 +135,43 @@ class ListParamTest : UnitSim() {
     }
 
     @Test
-    fun `verifyNotNull is false`() = test {
+    fun `verifyNotNull is false when no defaultValue`() = test {
         given {
             val param = ListPropSchema("test", STRING)
             expect { false }
             whenever { param.verifyNotNull }
+        }
+    }
+
+    @Test
+    fun `verifyNotEmpty is false when defaultValue is provided`() = test {
+        given {
+            val defaultValue = DefaultPropertyValue("emptyList()", CodeBlock.of("emptyList()"), "", "")
+            val param = ListPropSchema("test", STRING, defaultValue = defaultValue)
+            expect { false }
+            whenever { param.verifyNotEmpty }
+        }
+    }
+
+    @Test
+    fun `verifyNotNull is true when defaultValue is provided`() = test {
+        given {
+            val defaultValue = DefaultPropertyValue("emptyList()", CodeBlock.of("emptyList()"), "", "")
+            val param = ListPropSchema("test", STRING, defaultValue = defaultValue)
+            expect { true }
+            whenever { param.verifyNotNull }
+        }
+    }
+
+    @Test
+    fun `toPropertySpec uses defaultValue initializer when provided`() = test {
+        given {
+            val defaultValue = DefaultPropertyValue("emptyList()", CodeBlock.of("emptyList()"), "", "")
+            val param = ListPropSchema("test", STRING, defaultValue = defaultValue)
+
+            expect { "protected var test: kotlin.collections.List<kotlin.String>? = emptyList()" }
+
+            whenever { param.toPropertySpec().toString().trimIndent() }
         }
     }
 }
