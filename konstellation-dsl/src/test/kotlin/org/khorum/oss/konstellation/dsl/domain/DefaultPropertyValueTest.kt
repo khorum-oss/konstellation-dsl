@@ -40,6 +40,33 @@ class DefaultPropertyValueTest : UnitSim() {
                 whenever { value.importString() }
             }
         }
+
+        @Test
+        fun `returns null when packageName is empty`() = test {
+            given {
+                val value = createValue(packageName = "", className = "TestClass")
+                expect { null }
+                whenever { value.importString() }
+            }
+        }
+
+        @Test
+        fun `returns null when className is empty`() = test {
+            given {
+                val value = createValue(packageName = "org.test", className = "")
+                expect { null }
+                whenever { value.importString() }
+            }
+        }
+
+        @Test
+        fun `returns null when both packageName and className are empty`() = test {
+            given {
+                val value = createValue(packageName = "", className = "")
+                expect { null }
+                whenever { value.importString() }
+            }
+        }
     }
 
     @Nested

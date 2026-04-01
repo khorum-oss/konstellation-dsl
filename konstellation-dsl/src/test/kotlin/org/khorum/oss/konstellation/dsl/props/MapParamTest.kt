@@ -1,8 +1,10 @@
 package org.khorum.oss.konstellation.dsl.props
 
+import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.INT
 import com.squareup.kotlinpoet.STRING
 import org.khorum.oss.geordi.UnitSim
+import org.khorum.oss.konstellation.dsl.domain.DefaultPropertyValue
 import org.khorum.oss.konstellation.dsl.schema.MapPropSchema
 import org.junit.jupiter.api.Test
 
@@ -121,6 +123,58 @@ class MapParamTest : UnitSim() {
                 val accessor = param.accessors().first().toString()
                 accessor.contains("apply(block)")
             }
+        }
+    }
+
+    @Test
+    fun `verifyNotEmpty is true when no defaultValue`() = test {
+        given {
+            val param = MapPropSchema("test", STRING, INT)
+            expect { true }
+            whenever { param.verifyNotEmpty }
+        }
+    }
+
+    @Test
+    fun `verifyNotNull is false when no defaultValue`() = test {
+        given {
+            val param = MapPropSchema("test", STRING, INT)
+            expect { false }
+            whenever { param.verifyNotNull }
+        }
+    }
+
+    @Test
+    fun `verifyNotEmpty is false when defaultValue is provided`() = test {
+        given {
+            val defaultValue = DefaultPropertyValue("emptyMap()", CodeBlock.of("emptyMap()"), "", "")
+            val param = MapPropSchema("test", STRING, INT, defaultValue = defaultValue)
+            expect { false }
+            whenever { param.verifyNotEmpty }
+        }
+    }
+
+    @Test
+    fun `verifyNotNull is true when defaultValue is provided`() = test {
+        given {
+            val defaultValue = DefaultPropertyValue("emptyMap()", CodeBlock.of("emptyMap()"), "", "")
+            val param = MapPropSchema("test", STRING, INT, defaultValue = defaultValue)
+            expect { true }
+            whenever { param.verifyNotNull }
+        }
+    }
+
+    @Test
+    fun `toPropertySpec uses defaultValue initializer when provided`() = test {
+        given {
+            val defaultValue = DefaultPropertyValue("emptyMap()", CodeBlock.of("emptyMap()"), "", "")
+            val param = MapPropSchema("test", STRING, INT, defaultValue = defaultValue)
+
+            expect {
+                "protected var test: kotlin.collections.Map<kotlin.String, kotlin.Int>? = emptyMap()"
+            }
+
+            whenever { param.toPropertySpec().toString().trimIndent() }
         }
     }
 }

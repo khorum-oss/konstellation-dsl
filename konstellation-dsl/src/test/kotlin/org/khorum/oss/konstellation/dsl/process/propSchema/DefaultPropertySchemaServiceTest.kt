@@ -1461,4 +1461,142 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
             }
         }
     }
+
+    @Test
+    fun `getParamsFromDomain TransientDsl with null reason exercises null branch`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            service.logger.enableDebug()
+            // TransientDsl without reason argument
+            val ann = mockAnnotation("TransientDsl")
+            val prop = mockPropWithAnnotations("transientNoReason", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { 0 }
+            whenever {
+                try {
+                    service.getParamsFromDomain(domainConfig).size
+                } finally {
+                    service.logger.disableDebug()
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain shorthand DefaultFalse annotation`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockShorthandDefaultAnnotation("DefaultFalse")
+            val prop = mockPropWithAnnotations("disabled", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { "false" }
+            whenever { service.getParamsFromDomain(domainConfig).first().defaultValue?.rawValue }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain shorthand DefaultEmptyMap annotation`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockShorthandDefaultAnnotation("DefaultEmptyMap")
+            val prop = mockPropWithAnnotations("data", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { "mutableMapOf()" }
+            whenever { service.getParamsFromDomain(domainConfig).first().defaultValue?.rawValue }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain shorthand DefaultZeroLong annotation`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockShorthandDefaultAnnotation("DefaultZeroLong")
+            val prop = mockPropWithAnnotations("ts", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { "0L" }
+            whenever { service.getParamsFromDomain(domainConfig).first().defaultValue?.rawValue }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain shorthand DefaultZeroDouble annotation`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockShorthandDefaultAnnotation("DefaultZeroDouble")
+            val prop = mockPropWithAnnotations("rate", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { "0.0" }
+            whenever { service.getParamsFromDomain(domainConfig).first().defaultValue?.rawValue }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain shorthand DefaultZeroFloat annotation`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockShorthandDefaultAnnotation("DefaultZeroFloat")
+            val prop = mockPropWithAnnotations("weight", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { "0.0f" }
+            whenever { service.getParamsFromDomain(domainConfig).first().defaultValue?.rawValue }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain shorthand with debug enabled exercises logging`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            service.logger.enableDebug()
+            val ann = mockShorthandDefaultAnnotation("DefaultEmptyString")
+            val prop = mockPropWithAnnotations("label", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { "\"\"" }
+            whenever {
+                try {
+                    service.getParamsFromDomain(domainConfig).first().defaultValue?.rawValue
+                } finally {
+                    service.logger.disableDebug()
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain DefaultState with missing type argument returns null`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val annTypeRef: KSTypeReference = mockk()
+            val annResolvedType: KSType = mockk()
+            val annDecl: KSClassDeclaration = mockk()
+            val annQualName: KSName = mockk()
+            every { annQualName.asString() } returns "org.khorum.oss.konstellation.metaDsl.annotation.defaults.state.DefaultState"
+            every { annDecl.qualifiedName } returns annQualName
+            every { annResolvedType.declaration } returns annDecl
+            every { annTypeRef.resolve() } returns annResolvedType
+
+            val ann: KSAnnotation = mockk()
+            every { ann.annotationType } returns annTypeRef
+            val shortName: KSName = mockk()
+            every { shortName.asString() } returns "DefaultState"
+            every { ann.shortName } returns shortName
+            // Argument with "type" name but null value - uses relaxed mock that returns default
+            val typeArg: KSValueArgument = mockk(relaxed = true)
+            every { typeArg.name } returns mockKSName("type")
+            every { typeArg.value } returns "INVALID..NO..MATCH"
+            every { ann.arguments } returns listOf(typeArg)
+
+            val prop = mockPropWithAnnotations("badEntry", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { null }
+            whenever { service.getParamsFromDomain(domainConfig).first().defaultValue }
+        }
+    }
 }

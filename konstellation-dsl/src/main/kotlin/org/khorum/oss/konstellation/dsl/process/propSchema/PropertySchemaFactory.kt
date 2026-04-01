@@ -278,6 +278,7 @@ abstract class AbstractPropertySchemaFactory<T : PropertySchemaFactoryAdapter, P
                 nullableAssignment = adapter.hasNullableAssignment,
                 withVararg = adapter.withVararg,
                 withProvider = adapter.withProvider,
+                defaultValue = adapter.defaultValue,
                 annotationMetadata = adapter.annotationMetadata
             )
         }
@@ -308,6 +309,7 @@ abstract class AbstractPropertySchemaFactory<T : PropertySchemaFactoryAdapter, P
                 nullableAssignment = adapter.hasNullableAssignment,
                 withVararg = adapter.withVararg,
                 withProvider = adapter.withProvider,
+                defaultValue = adapter.defaultValue,
                 annotationMetadata = adapter.annotationMetadata
             )
         }

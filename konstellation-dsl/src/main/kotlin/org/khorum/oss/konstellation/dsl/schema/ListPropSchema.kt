@@ -7,6 +7,7 @@ import com.squareup.kotlinpoet.TypeName
 import org.khorum.oss.konstellation.dsl.builder.kotlinPoet
 import org.khorum.oss.konstellation.dsl.builder.kpListOf
 import org.khorum.oss.konstellation.dsl.builder.kpMutableListOf
+import org.khorum.oss.konstellation.dsl.domain.DefaultPropertyValue
 import org.khorum.oss.konstellation.dsl.domain.PropertyAnnotationMetadata
 
 /**
@@ -26,13 +27,14 @@ class ListPropSchema(
     override val nullableAssignment: Boolean = true,
     val withVararg: Boolean = true,
     val withProvider: Boolean = true,
+    override val defaultValue: DefaultPropertyValue? = null,
     override val annotationMetadata: PropertyAnnotationMetadata = PropertyAnnotationMetadata()
 ) : DslPropSchema {
     override val propTypeName: TypeName = kpListOf(collectionType, nullable = true)
     override val iterableType: DslPropSchema.IterableType = DslPropSchema.IterableType.COLLECTION
 
-    override val verifyNotNull: Boolean = false
-    override val verifyNotEmpty: Boolean = true
+    override val verifyNotNull: Boolean = defaultValue != null
+    override val verifyNotEmpty: Boolean = defaultValue == null
 
     override fun toPropertySpec(): PropertySpec = kotlinPoet {
         property {
@@ -41,7 +43,11 @@ class ListPropSchema(
             name = propName
             type(propTypeName)
 
-            initNullValue()
+            if (defaultValue != null) {
+                initializer = defaultValue.codeBlock
+            } else {
+                initNullValue()
+            }
         }
     }
 

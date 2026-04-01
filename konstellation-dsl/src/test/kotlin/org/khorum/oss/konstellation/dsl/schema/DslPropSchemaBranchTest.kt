@@ -1031,4 +1031,123 @@ class DslPropSchemaBranchTest : UnitSim() {
             whenever { param.buildStatements().size }
         }
     }
+
+    // --- ListPropSchema and MapPropSchema default value branches ---
+
+    @Test
+    fun `ListPropSchema with defaultValue uses initializer in toPropertySpec`() = test {
+        given {
+            val dv = org.khorum.oss.konstellation.dsl.domain.DefaultPropertyValue(
+                rawValue = "mutableListOf()",
+                codeBlock = com.squareup.kotlinpoet.CodeBlock.of("%L", "mutableListOf()"),
+                packageName = "",
+                className = ""
+            )
+            val param = ListPropSchema("items", STRING, defaultValue = dv)
+            expect { true }
+            whenever { param.toPropertySpec().toString().contains("mutableListOf()") }
+        }
+    }
+
+    @Test
+    fun `MapPropSchema with defaultValue uses initializer in toPropertySpec`() = test {
+        given {
+            val dv = org.khorum.oss.konstellation.dsl.domain.DefaultPropertyValue(
+                rawValue = "mutableMapOf()",
+                codeBlock = com.squareup.kotlinpoet.CodeBlock.of("%L", "mutableMapOf()"),
+                packageName = "",
+                className = ""
+            )
+            val param = MapPropSchema("entries", STRING, STRING, defaultValue = dv)
+            expect { true }
+            whenever { param.toPropertySpec().toString().contains("mutableMapOf()") }
+        }
+    }
+
+    @Test
+    fun `ListPropSchema verifyNotNull is true when defaultValue present`() = test {
+        given {
+            val dv = org.khorum.oss.konstellation.dsl.domain.DefaultPropertyValue(
+                rawValue = "mutableListOf()",
+                codeBlock = com.squareup.kotlinpoet.CodeBlock.of("%L", "mutableListOf()"),
+                packageName = "",
+                className = ""
+            )
+            val param = ListPropSchema("items", STRING, defaultValue = dv)
+            expect { true to false }
+            whenever { param.verifyNotNull to param.verifyNotEmpty }
+        }
+    }
+
+    @Test
+    fun `MapPropSchema verifyNotNull is true when defaultValue present`() = test {
+        given {
+            val dv = org.khorum.oss.konstellation.dsl.domain.DefaultPropertyValue(
+                rawValue = "mutableMapOf()",
+                codeBlock = com.squareup.kotlinpoet.CodeBlock.of("%L", "mutableMapOf()"),
+                packageName = "",
+                className = ""
+            )
+            val param = MapPropSchema("entries", STRING, STRING, defaultValue = dv)
+            expect { true to false }
+            whenever { param.verifyNotNull to param.verifyNotEmpty }
+        }
+    }
+
+    // --- GroupPropSchema kdoc branch ---
+
+    @Test
+    fun `GroupPropSchema accessors with kdoc includes kdoc`() = test {
+        given {
+            val meta = PropertyAnnotationMetadata(description = "Ship items")
+            val param = GroupPropSchema(
+                "items",
+                com.squareup.kotlinpoet.ClassName("test", "Item"),
+                com.squareup.kotlinpoet.ClassName("test", "Item"),
+                annotationMetadata = meta
+            )
+            expect { true }
+            whenever { param.accessors().isNotEmpty() }
+        }
+    }
+
+    // --- MapGroupPropSchema kdoc branch ---
+
+    @Test
+    fun `MapGroupPropSchema accessors with kdoc includes kdoc`() = test {
+        given {
+            val meta = PropertyAnnotationMetadata(description = "Ship entries")
+            val param = MapGroupPropSchema(
+                "entries",
+                STRING,
+                com.squareup.kotlinpoet.ClassName("test", "Ship"),
+                annotationMetadata = meta
+            )
+            expect { true }
+            whenever { param.accessors().isNotEmpty() }
+        }
+    }
+
+    // --- ListPropSchema with kdoc ---
+
+    @Test
+    fun `ListPropSchema accessors with description generates function`() = test {
+        given {
+            val meta = PropertyAnnotationMetadata(description = "item list")
+            val param = ListPropSchema("items", STRING, annotationMetadata = meta)
+            expect { 2 }
+            whenever { param.accessors().size }
+        }
+    }
+
+    // --- MapPropSchema with both vararg and provider (default) ---
+
+    @Test
+    fun `MapPropSchema with both true generates two functions`() = test {
+        given {
+            val param = MapPropSchema("entries", STRING, STRING, withVararg = true, withProvider = true)
+            expect { 2 }
+            whenever { param.accessors().size }
+        }
+    }
 }
