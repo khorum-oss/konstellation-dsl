@@ -9,9 +9,11 @@ import com.google.devtools.ksp.symbol.KSTypeArgument
 import com.google.devtools.ksp.symbol.KSTypeReference
 import com.google.devtools.ksp.symbol.KSValueArgument
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.STRING
 import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.toTypeName
+import org.khorum.oss.konstellation.dsl.domain.DefaultPropertyValue
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -504,4 +506,178 @@ class DefaultPropertySchemaFactoryAdapterTest : UnitSim() {
             whenever { adapter.withVararg }
         }
     }
+
+    // --- defaultValue passed through ---
+
+    @Test
+    fun `defaultValue is passed through constructor`() = test {
+        given {
+            val dv = DefaultPropertyValue(
+                rawValue = "42",
+                codeBlock = com.squareup.kotlinpoet.CodeBlock.of("%L", 42),
+                packageName = "kotlin",
+                className = "Int"
+            )
+            val adapter = DefaultPropertySchemaFactoryAdapter(mockProp(), null, defaultValue = dv)
+            expect { "42" }
+            whenever { adapter.defaultValue?.rawValue }
+        }
+    }
+
+    // --- withProvider from mapDslWithProvider ---
+
+    @Test
+    fun `withProvider from mapDslWithProvider overrides default when no listDsl present`() = test {
+        given {
+            val meta = org.khorum.oss.konstellation.dsl.domain.PropertyAnnotationMetadata(
+                mapDslWithProvider = false
+            )
+            val adapter = DefaultPropertySchemaFactoryAdapter(
+                mockProp(), null,
+                annotationMetadata = meta
+            )
+            expect { false }
+            whenever { adapter.withProvider }
+        }
+    }
+
+    @Test
+    fun `withProvider listDsl takes precedence over mapDsl provider`() = test {
+        given {
+            val meta = org.khorum.oss.konstellation.dsl.domain.PropertyAnnotationMetadata(
+                listDslWithProvider = true,
+                mapDslWithProvider = false
+            )
+            val adapter = DefaultPropertySchemaFactoryAdapter(
+                mockProp(), null,
+                annotationMetadata = meta
+            )
+            expect { true }
+            whenever { adapter.withProvider }
+        }
+    }
+
+    // --- Type argument resolution branches ---
+
+    @Test
+    fun `isGroupElement and groupElementClassName with type arguments`() = test {
+        given {
+            expect { true }
+            whenever {
+                val innerDecl: KSClassDeclaration = mockk()
+                val genDslAnn: KSAnnotation = mockk()
+                io.mockk.every { genDslAnn.shortName } returns mockKSName("GeneratedDsl")
+                io.mockk.every { genDslAnn.arguments } returns listOf(mockValueArg("withListGroup", true))
+                io.mockk.every { innerDecl.annotations } returns sequenceOf(genDslAnn)
+                io.mockk.every { innerDecl.toClassName() } returns ClassName("org.test", "Ship")
+
+                val innerResolvedType: KSType = mockk()
+                io.mockk.every { innerResolvedType.declaration } returns innerDecl
+                val innerTypeRef: KSTypeReference = mockk()
+                io.mockk.every { innerTypeRef.resolve() } returns innerResolvedType
+
+                val typeArg: KSTypeArgument = mockk(relaxed = true)
+                io.mockk.every { typeArg.type } returns innerTypeRef
+
+                val typeRef: KSTypeReference = mockk()
+                io.mockk.every { typeRef.toTypeName() } returns STRING
+                val resolvedType: KSType = mockk()
+                io.mockk.every { resolvedType.isMarkedNullable } returns false
+                val propDecl: KSClassDeclaration = mockk()
+                io.mockk.every { propDecl.toClassName() } returns ClassName("kotlin.collections", "List")
+                io.mockk.every { propDecl.annotations } returns emptySequence()
+                io.mockk.every { propDecl.qualifiedName } returns mockKSName("kotlin.collections.List")
+                io.mockk.every { resolvedType.declaration } returns propDecl
+                io.mockk.every { resolvedType.arguments } returns listOf(typeArg)
+                io.mockk.every { typeRef.resolve() } returns resolvedType
+
+                val prop: KSPropertyDeclaration = mockk()
+                io.mockk.every { prop.simpleName } returns mockKSName("ships")
+                io.mockk.every { prop.type } returns typeRef
+                io.mockk.every { prop.annotations } returns emptySequence()
+
+                val adapter = DefaultPropertySchemaFactoryAdapter(prop, null)
+                adapter.isGroupElement && adapter.groupElementClassName == ClassName("org.test", "Ship")
+            }
+        }
+    }
+
+    @Test
+    fun `mapDetails with map type arguments and valid mapGroupType`() = test {
+        given {
+            expect { true }
+            whenever {
+                val keyDecl: KSClassDeclaration = mockk()
+                io.mockk.every { keyDecl.annotations } returns emptySequence()
+                io.mockk.every { keyDecl.toClassName() } returns ClassName("kotlin", "String")
+                val keyResolvedType: KSType = mockk()
+                io.mockk.every { keyResolvedType.declaration } returns keyDecl
+                val keyTypeRef: KSTypeReference = mockk()
+                io.mockk.every { keyTypeRef.resolve() } returns keyResolvedType
+                val keyArg: KSTypeArgument = mockk(relaxed = true)
+                io.mockk.every { keyArg.type } returns keyTypeRef
+
+                val valueDecl: KSClassDeclaration = mockk()
+                val genDslAnn: KSAnnotation = mockk()
+                io.mockk.every { genDslAnn.shortName } returns mockKSName("GeneratedDsl")
+                io.mockk.every { genDslAnn.arguments } returns listOf(mockValueArg("withMapGroup", "SINGLE"))
+                io.mockk.every { valueDecl.annotations } returns sequenceOf(genDslAnn)
+                io.mockk.every { valueDecl.toClassName() } returns ClassName("org.test", "Ship")
+                val valueResolvedType: KSType = mockk()
+                io.mockk.every { valueResolvedType.declaration } returns valueDecl
+                val valueTypeRef: KSTypeReference = mockk()
+                io.mockk.every { valueTypeRef.resolve() } returns valueResolvedType
+                val valueArg: KSTypeArgument = mockk(relaxed = true)
+                io.mockk.every { valueArg.type } returns valueTypeRef
+
+                val mapTypeName = com.squareup.kotlinpoet.MAP.parameterizedBy(STRING, ClassName("org.test", "Ship"))
+                val typeRef: KSTypeReference = mockk()
+                io.mockk.every { typeRef.toTypeName() } returns mapTypeName
+                val resolvedType: KSType = mockk()
+                io.mockk.every { resolvedType.isMarkedNullable } returns false
+                val propDecl: KSClassDeclaration = mockk()
+                io.mockk.every { propDecl.toClassName() } returns ClassName("kotlin.collections", "Map")
+                io.mockk.every { propDecl.annotations } returns emptySequence()
+                io.mockk.every { propDecl.qualifiedName } returns mockKSName("kotlin.collections.Map")
+                io.mockk.every { resolvedType.declaration } returns propDecl
+                io.mockk.every { resolvedType.arguments } returns listOf(keyArg, valueArg)
+                io.mockk.every { typeRef.resolve() } returns resolvedType
+
+                val prop: KSPropertyDeclaration = mockk()
+                io.mockk.every { prop.simpleName } returns mockKSName("shipMap")
+                io.mockk.every { prop.type } returns typeRef
+                io.mockk.every { prop.annotations } returns emptySequence()
+
+                val adapter = DefaultPropertySchemaFactoryAdapter(prop, null)
+                val details = adapter.mapDetails()
+                details != null && adapter.mapDetails() === details
+            }
+        }
+    }
+
+    @Test
+    fun `classDeclarationInternal null when declaration is not KSClassDeclaration`() = test {
+        given {
+            expect { null }
+            whenever {
+                val typeRef: KSTypeReference = mockk()
+                io.mockk.every { typeRef.toTypeName() } returns STRING
+                val resolvedType: KSType = mockk()
+                io.mockk.every { resolvedType.isMarkedNullable } returns false
+                val nonClassDecl: com.google.devtools.ksp.symbol.KSDeclaration = mockk()
+                io.mockk.every { resolvedType.declaration } returns nonClassDecl
+                io.mockk.every { resolvedType.arguments } returns emptyList()
+                io.mockk.every { typeRef.resolve() } returns resolvedType
+
+                val prop: KSPropertyDeclaration = mockk()
+                io.mockk.every { prop.simpleName } returns mockKSName("raw")
+                io.mockk.every { prop.type } returns typeRef
+                io.mockk.every { prop.annotations } returns emptySequence()
+
+                val adapter = DefaultPropertySchemaFactoryAdapter(prop, null)
+                adapter.propertyNonNullableClassName
+            }
+        }
+    }
+
 }
