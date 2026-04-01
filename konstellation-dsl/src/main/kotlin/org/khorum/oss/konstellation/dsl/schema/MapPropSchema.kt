@@ -44,7 +44,11 @@ class MapPropSchema(
             name = propName
             type(propTypeName)
 
-            defaultValue?.codeBlock?.let { initializer = it } ?: initNullValue()
+            if (defaultValue != null) {
+                initializer = defaultValue.codeBlock
+            } else {
+                initNullValue()
+            }
         }
     }
 
