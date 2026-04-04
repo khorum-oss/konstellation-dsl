@@ -17,6 +17,9 @@ data class BooleanAccessorConfig(
     /** Negation template enum name: "SELF", "NONE", "NOT", "IS_NOT", "WITHOUT", "DOES_NOT", "LACKS", etc. */
     val negationTemplate: String? = null
 ) {
+    /** Returns true if a template value is a named pattern (not null, SELF, or NONE). */
+    private fun String?.isNamedTemplate(): Boolean = this != null && this != "SELF" && this != "NONE"
+
     companion object {
         /** Template patterns for ValidFunctionTemplate enum entries. */
         val VALID_TEMPLATE_PATTERNS: Map<String, String> = mapOf(
@@ -140,20 +143,21 @@ data class BooleanAccessorConfig(
      */
     private fun resolveSemanticName(propName: String): String {
         // If negation is SELF, the property name IS the negation form — extract {x} from the paired valid template
-        if (negationTemplate == "SELF" && validTemplate != null && validTemplate != "SELF" && validTemplate != "NONE") {
-            return extractSemanticName(propName, pairedTemplate(validTemplate, isNegation = false), isNegation = true)
+        if (negationTemplate == "SELF" && validTemplate.isNamedTemplate()) {
+            return extractSemanticName(propName, pairedTemplate(validTemplate!!, isNegation = false), isNegation = true)
         }
         // If valid is SELF, the property name IS the valid form — extract {x} from the paired negation template
-        if (validTemplate == "SELF" && negationTemplate != null && negationTemplate != "SELF" && negationTemplate != "NONE") {
-            return extractSemanticName(propName, pairedTemplate(negationTemplate, isNegation = true), isNegation = false)
+        if (validTemplate == "SELF" && negationTemplate.isNamedTemplate()) {
+            val paired = pairedTemplate(negationTemplate!!, isNegation = true)
+            return extractSemanticName(propName, paired, isNegation = false)
         }
         // Try to extract from valid template
-        if (validTemplate != null && validTemplate != "SELF" && validTemplate != "NONE") {
-            return extractSemanticName(propName, validTemplate, isNegation = false)
+        if (validTemplate.isNamedTemplate()) {
+            return extractSemanticName(propName, validTemplate!!, isNegation = false)
         }
         // Try to extract from negation template
-        if (negationTemplate != null && negationTemplate != "SELF" && negationTemplate != "NONE") {
-            return extractSemanticName(propName, negationTemplate, isNegation = true)
+        if (negationTemplate.isNamedTemplate()) {
+            return extractSemanticName(propName, negationTemplate!!, isNegation = true)
         }
         return propName.replaceFirstChar { it.uppercaseChar() }
     }

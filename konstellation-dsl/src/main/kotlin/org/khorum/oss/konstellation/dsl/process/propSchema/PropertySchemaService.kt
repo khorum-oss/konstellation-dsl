@@ -195,12 +195,15 @@ class DefaultPropertySchemaService(
         val negationTemplate = resolveEnumEntryName(negationTemplateRaw)
 
         // If no template parameters are present, no config needed (backward compatibility)
-        if (validFunctionName == null && validTemplate == null && negationFunctionName == null && negationTemplate == null) {
+        val allParams = listOf(validFunctionName, validTemplate, negationFunctionName, negationTemplate)
+        if (allParams.all { it == null }) {
             return null
         }
 
         // If negation is SELF, blank out valid unless explicitly set
-        val effectiveValidTemplate = if (negationTemplate == "SELF" && validTemplate == null && validFunctionName == null) {
+        val negationIsSelf = negationTemplate == "SELF"
+        val noValidOverride = validTemplate == null && validFunctionName == null
+        val effectiveValidTemplate = if (negationIsSelf && noValidOverride) {
             "NONE"
         } else {
             validTemplate
