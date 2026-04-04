@@ -19,7 +19,7 @@ interface RootDslAccessorGenerator : DslFileWriter, VLoggable {
 
     fun generate(
         codeGenerator: CodeGenerator,
-        domains: List<KSClassDeclaration>,
+        domains: List<Triple<KSClassDeclaration, String?, String?>>,
         builderConfig: BuilderConfig,
         rootDslProperties: List<Triple<KSPropertyDeclaration, String?, String?>> = emptyList()
     )
@@ -33,12 +33,19 @@ class DefaultRootDslAccessorGenerator(
 ) : RootDslAccessorGenerator {
     override fun generate(
         codeGenerator: CodeGenerator,
-        domains: List<KSClassDeclaration>,
+        domains: List<Triple<KSClassDeclaration, String?, String?>>,
         builderConfig: BuilderConfig,
         rootDslProperties: List<Triple<KSPropertyDeclaration, String?, String?>>
     ) {
         val functions = domains
-            .map { rootFunctionGenerator.generate(it, builderConfig) }
+            .flatMap { (domain, name, alias) ->
+                buildList {
+                    add(rootFunctionGenerator.generate(domain, builderConfig, name))
+                    if (alias != null) {
+                        add(rootFunctionGenerator.generate(domain, builderConfig, alias))
+                    }
+                }
+            }
             .toMutableList()
 
         // Generate functions for @RootDsl properties
@@ -62,7 +69,7 @@ class DefaultRootDslAccessorGenerator(
         }
 
         val containingFiles = (
-            domains.mapNotNull { it.containingFile } +
+            domains.mapNotNull { it.first.containingFile } +
             rootDslProperties.mapNotNull { it.first.containingFile }
         ).toTypedArray()
 

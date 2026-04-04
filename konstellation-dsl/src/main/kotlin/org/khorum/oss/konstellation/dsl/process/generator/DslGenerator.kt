@@ -105,6 +105,14 @@ class DefaultDslGenerator(
 
         val rootClasses = generatedBuilderDSL
             .filter { it.isRootDsl() }
+            .map { domain ->
+                val rootDslAnn = AnnotationLookup.findAnnotationByName(domain.annotations, "RootDsl")
+                val name = rootDslAnn?.let { AnnotationLookup.findArgumentValue<String>(it, "name") }
+                    ?.takeIf { it.isNotBlank() }
+                val alias = rootDslAnn?.let { AnnotationLookup.findArgumentValue<String>(it, "alias") }
+                    ?.takeIf { it.isNotBlank() }
+                Triple(domain, name, alias)
+            }
             .toList()
 
         // Also find properties with @RootDsl annotation across all @GeneratedDsl classes
@@ -185,6 +193,7 @@ class DefaultDslGenerator(
         AnnotationLookup.anyAnnotationArgMatches(
             annotations, GeneratedDsl::class, GeneratedDsl::isRoot.name
         ) { it == true }
+        || AnnotationLookup.hasAnnotationByName(annotations, "RootDsl")
 
     private fun KSClassDeclaration.isDebug(): Boolean =
         AnnotationLookup.anyAnnotationArgMatches(

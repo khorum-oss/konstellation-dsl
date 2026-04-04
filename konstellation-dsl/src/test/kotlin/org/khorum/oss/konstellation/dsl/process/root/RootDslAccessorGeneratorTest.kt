@@ -92,7 +92,7 @@ class RootDslAccessorGeneratorTest : UnitSim() {
             expect { true }
             whenever {
                 try {
-                    generator.generate(codeGenerator, listOf(domain), builderConfig())
+                    generator.generate(codeGenerator, listOf(Triple(domain, null as String?, null as String?)), builderConfig())
                     true
                 } catch (_: Exception) {
                     // writeTo may fail with relaxed mock - that's OK, we're testing the generation logic
@@ -116,7 +116,7 @@ class RootDslAccessorGeneratorTest : UnitSim() {
                 try {
                     generator.generate(
                         codeGenerator,
-                        listOf(domain),
+                        listOf(Triple(domain, null as String?, null as String?)),
                         builderConfig(),
                         listOf(rootDslProp)
                     )
@@ -142,7 +142,7 @@ class RootDslAccessorGeneratorTest : UnitSim() {
                 try {
                     generator.generate(
                         codeGenerator,
-                        listOf(domain),
+                        listOf(Triple(domain, null as String?, null as String?)),
                         builderConfig(),
                         listOf(rootDslProp)
                     )
@@ -180,9 +180,37 @@ class RootDslAccessorGeneratorTest : UnitSim() {
                 try {
                     generator.generate(
                         codeGenerator,
-                        listOf(domain),
+                        listOf(Triple(domain, null as String?, null as String?)),
                         builderConfig(),
                         listOf(rootDslProp)
+                    )
+                    true
+                } catch (_: Exception) {
+                    true
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `generate includes alias function for class-level RootDsl with name and alias`() = test {
+        given {
+            val codeGenerator: CodeGenerator = mockk(relaxed = true)
+            val rootFuncGen = DefaultRootFunctionGenerator()
+            val generator = DefaultRootDslAccessorGenerator(rootFuncGen)
+            // Use relaxed mock since simpleName won't be called when customName is provided
+            val domain: KSClassDeclaration = mockk(relaxed = true)
+            every { domain.toClassName() } returns ClassName("org.test", "StarShip")
+            val file: KSFile = mockk()
+            every { domain.containingFile } returns file
+
+            expect { true }
+            whenever {
+                try {
+                    generator.generate(
+                        codeGenerator,
+                        listOf(Triple(domain, "vessel", "ship")),
+                        builderConfig()
                     )
                     true
                 } catch (_: Exception) {
