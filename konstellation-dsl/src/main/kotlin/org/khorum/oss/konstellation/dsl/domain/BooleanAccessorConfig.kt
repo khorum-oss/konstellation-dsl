@@ -144,21 +144,21 @@ data class BooleanAccessorConfig(
     private fun resolveSemanticName(propName: String): String {
         // If negation is SELF, the property name IS the negation form — extract {x} from the paired valid template
         if (negationTemplate == "SELF" && validTemplate.isNamedTemplate()) {
-            return extractSemanticName(propName, pairedTemplate(validTemplate!!, isNegation = false), isNegation = true)
+            val paired = pairedTemplate(validTemplate!!, isNegation = false)
+            return extractSemanticName(propName, paired, isNegation = true)
         }
         // If valid is SELF, the property name IS the valid form — extract {x} from the paired negation template
         if (validTemplate == "SELF" && negationTemplate.isNamedTemplate()) {
             val paired = pairedTemplate(negationTemplate!!, isNegation = true)
             return extractSemanticName(propName, paired, isNegation = false)
         }
-        // Try to extract from valid template
-        if (validTemplate.isNamedTemplate()) {
-            return extractSemanticName(propName, validTemplate!!, isNegation = false)
+        // Try valid template, then negation template, then fallback to capitalize
+        return when {
+            validTemplate.isNamedTemplate() ->
+                extractSemanticName(propName, validTemplate!!, isNegation = false)
+            negationTemplate.isNamedTemplate() ->
+                extractSemanticName(propName, negationTemplate!!, isNegation = true)
+            else -> propName.replaceFirstChar { it.uppercaseChar() }
         }
-        // Try to extract from negation template
-        if (negationTemplate.isNamedTemplate()) {
-            return extractSemanticName(propName, negationTemplate!!, isNegation = true)
-        }
-        return propName.replaceFirstChar { it.uppercaseChar() }
     }
 }

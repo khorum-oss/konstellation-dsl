@@ -299,6 +299,23 @@ class BooleanAccessorConfigTest : UnitSim() {
         }
 
         @Test
+        fun `prefix matches but remainder empty returns capitalized name`() = test {
+            given {
+                // "is" with IS template → prefix="is", remainder="" → fallback
+                expect { "Is" }
+                whenever { BooleanAccessorConfig.extractSemanticName("is", "IS", isNegation = false) }
+            }
+        }
+
+        @Test
+        fun `negation prefix matches but remainder empty`() = test {
+            given {
+                expect { "Not" }
+                whenever { BooleanAccessorConfig.extractSemanticName("not", "NOT", isNegation = true) }
+            }
+        }
+
+        @Test
         fun `unknown template name falls back to capitalize`() = test {
             given {
                 expect { "Prop" }
