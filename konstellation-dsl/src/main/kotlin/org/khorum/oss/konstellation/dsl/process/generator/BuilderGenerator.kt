@@ -22,8 +22,7 @@ import org.khorum.oss.konstellation.dsl.schema.DslPropSchema
 import org.khorum.oss.konstellation.dsl.utils.AnnotationLookup
 import org.khorum.oss.konstellation.dsl.utils.VLoggable
 import org.khorum.oss.konstellation.dsl.utils.isGroupDsl
-import org.khorum.oss.konstellation.dsl.utils.mapGroupType
-import org.khorum.oss.konstellation.metaDsl.annotation.MapGroupType
+import org.khorum.oss.konstellation.dsl.utils.hasMapDsl
 
 /** * Interface for generating DSL builders.
  * This interface defines the contract for generating DSL builder files based on domain configurations.
@@ -98,7 +97,7 @@ class DefaultBuilderGenerator(
         val typeAliasNames: MutableList<String> = mutableListOf(builderScopeTypeAlias)
 
         val hasGroup = domainConfig.domain.isGroupDsl()
-        val hasMapGroup = domainConfig.domain.mapGroupType() in MapGroupType.ACTIVE_TYPES
+        val hasMapGroup = domainConfig.domain.hasMapDsl()
 
         if (hasGroup) typeAliasNames.add("${builderScopeTypeAlias}.Group")
         if (hasMapGroup) typeAliasNames.add("${builderScopeTypeAlias}.MapGroup")
@@ -264,11 +263,8 @@ class DefaultBuilderGenerator(
 
         return kotlinPoet {
             file {
-                addImportIf(hasRequireNotNull, META_DSL_PACKAGE, "vRequireNotNull")
-                addImportIf(
-                    hasCollectionRequireNotEmpty, META_DSL_PACKAGE, "vRequireCollectionNotEmpty"
-                )
-                addImportIf(hasMapRequireNotEmpty, META_DSL_PACKAGE, "vRequireMapNotEmpty")
+                val needsDslValidation = hasRequireNotNull || hasCollectionRequireNotEmpty || hasMapRequireNotEmpty
+                addImportIf(needsDslValidation, META_DSL_PACKAGE, "DslValidation")
                 defaultValueImports.forEach {
                     addImport(it)
                 }

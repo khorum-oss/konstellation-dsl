@@ -12,9 +12,7 @@ import org.khorum.oss.konstellation.dsl.domain.DefaultDomainProperty
 import org.khorum.oss.konstellation.dsl.domain.DefaultPropertyValue
 import org.khorum.oss.konstellation.dsl.domain.PropertyAnnotationMetadata
 import org.khorum.oss.konstellation.dsl.utils.AnnotationLookup
-import org.khorum.oss.konstellation.metaDsl.annotation.DslProperty
 import org.khorum.oss.konstellation.metaDsl.annotation.GeneratedDsl
-import org.khorum.oss.konstellation.metaDsl.annotation.MapGroupType
 import org.khorum.oss.konstellation.metaDsl.annotation.SingleEntryTransformDsl
 
 /**
@@ -23,7 +21,7 @@ import org.khorum.oss.konstellation.metaDsl.annotation.SingleEntryTransformDsl
  * through the [PropertySchemaFactoryAdapter] interface.
  */
 class DefaultPropertySchemaFactoryAdapter(
-    prop: KSPropertyDeclaration,
+    private val prop: KSPropertyDeclaration,
     singleEntryTransform: KSClassDeclaration?,
     override val defaultValue: DefaultPropertyValue? = null,
     override val annotationMetadata: PropertyAnnotationMetadata = PropertyAnnotationMetadata(),
@@ -32,19 +30,21 @@ class DefaultPropertySchemaFactoryAdapter(
     override val actualPropTypeName: TypeName = prop.type.toTypeName()
     override val hasSingleEntryTransform: Boolean = singleEntryTransform != null
 
-    // @ListDsl/@MapDsl take precedence over @DslProperty for withVararg/withProvider
-    private val dslPropertyAnnotation = AnnotationLookup.findAnnotation(prop.annotations, DslProperty::class)
+    // @ListDsl/@MapDsl take precedence over @PublicDslProperty/@PrivateDslProperty for withVararg/withProvider
+    private val dslPropertyAnnotation =
+        AnnotationLookup.findAnnotationByName(prop.annotations, "PublicDslProperty")
+            ?: AnnotationLookup.findAnnotationByName(prop.annotations, "PrivateDslProperty")
 
     override val withVararg: Boolean =
         annotationMetadata.listDslWithVararg
             ?: annotationMetadata.mapDslWithVararg
-            ?: AnnotationLookup.findArgumentValue<Boolean>(dslPropertyAnnotation, DslProperty::withVararg.name)
+            ?: AnnotationLookup.findArgumentValue<Boolean>(dslPropertyAnnotation, "withVararg")
             ?: true
 
     override val withProvider: Boolean =
         annotationMetadata.listDslWithProvider
             ?: annotationMetadata.mapDslWithProvider
-            ?: AnnotationLookup.findArgumentValue<Boolean>(dslPropertyAnnotation, DslProperty::withProvider.name)
+            ?: AnnotationLookup.findArgumentValue<Boolean>(dslPropertyAnnotation, "withProvider")
             ?: true
 
     constructor(propertyAdapter: DefaultDomainProperty) : this(
@@ -100,22 +100,16 @@ class DefaultPropertySchemaFactoryAdapter(
         ?.declaration as? KSClassDeclaration
 
     override val isGroupElement: Boolean = collectionFirstElementClassDecl?.let {
-        AnnotationLookup.anyAnnotationArgMatches(
-            it.annotations, GeneratedDsl::class, GeneratedDsl::withListGroup.name
-        ) { value -> value == true }
+        AnnotationLookup.hasAnnotationByName(it.annotations, "GeneratedDsl")
     } ?: false
 
     override val groupElementClassName: ClassName? = collectionFirstElementClassDecl?.toClassName()
     override val groupElementClassDeclaration: KSClassDeclaration? = collectionFirstElementClassDecl
 
-    private val dslAnnotation = collectionSecondElementClassDecl?.let {
-        AnnotationLookup.findAnnotation(it.annotations, GeneratedDsl::class)
-    }
-
-    private fun mapGroupType(): MapGroupType? {
-        val mapGroupValue = AnnotationLookup.findArgument(dslAnnotation, GeneratedDsl::withMapGroup.name)
-            ?: return null
-        return MapGroupType.valueOf(mapGroupValue.value.toString().uppercase())
+    private fun hasMapGroup(): Boolean {
+        return collectionSecondElementClassDecl?.let {
+            AnnotationLookup.hasAnnotationByName(it.annotations, "GeneratedDsl")
+        } ?: false
     }
 
     override var mapDetails: PropertySchemaFactoryAdapter.MapDetails? = null
@@ -128,12 +122,9 @@ class DefaultPropertySchemaFactoryAdapter(
     }
 
     private fun createMapDetails(): MapDetails? {
-        val groupType = mapGroupType()
-        val typeRefs = getTypeArguments()
+        val typeRefs = getTypeArguments() ?: return null
 
-        if (groupType == null || typeRefs == null) return null
-
-        return MapDetails(groupType, typeRefs.first(), typeRefs.last())
+        return MapDetails(hasMapGroup(), typeRefs.first(), typeRefs.last())
     }
 
     private fun getTypeArguments(): List<TypeName>? {
@@ -145,12 +136,12 @@ class DefaultPropertySchemaFactoryAdapter(
     /**
      * Details about a map property in the DSL.
      *
-     * @property mapGroupType The type of the map group.
+     * @property hasMapGroup Whether the map value type has a @MapDsl annotation.
      * @property keyType The type of the keys in the map.
      * @property valueType The type of the values in the map.
      */
     class MapDetails(
-        override val mapGroupType: MapGroupType = MapGroupType.SINGLE,
+        override val hasMapGroup: Boolean = false,
         override val keyType: TypeName,
         override val valueType: TypeName
     ) : PropertySchemaFactoryAdapter.MapDetails

@@ -31,7 +31,6 @@ import org.khorum.oss.konstellation.dsl.schema.MapGroupPropSchema
 import org.khorum.oss.konstellation.dsl.schema.MapPropSchema
 import org.khorum.oss.konstellation.dsl.schema.SingleTransformPropSchema
 import org.khorum.oss.konstellation.metaDsl.annotation.GeneratedDsl
-import org.khorum.oss.konstellation.metaDsl.annotation.MapGroupType
 import org.junit.jupiter.api.Test
 
 class ParameterFactoryTest : UnitSim() {
@@ -261,10 +260,10 @@ class ParameterFactoryTest : UnitSim() {
     // --- Additional branch coverage tests ---
 
     @Test
-    fun `determineParam will create a MapGroupPropSchema when map group type is SINGLE`() = test {
+    fun `determineParam will create a MapGroupPropSchema when hasMapGroup is true`() = test {
         given {
             val mapDetails = object : PropertySchemaFactoryAdapter.MapDetails {
-                override val mapGroupType = MapGroupType.SINGLE
+                override val hasMapGroup = true
                 override val keyType: TypeName = STRING
                 override val valueType: TypeName = ClassName("test", "Ship")
             }
@@ -283,32 +282,10 @@ class ParameterFactoryTest : UnitSim() {
     }
 
     @Test
-    fun `determineParam will create a MapGroupPropSchema when map group type is LIST`() = test {
+    fun `determineParam will create a MapPropSchema when hasMapGroup is false`() = test {
         given {
             val mapDetails = object : PropertySchemaFactoryAdapter.MapDetails {
-                override val mapGroupType = MapGroupType.LIST
-                override val keyType: TypeName = STRING
-                override val valueType: TypeName = ClassName("test", "Ship")
-            }
-            val adapter = TestParamFactoryAdaptor(
-                actualPropTypeName = MAP.parameterizedBy(STRING, ClassName("test", "Ship")),
-                mapDetailsValue = mapDetails
-            )
-
-            expect { true }
-
-            whenever {
-                val propSchema = parameterFactory.determinePropertySchema(adapter)
-                propSchema is MapGroupPropSchema
-            }
-        }
-    }
-
-    @Test
-    fun `determineParam will create a MapPropSchema when map group type is NONE`() = test {
-        given {
-            val mapDetails = object : PropertySchemaFactoryAdapter.MapDetails {
-                override val mapGroupType = MapGroupType.NONE
+                override val hasMapGroup = false
                 override val keyType: TypeName = STRING
                 override val valueType: TypeName = STRING
             }
@@ -460,10 +437,10 @@ class ParameterFactoryTest : UnitSim() {
     }
 
     @Test
-    fun `determineParam will create MapPropSchema when mapDetails returns null mapGroupType NONE`() = test {
+    fun `determineParam will create MapPropSchema when mapDetails has hasMapGroup false`() = test {
         given {
             val mapDetails = object : PropertySchemaFactoryAdapter.MapDetails {
-                override val mapGroupType = MapGroupType.NONE
+                override val hasMapGroup = false
                 override val keyType: TypeName = STRING
                 override val valueType: TypeName = INT
             }
@@ -682,8 +659,6 @@ class ParameterFactoryTest : UnitSim() {
         val functionContent: String
     )
 
-    @GeneratedDsl(
-        withListGroup = true
-    )
+    @GeneratedDsl
     class Example
 }

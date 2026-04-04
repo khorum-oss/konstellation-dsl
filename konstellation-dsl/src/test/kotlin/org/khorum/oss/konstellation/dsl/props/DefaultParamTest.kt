@@ -78,11 +78,11 @@ class DefaultParamTest : UnitSim() {
     }
 
     @Test
-    fun `propertyValueReturn - non-nullable with verifyNotNull returns vRequireNotNull`() = test {
+    fun `propertyValueReturn - non-nullable with verifyNotNull returns requireNotNull`() = test {
         given {
             val param = DefaultPropSchema("test", propTypeName, nullableAssignment = false)
 
-            expect { "vRequireNotNull(::test)" }
+            expect { "DslValidation.requireNotNull(::test)" }
 
             whenever { param.propertyValueReturn() }
         }

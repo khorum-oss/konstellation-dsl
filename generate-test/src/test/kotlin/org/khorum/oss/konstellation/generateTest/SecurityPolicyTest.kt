@@ -108,9 +108,9 @@ class SecurityPolicyTest : UnitSim() {
     }
 
     @Test
-    fun `@DefaultFalse auditLogging no-arg call keeps false`() = test {
+    fun `@DefaultFalse auditLogging no-arg call sets true (SELF template default)`() = test {
         given {
-            expect { false }
+            expect { true }
             whenever { securityPolicy { auditLogging() }.auditLogging }
         }
     }

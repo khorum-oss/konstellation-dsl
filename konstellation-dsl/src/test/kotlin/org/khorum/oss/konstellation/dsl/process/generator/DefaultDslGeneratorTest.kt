@@ -59,6 +59,16 @@ class DefaultDslGeneratorTest : UnitSim() {
             every { cls.getAllProperties() } returns emptySequence()
             return cls
         }
+
+        fun mockRootClassWithAnnotation(vararg args: Pair<String, Any>): KSClassDeclaration {
+            val cls = mockClassWithAnnotation(*args)
+            val rootAnn: KSAnnotation = mockk()
+            every { rootAnn.shortName } returns mockKSName("RootDsl")
+            every { rootAnn.arguments } returns emptyList()
+            val existingAnns = cls.annotations.toList()
+            every { cls.annotations } returns (existingAnns + rootAnn).asSequence()
+            return cls
+        }
     }
 
     private fun options() = mapOf<String, String?>(
@@ -134,9 +144,8 @@ class DefaultDslGeneratorTest : UnitSim() {
                 rootDslAccessorGenerator = rootGenerator
             )
 
-            // Class with isRoot=false, debug=false
+            // Class with debug=false (non-root, no @RootDsl)
             val nonRootClass = mockClassWithAnnotation(
-                "isRoot" to false,
                 "debug" to false
             )
 
@@ -173,8 +182,7 @@ class DefaultDslGeneratorTest : UnitSim() {
                 rootDslAccessorGenerator = rootGenerator
             )
 
-            val rootClass = mockClassWithAnnotation(
-                "isRoot" to true,
+            val rootClass = mockRootClassWithAnnotation(
                 "debug" to true
             )
 
@@ -211,8 +219,8 @@ class DefaultDslGeneratorTest : UnitSim() {
                 rootDslAccessorGenerator = rootGenerator
             )
 
-            val rootClass = mockClassWithAnnotation("isRoot" to true, "debug" to false)
-            val nonRootClass = mockClassWithAnnotation("isRoot" to false, "debug" to false)
+            val rootClass = mockRootClassWithAnnotation("debug" to false)
+            val nonRootClass = mockClassWithAnnotation("debug" to false)
 
             every {
                 resolver.getSymbolsWithAnnotation(GeneratedDsl::class.qualifiedName!!)
@@ -247,8 +255,8 @@ class DefaultDslGeneratorTest : UnitSim() {
                 rootDslAccessorGenerator = rootGenerator
             )
 
-            // Class with isRoot=false but has a property annotated with @RootDsl
-            val cls = mockClassWithAnnotation("isRoot" to false, "debug" to false)
+            // Class without @RootDsl but has a property annotated with @RootDsl
+            val cls = mockClassWithAnnotation("debug" to false)
 
             // Mock a property with @RootDsl annotation
             val propAnn: KSAnnotation = mockk()
@@ -304,7 +312,7 @@ class DefaultDslGeneratorTest : UnitSim() {
                 rootDslAccessorGenerator = rootGenerator
             )
 
-            val cls = mockClassWithAnnotation("isRoot" to false, "debug" to false)
+            val cls = mockClassWithAnnotation("debug" to false)
 
             // Mock a property with @RootDsl annotation with blank name and alias
             val propAnn: KSAnnotation = mockk()
@@ -362,16 +370,12 @@ class DefaultDslGeneratorTest : UnitSim() {
                 rootDslAccessorGenerator = rootGenerator
             )
 
-            // Class with @GeneratedDsl(isRoot=false) but also @RootDsl(name="vessel", alias="ship")
+            // Class with @GeneratedDsl and @RootDsl(name="vessel", alias="ship")
             val cls: KSClassDeclaration = mockk(relaxed = true)
 
             val generatedDslAnn: KSAnnotation = mockk()
             every { generatedDslAnn.shortName } returns mockKSName("GeneratedDsl")
             every { generatedDslAnn.arguments } returns listOf<KSValueArgument>(
-                mockk<KSValueArgument>().also { arg ->
-                    every { arg.name } returns mockKSName("isRoot")
-                    every { arg.value } returns false
-                },
                 mockk<KSValueArgument>().also { arg ->
                     every { arg.name } returns mockKSName("debug")
                     every { arg.value } returns false
@@ -432,15 +436,11 @@ class DefaultDslGeneratorTest : UnitSim() {
                 rootDslAccessorGenerator = rootGenerator
             )
 
-            // Class with @GeneratedDsl(isRoot=false) and @RootDsl with empty arguments
+            // Class with @GeneratedDsl and @RootDsl with empty arguments
             val cls: KSClassDeclaration = mockk(relaxed = true)
             val generatedDslAnn: KSAnnotation = mockk()
             every { generatedDslAnn.shortName } returns mockKSName("GeneratedDsl")
             every { generatedDslAnn.arguments } returns listOf<KSValueArgument>(
-                mockk<KSValueArgument>().also { arg ->
-                    every { arg.name } returns mockKSName("isRoot")
-                    every { arg.value } returns false
-                },
                 mockk<KSValueArgument>().also { arg ->
                     every { arg.name } returns mockKSName("debug")
                     every { arg.value } returns false
@@ -495,10 +495,6 @@ class DefaultDslGeneratorTest : UnitSim() {
             val generatedDslAnn: KSAnnotation = mockk()
             every { generatedDslAnn.shortName } returns mockKSName("GeneratedDsl")
             every { generatedDslAnn.arguments } returns listOf<KSValueArgument>(
-                mockk<KSValueArgument>().also { arg ->
-                    every { arg.name } returns mockKSName("isRoot")
-                    every { arg.value } returns false
-                },
                 mockk<KSValueArgument>().also { arg ->
                     every { arg.name } returns mockKSName("debug")
                     every { arg.value } returns false
@@ -558,7 +554,7 @@ class DefaultDslGeneratorTest : UnitSim() {
                 rootDslAccessorGenerator = rootGenerator
             )
 
-            val rootClass = mockClassWithAnnotation("isRoot" to true, "debug" to false)
+            val rootClass = mockRootClassWithAnnotation("debug" to false)
 
             // Add a property WITHOUT @RootDsl (just a normal annotation)
             val normalProp: com.google.devtools.ksp.symbol.KSPropertyDeclaration = mockk()
@@ -601,7 +597,7 @@ class DefaultDslGeneratorTest : UnitSim() {
                 rootDslAccessorGenerator = rootGenerator
             )
 
-            val nonRootClass = mockClassWithAnnotation("isRoot" to false, "debug" to false)
+            val nonRootClass = mockClassWithAnnotation("debug" to false)
 
             // SingleEntryTransform class
             val transformClass: KSClassDeclaration = mockk()

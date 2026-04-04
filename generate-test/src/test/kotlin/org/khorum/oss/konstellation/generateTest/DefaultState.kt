@@ -41,9 +41,9 @@ class DefaultState : UnitSim() {
     }
 
     @Test
-    fun `@DefaultFalse accessor with no arg defaults to false`() = test {
+    fun `@DefaultFalse accessor with no arg sets to true (SELF template default)`() = test {
         given {
-            expect { false }
+            expect { true }
             whenever {
                 navigationConfig {
                     autopilotEnabled()

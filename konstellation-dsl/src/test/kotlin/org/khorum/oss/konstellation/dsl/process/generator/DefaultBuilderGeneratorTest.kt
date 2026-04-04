@@ -374,7 +374,7 @@ class DefaultBuilderGeneratorTest : UnitSim() {
             val codeGen = mockCodeGenerator()
             val config = mockBuilderConfig()
 
-            // Non-nullable STRING property - will need vRequireNotNull import
+            // Non-nullable STRING property - will need requireNotNull import
             val typeRef: KSTypeReference = mockk()
             every { typeRef.toTypeName() } returns STRING // non-nullable
             val resolvedType: KSType = mockk()
@@ -908,7 +908,7 @@ class DefaultBuilderGeneratorTest : UnitSim() {
             whenever {
                 generator.generate(codeGen, domain, config, emptyMap(), false)
                 val output = outputStream.toString()
-                output.contains("vRequireCollectionNotEmpty")
+                output.contains("DslValidation.requireCollectionNotEmpty")
             }
         }
     }

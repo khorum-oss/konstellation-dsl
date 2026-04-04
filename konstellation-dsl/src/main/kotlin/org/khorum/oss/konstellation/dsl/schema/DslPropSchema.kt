@@ -180,9 +180,9 @@ interface DslPropSchema {
         if (nullableAssignment) return propName
 
         return when {
-            verifyNotNull -> "vRequireNotNull(::$propName)"
-            verifyNotEmpty && isCollection() -> "vRequireCollectionNotEmpty(::$propName)"
-            verifyNotEmpty && isMap() -> "vRequireMapNotEmpty(::$propName)"
+            verifyNotNull -> "DslValidation.requireNotNull(::$propName)"
+            verifyNotEmpty && isCollection() -> "DslValidation.requireCollectionNotEmpty(::$propName)"
+            verifyNotEmpty && isMap() -> "DslValidation.requireMapNotEmpty(::$propName)"
             else -> propName
         }
     }

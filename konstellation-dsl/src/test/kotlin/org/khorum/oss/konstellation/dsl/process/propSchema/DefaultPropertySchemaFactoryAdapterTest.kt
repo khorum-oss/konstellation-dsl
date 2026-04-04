@@ -88,7 +88,7 @@ class DefaultPropertySchemaFactoryAdapterTest : UnitSim() {
 
         fun mockDslPropertyAnnotation(withVararg: Boolean?, withProvider: Boolean?): KSAnnotation {
             val ann: KSAnnotation = mockk()
-            val shortName = mockKSName("DslProperty")
+            val shortName = mockKSName("PublicDslProperty")
             every { ann.shortName } returns shortName
 
             val args = mutableListOf<KSValueArgument>()
@@ -567,7 +567,7 @@ class DefaultPropertySchemaFactoryAdapterTest : UnitSim() {
                 val innerDecl: KSClassDeclaration = mockk()
                 val genDslAnn: KSAnnotation = mockk()
                 io.mockk.every { genDslAnn.shortName } returns mockKSName("GeneratedDsl")
-                io.mockk.every { genDslAnn.arguments } returns listOf(mockValueArg("withListGroup", true))
+                io.mockk.every { genDslAnn.arguments } returns emptyList()
                 io.mockk.every { innerDecl.annotations } returns sequenceOf(genDslAnn)
                 io.mockk.every { innerDecl.toClassName() } returns ClassName("org.test", "Ship")
 
@@ -618,10 +618,10 @@ class DefaultPropertySchemaFactoryAdapterTest : UnitSim() {
                 io.mockk.every { keyArg.type } returns keyTypeRef
 
                 val valueDecl: KSClassDeclaration = mockk()
-                val genDslAnn: KSAnnotation = mockk()
-                io.mockk.every { genDslAnn.shortName } returns mockKSName("GeneratedDsl")
-                io.mockk.every { genDslAnn.arguments } returns listOf(mockValueArg("withMapGroup", "SINGLE"))
-                io.mockk.every { valueDecl.annotations } returns sequenceOf(genDslAnn)
+                val mapDslAnn: KSAnnotation = mockk()
+                io.mockk.every { mapDslAnn.shortName } returns mockKSName("MapDsl")
+                io.mockk.every { mapDslAnn.arguments } returns emptyList()
+                io.mockk.every { valueDecl.annotations } returns sequenceOf(mapDslAnn)
                 io.mockk.every { valueDecl.toClassName() } returns ClassName("org.test", "Ship")
                 val valueResolvedType: KSType = mockk()
                 io.mockk.every { valueResolvedType.declaration } returns valueDecl

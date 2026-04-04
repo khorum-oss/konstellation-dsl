@@ -6,45 +6,25 @@ import com.google.devtools.ksp.symbol.KSName
 import com.google.devtools.ksp.symbol.KSValueArgument
 import io.mockk.mockk
 import org.khorum.oss.geordi.UnitSim
-import org.khorum.oss.konstellation.metaDsl.annotation.MapGroupType
 import org.junit.jupiter.api.Test
 
 class KSClassDeclarationExtTest : UnitSim() {
 
-    private fun mockAnnotation(args: Map<String, Any>): KSAnnotation {
+    private fun mockAnnotationWithName(name: String): KSAnnotation {
         val ann: KSAnnotation = mockk()
         val shortName: KSName = mockk()
-        every { shortName.asString() } returns "GeneratedDsl"
+        every { shortName.asString() } returns name
         every { ann.shortName } returns shortName
-        every { ann.arguments } returns args.map { (k, v) ->
-            val argName: KSName = mockk()
-            every { argName.asString() } returns k
-            val arg: KSValueArgument = mockk()
-            every { arg.name } returns argName
-            every { arg.value } returns v
-            arg
-        }
         return ann
     }
 
     @Test
-    fun `isGroupDsl returns true when withListGroup is true`() = test {
+    fun `isGroupDsl returns true when ListDsl annotation is present`() = test {
         given {
             val decl: KSClassDeclaration = mockk()
-            every { decl.annotations } returns sequenceOf(mockAnnotation(mapOf("withListGroup" to true)))
+            every { decl.annotations } returns sequenceOf(mockAnnotationWithName("GeneratedDsl"))
 
             expect { true }
-            whenever { decl.isGroupDsl() }
-        }
-    }
-
-    @Test
-    fun `isGroupDsl returns false when withListGroup is false`() = test {
-        given {
-            val decl: KSClassDeclaration = mockk()
-            every { decl.annotations } returns sequenceOf(mockAnnotation(mapOf("withListGroup" to false)))
-
-            expect { false }
             whenever { decl.isGroupDsl() }
         }
     }
@@ -71,82 +51,34 @@ class KSClassDeclarationExtTest : UnitSim() {
     }
 
     @Test
-    fun `mapGroupType returns enum value when annotation present`() = test {
+    fun `hasMapDsl returns true when MapDsl annotation is present`() = test {
         given {
             val decl: KSClassDeclaration = mockk()
-            every { decl.annotations } returns sequenceOf(mockAnnotation(mapOf("withMapGroup" to "SINGLE")))
+            every { decl.annotations } returns sequenceOf(mockAnnotationWithName("GeneratedDsl"))
 
-            expect { MapGroupType.SINGLE }
-            whenever { decl.mapGroupType() }
+            expect { true }
+            whenever { decl.hasMapDsl() }
         }
     }
 
     @Test
-    fun `mapGroupType returns null when no annotation`() = test {
+    fun `hasMapDsl returns false when no annotation`() = test {
         given {
             val decl: KSClassDeclaration = mockk()
             every { decl.annotations } returns emptySequence()
 
-            expect { null }
-            whenever { decl.mapGroupType() }
+            expect { false }
+            whenever { decl.hasMapDsl() }
         }
     }
 
     @Test
-    fun `mapGroupType returns null on null receiver`() = test {
+    fun `hasMapDsl returns false on null receiver`() = test {
         given {
             val decl: KSClassDeclaration? = null
 
-            expect { null }
-            whenever { decl.mapGroupType() }
-        }
-    }
-
-    @Test
-    fun `mapGroupType returns LIST when annotation has LIST value`() = test {
-        given {
-            val decl: KSClassDeclaration = mockk()
-            every { decl.annotations } returns sequenceOf(mockAnnotation(mapOf("withMapGroup" to "LIST")))
-
-            expect { MapGroupType.LIST }
-            whenever { decl.mapGroupType() }
-        }
-    }
-
-    @Test
-    fun `mapGroupType returns NONE when annotation has NONE value`() = test {
-        given {
-            val decl: KSClassDeclaration = mockk()
-            every { decl.annotations } returns sequenceOf(mockAnnotation(mapOf("withMapGroup" to "NONE")))
-
-            expect { MapGroupType.NONE }
-            whenever { decl.mapGroupType() }
-        }
-    }
-
-    // Note: Tests for annotations with non-matching argument names
-    // are covered indirectly through ParameterFactoryTest and GroupGeneratorTest.
-
-    @Test
-    fun `mapGroupType handles lowercase value via uppercase conversion`() = test {
-        given {
-            val decl: KSClassDeclaration = mockk()
-            every { decl.annotations } returns sequenceOf(mockAnnotation(mapOf("withMapGroup" to "single")))
-
-            expect { MapGroupType.SINGLE }
-            whenever { decl.mapGroupType() }
-        }
-    }
-
-    @Test
-    fun `mapGroupType returns null when GeneratedDsl annotation has no withMapGroup arg`() = test {
-        given {
-            val decl: KSClassDeclaration = mockk()
-            // GeneratedDsl annotation present but without withMapGroup argument
-            every { decl.annotations } returns sequenceOf(mockAnnotation(emptyMap()))
-
-            expect { null }
-            whenever { decl.mapGroupType() }
+            expect { false }
+            whenever { decl.hasMapDsl() }
         }
     }
 
@@ -154,14 +86,21 @@ class KSClassDeclarationExtTest : UnitSim() {
     fun `isGroupDsl returns false when annotation has non-matching name`() = test {
         given {
             val decl: KSClassDeclaration = mockk()
-            val ann: KSAnnotation = mockk()
-            val shortName: KSName = mockk()
-            every { shortName.asString() } returns "OtherAnnotation"
-            every { ann.shortName } returns shortName
-            every { decl.annotations } returns sequenceOf(ann)
+            every { decl.annotations } returns sequenceOf(mockAnnotationWithName("OtherAnnotation"))
 
             expect { false }
             whenever { decl.isGroupDsl() }
+        }
+    }
+
+    @Test
+    fun `hasMapDsl returns false when annotation has non-matching name`() = test {
+        given {
+            val decl: KSClassDeclaration = mockk()
+            every { decl.annotations } returns sequenceOf(mockAnnotationWithName("OtherAnnotation"))
+
+            expect { false }
+            whenever { decl.hasMapDsl() }
         }
     }
 }

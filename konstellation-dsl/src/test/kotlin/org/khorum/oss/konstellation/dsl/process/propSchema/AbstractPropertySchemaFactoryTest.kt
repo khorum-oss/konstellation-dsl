@@ -23,7 +23,6 @@ import org.khorum.oss.konstellation.dsl.schema.ListPropSchema
 import org.khorum.oss.konstellation.dsl.schema.MapGroupPropSchema
 import org.khorum.oss.konstellation.dsl.schema.MapPropSchema
 import org.khorum.oss.konstellation.dsl.schema.SingleTransformPropSchema
-import org.khorum.oss.konstellation.metaDsl.annotation.MapGroupType
 
 /**
  * Test-only factory that uses the interface type to allow nullable mocking.
@@ -131,11 +130,11 @@ class AbstractPropertySchemaFactoryTest : UnitSim() {
     }
 
     @Test
-    fun `determinePropertySchema returns MapGroupPropSchema when mapGroupType is SINGLE`() = test {
+    fun `determinePropertySchema returns MapGroupPropSchema when hasMapGroup is true`() = test {
         given {
             val mapType = MAP.parameterizedBy(STRING, ClassName("org.test", "Ship"))
             val details: PropertySchemaFactoryAdapter.MapDetails = mockk()
-            every { details.mapGroupType } returns MapGroupType.SINGLE
+            every { details.hasMapGroup } returns true
             every { details.keyType } returns STRING
             every { details.valueType } returns ClassName("org.test", "Ship")
             val adapter = TestAdapter(
@@ -333,11 +332,11 @@ class AbstractPropertySchemaFactoryTest : UnitSim() {
     // --- MapGroupPropSchema path with explicit mapDetails set ---
 
     @Test
-    fun `determinePropertySchema returns MapPropSchema when mapGroupType is NONE`() = test {
+    fun `determinePropertySchema returns MapPropSchema when hasMapGroup is false`() = test {
         given {
             val mapType = MAP.parameterizedBy(STRING, ClassName("org.test", "Ship"))
             val details: PropertySchemaFactoryAdapter.MapDetails = mockk()
-            every { details.mapGroupType } returns MapGroupType.NONE
+            every { details.hasMapGroup } returns false
             val adapter = TestAdapter(
                 propName = "ships",
                 actualPropTypeName = mapType,

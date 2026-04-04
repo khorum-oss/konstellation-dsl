@@ -5,8 +5,6 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.TypeName
 import org.khorum.oss.konstellation.dsl.domain.DefaultPropertyValue
 import org.khorum.oss.konstellation.dsl.domain.PropertyAnnotationMetadata
-import org.khorum.oss.konstellation.metaDsl.annotation.MapGroupType
-
 /**
  * Adapter for property schema factory, providing details about a property in the DSL.
  */
@@ -45,7 +43,7 @@ interface PropertySchemaFactoryAdapter {
      * as well as the group type of the map.
      */
     interface MapDetails {
-        val mapGroupType: MapGroupType
+        val hasMapGroup: Boolean
         val keyType: TypeName
         val valueType: TypeName
 

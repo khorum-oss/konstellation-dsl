@@ -27,8 +27,6 @@ import org.khorum.oss.konstellation.dsl.schema.MapGroupPropSchema
 import org.khorum.oss.konstellation.dsl.schema.MapPropSchema
 import org.khorum.oss.konstellation.dsl.schema.SingleTransformPropSchema
 import org.khorum.oss.konstellation.dsl.utils.VLoggable
-import org.khorum.oss.konstellation.metaDsl.annotation.MapGroupType
-import kotlin.collections.contains
 import kotlin.reflect.KClass
 
 
@@ -118,8 +116,8 @@ abstract class AbstractPropertySchemaFactory<T : PropertySchemaFactoryAdapter, P
 
             checkCollectionType(adapter, MAP, Map::class) -> {
                 logger.debug("[CHOICE] map branch", tier = 4, branch = branch)
-                val mapGroupType: MapGroupType? = adapter.mapDetails()?.mapGroupType
-                if (mapGroupType in MapGroupType.ACTIVE_TYPES) {
+                val hasMapGroup: Boolean = adapter.mapDetails()?.hasMapGroup == true
+                if (hasMapGroup) {
                     logger.debug("[DECISION] build MapGroupProp", tier = 4, branch = branch)
                     createMapGroupProp(adapter)
                 } else {

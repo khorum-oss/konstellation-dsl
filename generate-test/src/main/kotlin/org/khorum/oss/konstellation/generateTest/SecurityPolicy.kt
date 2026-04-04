@@ -4,9 +4,12 @@ import org.khorum.oss.konstellation.metaDsl.annotation.DslAlias
 import org.khorum.oss.konstellation.metaDsl.annotation.DslDescription
 import org.khorum.oss.konstellation.metaDsl.annotation.DeprecatedDsl
 import org.khorum.oss.konstellation.metaDsl.annotation.GeneratedDsl
+import org.khorum.oss.konstellation.metaDsl.annotation.RootDsl
 import org.khorum.oss.konstellation.metaDsl.annotation.ValidateDsl
 import org.khorum.oss.konstellation.metaDsl.annotation.defaults.state.standard.DefaultFalse
 import org.khorum.oss.konstellation.metaDsl.annotation.defaults.state.standard.DefaultTrue
+import org.khorum.oss.konstellation.metaDsl.annotation.defaults.state.standard.NegationFunctionTemplate
+import org.khorum.oss.konstellation.metaDsl.annotation.defaults.state.standard.ValidFunctionTemplate
 import org.khorum.oss.konstellation.metaDsl.annotation.defaults.state.standard.DefaultEmptyString
 import org.khorum.oss.konstellation.metaDsl.annotation.defaults.state.standard.DefaultZeroInt
 
@@ -17,7 +20,8 @@ import org.khorum.oss.konstellation.metaDsl.annotation.defaults.state.standard.D
  * @DslDescription on booleans, @ValidateDsl on non-boolean fields alongside booleans,
  * and nullable vs non-nullable booleans.
  */
-@GeneratedDsl(isRoot = true)
+@RootDsl
+@GeneratedDsl
 data class SecurityPolicy(
     @DefaultEmptyString
     val policyName: String,
@@ -44,8 +48,8 @@ data class SecurityPolicy(
 
     // ── Boolean with alias ──────────────────────────────────────────────
 
-    /** Intrusion detection with alias "ids". */
-    @DefaultTrue
+    /** Intrusion detection with alias "ids" — suppress negation to avoid alias conflict. */
+    @DefaultTrue(negationTemplate = NegationFunctionTemplate.NONE)
     @DslAlias(names = ["ids"])
     val intrusionDetection: Boolean,
 

@@ -29,10 +29,11 @@ class GroupGeneratorTest : UnitSim() {
         private lateinit var domainWithMapNone: KSClassDeclaration
         private lateinit var config: BuilderConfig
 
-        private fun mockAnnotation(args: Map<String, Any>): KSAnnotation {
+        private fun mockAnnotation(shortNameStr: String, args: Map<String, Any> = emptyMap()): KSAnnotation {
             val ann: KSAnnotation = mockk()
             val shortName: KSName = mockk()
-            every { shortName.asString() } returns "GeneratedDsl"
+            every { shortName.asString() } returns shortNameStr
+            every { shortName.getShortName() } returns shortNameStr
             every { ann.shortName } returns shortName
             every { ann.arguments } returns args.map { (k, v) ->
                 val argName: KSName = mockk()
@@ -68,10 +69,10 @@ class GroupGeneratorTest : UnitSim() {
                 mapOf("projectRootClasspath" to "org.test", "dslBuilderClasspath" to "org.test"),
                 Logger("GroupGeneratorTest")
             )
-            domainWithListGroup = makeDomain(listOf(mockAnnotation(mapOf("withListGroup" to true))))
-            domainWithoutListGroup = makeDomain(listOf(mockAnnotation(mapOf("withListGroup" to false))))
-            domainWithMapSingle = makeDomain(listOf(mockAnnotation(mapOf("withMapGroup" to "SINGLE"))))
-            domainWithMapNone = makeDomain(listOf(mockAnnotation(mapOf("withMapGroup" to "NONE"))))
+            domainWithListGroup = makeDomain(listOf(mockAnnotation("GeneratedDsl")))
+            domainWithoutListGroup = makeDomain(listOf(mockAnnotation("OtherAnnotation")))
+            domainWithMapSingle = makeDomain(listOf(mockAnnotation("GeneratedDsl")))
+            domainWithMapNone = makeDomain(listOf(mockAnnotation("OtherAnnotation")))
         }
 
         @JvmStatic

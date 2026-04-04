@@ -75,10 +75,10 @@ class BooleanParamTest : UnitSim() {
     }
 
     @Test
-    fun `propertyValueReturn - non-nullable returns vRequireNotNull`() = test {
+    fun `propertyValueReturn - non-nullable returns requireNotNull`() = test {
         given {
             val param = BooleanPropSchema("active", nullableAssignment = false)
-            expect { "vRequireNotNull(::active)" }
+            expect { "DslValidation.requireNotNull(::active)" }
             whenever { param.propertyValueReturn() }
         }
     }

@@ -1,6 +1,7 @@
 package org.khorum.oss.konstellation.generateTest
 
 import org.khorum.oss.konstellation.metaDsl.annotation.GeneratedDsl
+import org.khorum.oss.konstellation.metaDsl.annotation.RootDsl
 import org.khorum.oss.konstellation.metaDsl.annotation.defaults.state.standard.DefaultEmptyList
 import org.khorum.oss.konstellation.metaDsl.annotation.defaults.state.standard.DefaultEmptyMap
 import org.khorum.oss.konstellation.metaDsl.annotation.defaults.state.standard.DefaultEmptyString
@@ -15,7 +16,8 @@ import org.khorum.oss.konstellation.metaDsl.annotation.defaults.state.standard.D
  * Domain class demonstrating shorthand default state annotations.
  * These are equivalent to @DefaultState(DefaultStateType.X) but more concise.
  */
-@GeneratedDsl(isRoot = true)
+@RootDsl
+@GeneratedDsl
 data class NavigationConfig(
     @DefaultEmptyString
     val routeName: String,

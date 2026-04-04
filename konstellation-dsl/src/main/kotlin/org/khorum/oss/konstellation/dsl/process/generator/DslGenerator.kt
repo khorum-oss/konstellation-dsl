@@ -190,10 +190,7 @@ class DefaultDslGenerator(
      * @return Boolean indicating whether the class is a root DSL class.
      */
     private fun KSClassDeclaration.isRootDsl(): Boolean =
-        AnnotationLookup.anyAnnotationArgMatches(
-            annotations, GeneratedDsl::class, GeneratedDsl::isRoot.name
-        ) { it == true }
-        || AnnotationLookup.hasAnnotationByName(annotations, "RootDsl")
+        AnnotationLookup.hasAnnotationByName(annotations, "RootDsl")
 
     private fun KSClassDeclaration.isDebug(): Boolean =
         AnnotationLookup.anyAnnotationArgMatches(
