@@ -222,6 +222,76 @@ class BooleanParamTest : UnitSim() {
     }
 
     @Test
+    fun `accessors - no defaultValue uses true as default parameter`() = test {
+        given {
+            val param = BooleanPropSchema("active", defaultValue = null)
+
+            expect { true }
+            whenever { param.accessors().first().toString().contains("true") }
+        }
+    }
+
+    @Test
+    fun `accessors - NONE valid template generates only negation function`() = test {
+        given {
+            val config = BooleanAccessorConfig(
+                validTemplate = "NONE",
+                negationTemplate = "NOT"
+            )
+            val param = BooleanPropSchema("enabled", defaultValue = DefaultPropertyValue(
+                rawValue = "true",
+                codeBlock = CodeBlock.of("%L", true),
+                packageName = "",
+                className = "",
+                booleanAccessorConfig = config
+            ))
+
+            expect { 1 }
+            whenever { param.accessors().size }
+        }
+    }
+
+    @Test
+    fun `accessors - NONE valid only generates negation with correct name`() = test {
+        given {
+            val config = BooleanAccessorConfig(
+                validTemplate = "NONE",
+                negationTemplate = "NOT"
+            )
+            val param = BooleanPropSchema("enabled", defaultValue = DefaultPropertyValue(
+                rawValue = "true",
+                codeBlock = CodeBlock.of("%L", true),
+                packageName = "",
+                className = "",
+                booleanAccessorConfig = config
+            ))
+
+            expect { "notEnabled" }
+            whenever { param.accessors().first().name }
+        }
+    }
+
+    @Test
+    fun `accessors - both NONE generates no functions`() = test {
+        given {
+            val config = BooleanAccessorConfig(
+                validTemplate = "NONE",
+                negationTemplate = "NONE"
+            )
+            val param = BooleanPropSchema("enabled", defaultValue = DefaultPropertyValue(
+                rawValue = "true",
+                codeBlock = CodeBlock.of("%L", true),
+                packageName = "",
+                className = "",
+                booleanAccessorConfig = config
+            ))
+
+            expect { 0 }
+            whenever { param.accessors().size }
+        }
+    }
+
+    @Test
     fun `accessors - backward compat when no config`() = test {
         given {
             val param = BooleanPropSchema("enabled", defaultValue = DefaultPropertyValue(

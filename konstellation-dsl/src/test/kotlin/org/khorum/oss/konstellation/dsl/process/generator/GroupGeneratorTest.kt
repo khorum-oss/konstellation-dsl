@@ -287,6 +287,37 @@ class GroupGeneratorTest : UnitSim() {
     }
 
     @Test
+    fun `ListGroupGenerator isGroup false when predicate does not match`() = test {
+        given {
+            // Domain with withListGroup=false means predicate returns false
+            val builder = KPTypeSpecBuilder()
+            builder.name = "TestBuilder"
+            val dc = DomainConfig(config, emptyMap(), domainWithoutListGroup, false)
+
+            expect { false }
+            whenever {
+                ListGroupGenerator().generate(builder, dc)
+                builder.build().toString().contains("Group")
+            }
+        }
+    }
+
+    @Test
+    fun `MapGroupGenerator isGroup false when predicate does not match NONE`() = test {
+        given {
+            val builder = KPTypeSpecBuilder()
+            builder.name = "TestBuilder"
+            val dc = DomainConfig(config, emptyMap(), domainWithMapNone, false)
+
+            expect { false }
+            whenever {
+                MapGroupGenerator().generate(builder, dc)
+                builder.build().toString().contains("MapGroup")
+            }
+        }
+    }
+
+    @Test
     fun `MapGroupGenerator with domain having no annotations does not add MapGroup`() = test {
         given {
             val emptyDomain = makeDomain(emptyList())

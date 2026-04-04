@@ -1660,6 +1660,133 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
     }
 
     @Test
+    fun `getParamsFromDomain DefaultTrue with explicit valid function name`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockShorthandDefaultAnnotation("DefaultTrue")
+
+            every { ann.arguments } returns listOf(
+                mockk<KSValueArgument>().also { arg ->
+                    every { arg.name } returns mockKSName("validFunctionName")
+                    every { arg.value } returns "myValidFn"
+                },
+                mockk<KSValueArgument>().also { arg ->
+                    every { arg.name } returns mockKSName("negationFunctionName")
+                    every { arg.value } returns "myNegFn"
+                }
+            )
+
+            val prop = mockPropWithAnnotations("enabled", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                val config = service.getParamsFromDomain(domainConfig)
+                    .first().defaultValue?.booleanAccessorConfig
+                config != null &&
+                    config.validFunctionName == "myValidFn" &&
+                    config.negationFunctionName == "myNegFn"
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain DefaultTrue with SELF negation and IS valid preserves both`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockShorthandDefaultAnnotation("DefaultTrue")
+
+            val validDecl: KSClassDeclaration = mockk()
+            every { validDecl.simpleName } returns mockKSName("IS")
+            val negDecl: KSClassDeclaration = mockk()
+            every { negDecl.simpleName } returns mockKSName("SELF")
+
+            every { ann.arguments } returns listOf(
+                mockk<KSValueArgument>().also { arg ->
+                    every { arg.name } returns mockKSName("validTemplate")
+                    every { arg.value } returns validDecl
+                },
+                mockk<KSValueArgument>().also { arg ->
+                    every { arg.name } returns mockKSName("negationTemplate")
+                    every { arg.value } returns negDecl
+                },
+                mockk<KSValueArgument>().also { arg ->
+                    every { arg.name } returns mockKSName("validFunctionName")
+                    every { arg.value } returns ""
+                },
+                mockk<KSValueArgument>().also { arg ->
+                    every { arg.name } returns mockKSName("negationFunctionName")
+                    every { arg.value } returns ""
+                }
+            )
+
+            val prop = mockPropWithAnnotations("isCool", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                val config = service.getParamsFromDomain(domainConfig)
+                    .first().defaultValue?.booleanAccessorConfig
+                // negation is SELF but valid IS is set → no blanking
+                config != null &&
+                    config.validTemplate == "IS" &&
+                    config.negationTemplate == "SELF"
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain DefaultTrue template resolves string enum entry`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockShorthandDefaultAnnotation("DefaultTrue")
+
+            // Test the else branch of resolveEnumEntryName where value is a string
+            every { ann.arguments } returns listOf(
+                mockk<KSValueArgument>().also { arg ->
+                    every { arg.name } returns mockKSName("validTemplate")
+                    every { arg.value } returns "ValidFunctionTemplate.WITH"
+                },
+                mockk<KSValueArgument>().also { arg ->
+                    every { arg.name } returns mockKSName("negationFunctionName")
+                    every { arg.value } returns ""
+                },
+                mockk<KSValueArgument>().also { arg ->
+                    every { arg.name } returns mockKSName("validFunctionName")
+                    every { arg.value } returns ""
+                }
+            )
+
+            val prop = mockPropWithAnnotations("cool", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                val config = service.getParamsFromDomain(domainConfig)
+                    .first().defaultValue?.booleanAccessorConfig
+                config != null && config.validTemplate == "WITH"
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain DefaultFalse with null ann returns null config`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            // DefaultEmptyString is not TRUE or FALSE, so booleanAccessorConfig is null
+            val ann = mockShorthandDefaultAnnotation("DefaultEmptyString")
+            val prop = mockPropWithAnnotations("label", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { null }
+            whenever {
+                service.getParamsFromDomain(domainConfig)
+                    .first().defaultValue?.booleanAccessorConfig
+            }
+        }
+    }
+
+    @Test
     fun `getParamsFromDomain DefaultState with missing type argument returns null`() = test {
         given {
             val service = DefaultPropertySchemaService()

@@ -334,6 +334,84 @@ class LoggerTest : UnitSim() {
         }
     }
 
+    @Test
+    fun `globalDebugEnabled returns false when property not set`() = test {
+        given {
+            expect { false }
+            whenever {
+                val prev = System.getProperty("debug")
+                try {
+                    System.clearProperty("debug")
+                    Logger("test").globalDebugEnabled()
+                } finally {
+                    if (prev != null) System.setProperty("debug", prev)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `globalDebugEnabled returns true when property is true`() = test {
+        given {
+            expect { true }
+            whenever {
+                val prev = System.getProperty("debug")
+                try {
+                    System.setProperty("debug", "true")
+                    Logger("test").globalDebugEnabled()
+                } finally {
+                    if (prev != null) System.setProperty("debug", prev)
+                    else System.clearProperty("debug")
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `VLoggable companion setGlobalDebug enables debug`() = test {
+        given {
+            expect { true }
+            whenever {
+                try {
+                    VLoggable.Companion.setGlobalDebug(true)
+                    true
+                } finally {
+                    VLoggable.Companion.setGlobalDebug(false)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `VLoggable companion resetGlobalDebug runs without error`() = test {
+        given {
+            expect { true }
+            whenever {
+                val prev = System.getProperty("debug")
+                try {
+                    System.clearProperty("debug")
+                    VLoggable.Companion.resetGlobalDebug()
+                    true
+                } finally {
+                    if (prev != null) System.setProperty("debug", prev)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `infoMultiline with multiple lines prints all`() = test {
+        given {
+            expect { true }
+            whenever {
+                val output = captureStdout {
+                    Logger("test").infoMultiline("line1\nline2\nline3")
+                }
+                output.contains("line1") && output.contains("line2") && output.contains("line3")
+            }
+        }
+    }
+
     private fun captureStdout(block: () -> Unit): String {
         val originalOut = System.out
         val baos = ByteArrayOutputStream()

@@ -167,6 +167,57 @@ class DslPropSchemaBranchTest : UnitSim() {
         }
     }
 
+    // --- toPropertySpec default value branches ---
+
+    @Test
+    fun `toPropertySpec without defaultValue initializes with null`() = test {
+        given {
+            val param = DefaultPropSchema("field", STRING, defaultValue = null)
+            expect { true }
+            whenever { param.toPropertySpec().toString().contains("null") }
+        }
+    }
+
+    @Test
+    fun `GroupPropSchema accessor generates a function`() = test {
+        given {
+            val param = GroupPropSchema(
+                "crew",
+                com.squareup.kotlinpoet.ClassName("org.test", "Crew"),
+                com.squareup.kotlinpoet.ClassName("org.test", "CrewDslBuilder")
+            )
+            expect { true }
+            whenever { param.accessors().isNotEmpty() }
+        }
+    }
+
+    @Test
+    fun `MapGroupPropSchema accessor generates a function`() = test {
+        given {
+            val param = MapGroupPropSchema(
+                "entries",
+                com.squareup.kotlinpoet.ClassName("test", "Entry"),
+                com.squareup.kotlinpoet.ClassName("test", "EntryDslBuilder")
+            )
+            expect { true }
+            whenever { param.accessors().isNotEmpty() }
+        }
+    }
+
+    @Test
+    fun `SingleTransformPropSchema accessor generates a function`() = test {
+        given {
+            val param = SingleTransformPropSchema(
+                propName = "value",
+                inputTypeName = com.squareup.kotlinpoet.INT,
+                actualPropTypeName = STRING,
+                transformTemplate = "MyType(%N)"
+            )
+            expect { "value" }
+            whenever { param.accessors().first().name }
+        }
+    }
+
     // --- ListPropSchema withVararg/withProvider branches ---
 
     @Test
