@@ -912,4 +912,40 @@ class DefaultBuilderGeneratorTest : UnitSim() {
             }
         }
     }
+
+    @Test
+    fun `generate with blank DslDescription does not add kdoc`() = test {
+        given {
+            val outputStream = ByteArrayOutputStream()
+            val codeGen: CodeGenerator = mockk()
+            io.mockk.every {
+                codeGen.createNewFile(any<Dependencies>(), any(), any(), any())
+            } returns outputStream
+
+            val config = mockBuilderConfig()
+            val domain = mockDomain()
+
+            val genAnn: KSAnnotation = mockk()
+            io.mockk.every { genAnn.shortName } returns mockKSName("GeneratedDsl")
+            io.mockk.every { genAnn.arguments } returns emptyList()
+
+            val descAnn: KSAnnotation = mockk()
+            io.mockk.every { descAnn.shortName } returns mockKSName("DslDescription")
+            val descArg: KSValueArgument = mockk()
+            io.mockk.every { descArg.name } returns mockKSName("value")
+            io.mockk.every { descArg.value } returns "   "
+            io.mockk.every { descAnn.arguments } returns listOf(descArg)
+
+            io.mockk.every { domain.annotations } returns sequenceOf(genAnn, descAnn)
+
+            val generator = DefaultBuilderGenerator()
+
+            expect { false }
+            whenever {
+                generator.generate(codeGen, domain, config, emptyMap(), false)
+                val output = outputStream.toString()
+                output.contains("/**")
+            }
+        }
+    }
 }

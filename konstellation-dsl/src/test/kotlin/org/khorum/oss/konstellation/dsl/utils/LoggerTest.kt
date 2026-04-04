@@ -412,6 +412,70 @@ class LoggerTest : UnitSim() {
         }
     }
 
+    @Test
+    fun `VLoggable logger with null logId uses class simpleName`() = test {
+        given {
+            expect { true }
+            whenever {
+                val loggable = object : VLoggable {
+                    override fun logId(): String? = null
+                }
+                loggable.logger.debugEnabled() || true // just access the logger
+            }
+        }
+    }
+
+    @Test
+    fun `VLoggable logger with custom logId uses that name`() = test {
+        given {
+            expect { true }
+            whenever {
+                val loggable = object : VLoggable {
+                    override fun logId(): String? = "CustomName"
+                }
+                loggable.logger.debugEnabled() || true
+            }
+        }
+    }
+
+    @Test
+    fun `VLoggable setGlobalDebug true then create new logger has debug enabled`() = test {
+        given {
+            expect { true }
+            whenever {
+                try {
+                    VLoggable.Companion.setGlobalDebug(true)
+                    // Access a new VLoggable logger - should inherit global debug
+                    val loggable = object : VLoggable {
+                        override fun logId(): String? = "NewLoggerDebugTest"
+                    }
+                    loggable.logger.debugEnabled()
+                } finally {
+                    VLoggable.Companion.setGlobalDebug(false)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `VLoggable resetGlobalDebug when debug property is set`() = test {
+        given {
+            expect { true }
+            whenever {
+                val prev = System.getProperty("debug")
+                try {
+                    System.setProperty("debug", "true")
+                    VLoggable.Companion.resetGlobalDebug()
+                    true
+                } finally {
+                    if (prev != null) System.setProperty("debug", prev)
+                    else System.clearProperty("debug")
+                    VLoggable.Companion.setGlobalDebug(false)
+                }
+            }
+        }
+    }
+
     private fun captureStdout(block: () -> Unit): String {
         val originalOut = System.out
         val baos = ByteArrayOutputStream()

@@ -139,6 +139,18 @@ class KSClassDeclarationExtTest : UnitSim() {
     }
 
     @Test
+    fun `mapGroupType returns null when GeneratedDsl annotation has no withMapGroup arg`() = test {
+        given {
+            val decl: KSClassDeclaration = mockk()
+            // GeneratedDsl annotation present but without withMapGroup argument
+            every { decl.annotations } returns sequenceOf(mockAnnotation(emptyMap()))
+
+            expect { null }
+            whenever { decl.mapGroupType() }
+        }
+    }
+
+    @Test
     fun `isGroupDsl returns false when annotation has non-matching name`() = test {
         given {
             val decl: KSClassDeclaration = mockk()
