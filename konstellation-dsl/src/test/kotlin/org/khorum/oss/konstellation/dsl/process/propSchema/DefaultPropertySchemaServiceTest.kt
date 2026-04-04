@@ -1787,6 +1787,45 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
     }
 
     @Test
+    fun `getParamsFromDomain DefaultTrue with KSType template value resolves via declaration`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockShorthandDefaultAnnotation("DefaultTrue")
+
+            // Use KSType as template value (covers resolveEnumEntryName KSType branch)
+            val validTemplateType: KSType = mockk()
+            val validTemplateDecl: com.google.devtools.ksp.symbol.KSDeclaration = mockk()
+            every { validTemplateDecl.simpleName } returns mockKSName("IS")
+            every { validTemplateType.declaration } returns validTemplateDecl
+
+            every { ann.arguments } returns listOf(
+                mockk<KSValueArgument>().also { arg ->
+                    every { arg.name } returns mockKSName("validTemplate")
+                    every { arg.value } returns validTemplateType
+                },
+                mockk<KSValueArgument>().also { arg ->
+                    every { arg.name } returns mockKSName("negationFunctionName")
+                    every { arg.value } returns ""
+                },
+                mockk<KSValueArgument>().also { arg ->
+                    every { arg.name } returns mockKSName("validFunctionName")
+                    every { arg.value } returns ""
+                }
+            )
+
+            val prop = mockPropWithAnnotations("cool", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                val config = service.getParamsFromDomain(domainConfig)
+                    .first().defaultValue?.booleanAccessorConfig
+                config != null && config.validTemplate == "IS"
+            }
+        }
+    }
+
+    @Test
     fun `getParamsFromDomain DefaultState with missing type argument returns null`() = test {
         given {
             val service = DefaultPropertySchemaService()

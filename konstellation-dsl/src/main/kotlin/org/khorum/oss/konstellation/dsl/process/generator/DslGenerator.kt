@@ -106,38 +106,22 @@ class DefaultDslGenerator(
         val rootClasses = generatedBuilderDSL
             .filter { it.isRootDsl() }
             .map { domain ->
-                val rootDslAnn = AnnotationLookup.findAnnotationByName(domain.annotations, "RootDsl")
-                val name = rootDslAnn?.let { AnnotationLookup.findArgumentValue<String>(it, "name") }
+                // @RootDsl is guaranteed to exist since isRootDsl() already checked
+                val rootDslAnn = AnnotationLookup.findAnnotationByName(domain.annotations, "RootDsl")!!
+                val name = AnnotationLookup.findArgumentValue<String>(rootDslAnn, "name")
                     ?.takeIf { it.isNotBlank() }
-                val alias = rootDslAnn?.let { AnnotationLookup.findArgumentValue<String>(it, "alias") }
+                val alias = AnnotationLookup.findArgumentValue<String>(rootDslAnn, "alias")
                     ?.takeIf { it.isNotBlank() }
                 Triple(domain, name, alias)
             }
             .toList()
 
-        // Also find properties with @RootDsl annotation across all @GeneratedDsl classes
-        val rootDslProperties = generatedBuilderDSL.flatMap { domain ->
-            domain.getAllProperties()
-                .filter { prop ->
-                    AnnotationLookup.findAnnotationByName(prop.annotations, "RootDsl") != null
-                }
-                .map { prop ->
-                    val ann = AnnotationLookup.findAnnotationByName(prop.annotations, "RootDsl")!!
-                    val name = AnnotationLookup.findArgumentValue<String>(ann, "name")
-                        ?.takeIf { it.isNotBlank() }
-                    val alias = AnnotationLookup.findArgumentValue<String>(ann, "alias")
-                        ?.takeIf { it.isNotBlank() }
-                    Triple(prop, name, alias)
-                }
-                .toList()
-        }
-
-        if (rootClasses.isEmpty() && rootDslProperties.isEmpty()) {
+        if (rootClasses.isEmpty()) {
             logger.debug("No root classes found.")
             return
         }
         rootDslAccessorGenerator.generate(
-            codeGenerator, rootClasses, builderConfig, rootDslProperties
+            codeGenerator, rootClasses, builderConfig
         )
     }
 

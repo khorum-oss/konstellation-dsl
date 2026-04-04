@@ -123,7 +123,7 @@ class DefaultDslGeneratorTest : UnitSim() {
             whenever {
                 generator.generate(resolver, codeGenerator, options())
                 try {
-                    verify(exactly = 0) { rootGenerator.generate(any(), any(), any(), any()) }
+                    verify(exactly = 0) { rootGenerator.generate(any(), any(), any()) }
                     true
                 } catch (_: Exception) {
                     false
@@ -161,7 +161,7 @@ class DefaultDslGeneratorTest : UnitSim() {
                 generator.generate(resolver, codeGenerator, options())
                 try {
                     verify(exactly = 1) { builderGenerator.generate(any(), eq(nonRootClass), any(), any(), eq(false)) }
-                    verify(exactly = 0) { rootGenerator.generate(any(), any(), any(), any()) }
+                    verify(exactly = 0) { rootGenerator.generate(any(), any(), any()) }
                     true
                 } catch (_: Exception) {
                     false
@@ -198,7 +198,7 @@ class DefaultDslGeneratorTest : UnitSim() {
                 generator.generate(resolver, codeGenerator, options())
                 try {
                     verify(exactly = 1) { builderGenerator.generate(any(), eq(rootClass), any(), any(), eq(true)) }
-                    verify(exactly = 1) { rootGenerator.generate(any(), match { it.any { triple -> triple.first == rootClass } }, any(), any()) }
+                    verify(exactly = 1) { rootGenerator.generate(any(), match { it.any { triple -> triple.first == rootClass } }, any()) }
                     true
                 } catch (_: Exception) {
                     false
@@ -234,122 +234,7 @@ class DefaultDslGeneratorTest : UnitSim() {
                 generator.generate(resolver, codeGenerator, options())
                 try {
                     verify(exactly = 2) { builderGenerator.generate(any(), any(), any(), any(), any()) }
-                    verify(exactly = 1) { rootGenerator.generate(any(), match { it.size == 1 }, any(), any()) }
-                    true
-                } catch (_: Exception) {
-                    false
-                }
-            }
-        }
-    }
-
-    @Test
-    fun `generate processes rootDslProperties from property-level RootDsl annotation`() = test {
-        given {
-            val resolver: Resolver = mockk()
-            val codeGenerator: CodeGenerator = mockk()
-            val builderGenerator: DefaultBuilderGenerator = mockk(relaxed = true)
-            val rootGenerator = mockk<DefaultRootDslAccessorGenerator>(relaxed = true)
-            val generator = DefaultDslGenerator(
-                builderGenerator = builderGenerator,
-                rootDslAccessorGenerator = rootGenerator
-            )
-
-            // Class without @RootDsl but has a property annotated with @RootDsl
-            val cls = mockClassWithAnnotation("debug" to false)
-
-            // Mock a property with @RootDsl annotation
-            val propAnn: KSAnnotation = mockk()
-            every { propAnn.shortName } returns mockKSName("RootDsl")
-            every { propAnn.arguments } returns listOf<KSValueArgument>(
-                mockk<KSValueArgument>().also { arg ->
-                    every { arg.name } returns mockKSName("name")
-                    every { arg.value } returns "customRoot"
-                },
-                mockk<KSValueArgument>().also { arg ->
-                    every { arg.name } returns mockKSName("alias")
-                    every { arg.value } returns "rootAlias"
-                }
-            )
-
-            val prop: com.google.devtools.ksp.symbol.KSPropertyDeclaration = mockk()
-            every { prop.annotations } returns sequenceOf(propAnn)
-
-            // Override getAllProperties to return the annotated property
-            every { cls.getAllProperties() } returns sequenceOf(prop)
-
-            every {
-                resolver.getSymbolsWithAnnotation(GeneratedDsl::class.qualifiedName!!)
-            } returns sequenceOf(cls)
-            every {
-                resolver.getSymbolsWithAnnotation(SingleEntryTransformDsl::class.qualifiedName!!)
-            } returns emptySequence()
-
-            expect { true }
-            whenever {
-                generator.generate(resolver, codeGenerator, options())
-                try {
-                    verify(exactly = 1) {
-                        rootGenerator.generate(any(), any(), any(), match { it.isNotEmpty() })
-                    }
-                    true
-                } catch (_: Exception) {
-                    false
-                }
-            }
-        }
-    }
-
-    @Test
-    fun `generate processes rootDslProperties with blank name and alias falls back to null`() = test {
-        given {
-            val resolver: Resolver = mockk()
-            val codeGenerator: CodeGenerator = mockk()
-            val builderGenerator: DefaultBuilderGenerator = mockk(relaxed = true)
-            val rootGenerator = mockk<DefaultRootDslAccessorGenerator>(relaxed = true)
-            val generator = DefaultDslGenerator(
-                builderGenerator = builderGenerator,
-                rootDslAccessorGenerator = rootGenerator
-            )
-
-            val cls = mockClassWithAnnotation("debug" to false)
-
-            // Mock a property with @RootDsl annotation with blank name and alias
-            val propAnn: KSAnnotation = mockk()
-            every { propAnn.shortName } returns mockKSName("RootDsl")
-            every { propAnn.arguments } returns listOf<KSValueArgument>(
-                mockk<KSValueArgument>().also { arg ->
-                    every { arg.name } returns mockKSName("name")
-                    every { arg.value } returns "  "
-                },
-                mockk<KSValueArgument>().also { arg ->
-                    every { arg.name } returns mockKSName("alias")
-                    every { arg.value } returns ""
-                }
-            )
-
-            val prop: com.google.devtools.ksp.symbol.KSPropertyDeclaration = mockk()
-            every { prop.annotations } returns sequenceOf(propAnn)
-            every { cls.getAllProperties() } returns sequenceOf(prop)
-
-            every {
-                resolver.getSymbolsWithAnnotation(GeneratedDsl::class.qualifiedName!!)
-            } returns sequenceOf(cls)
-            every {
-                resolver.getSymbolsWithAnnotation(SingleEntryTransformDsl::class.qualifiedName!!)
-            } returns emptySequence()
-
-            expect { true }
-            whenever {
-                generator.generate(resolver, codeGenerator, options())
-                try {
-                    verify(exactly = 1) {
-                        rootGenerator.generate(any(), any(), any(), match { props ->
-                            props.isNotEmpty() &&
-                                props.first().second == null &&
-                                props.first().third == null
-                        })
-                    }
+                    verify(exactly = 1) { rootGenerator.generate(any(), match { it.size == 1 }, any()) }
                     true
                 } catch (_: Exception) {
                     false
@@ -396,7 +281,6 @@ class DefaultDslGeneratorTest : UnitSim() {
             )
 
             every { cls.annotations } returns sequenceOf(generatedDslAnn, rootDslAnn)
-            every { cls.getAllProperties() } returns emptySequence()
 
             every {
                 resolver.getSymbolsWithAnnotation(GeneratedDsl::class.qualifiedName!!)
@@ -414,7 +298,7 @@ class DefaultDslGeneratorTest : UnitSim() {
                             domains.size == 1 &&
                                 domains.first().second == "vessel" &&
                                 domains.first().third == "ship"
-                        }, any(), any())
+                        }, any())
                     }
                     true
                 } catch (_: Exception) {
@@ -451,7 +335,6 @@ class DefaultDslGeneratorTest : UnitSim() {
             every { rootDslAnn.arguments } returns emptyList()
 
             every { cls.annotations } returns sequenceOf(generatedDslAnn, rootDslAnn)
-            every { cls.getAllProperties() } returns emptySequence()
 
             every {
                 resolver.getSymbolsWithAnnotation(GeneratedDsl::class.qualifiedName!!)
@@ -469,7 +352,7 @@ class DefaultDslGeneratorTest : UnitSim() {
                             domains.size == 1 &&
                                 domains.first().second == null &&
                                 domains.first().third == null
-                        }, any(), any())
+                        }, any())
                     }
                     true
                 } catch (_: Exception) {
@@ -514,7 +397,6 @@ class DefaultDslGeneratorTest : UnitSim() {
             )
 
             every { cls.annotations } returns sequenceOf(generatedDslAnn, rootDslAnn)
-            every { cls.getAllProperties() } returns emptySequence()
 
             every {
                 resolver.getSymbolsWithAnnotation(GeneratedDsl::class.qualifiedName!!)
@@ -532,50 +414,7 @@ class DefaultDslGeneratorTest : UnitSim() {
                             domains.size == 1 &&
                                 domains.first().second == null &&
                                 domains.first().third == null
-                        }, any(), any())
-                    }
-                    true
-                } catch (_: Exception) {
-                    false
-                }
-            }
-        }
-    }
-
-    @Test
-    fun `generate filters out properties without RootDsl annotation`() = test {
-        given {
-            val resolver: Resolver = mockk()
-            val codeGenerator: CodeGenerator = mockk()
-            val builderGenerator: DefaultBuilderGenerator = mockk(relaxed = true)
-            val rootGenerator = mockk<DefaultRootDslAccessorGenerator>(relaxed = true)
-            val generator = DefaultDslGenerator(
-                builderGenerator = builderGenerator,
-                rootDslAccessorGenerator = rootGenerator
-            )
-
-            val rootClass = mockRootClassWithAnnotation("debug" to false)
-
-            // Add a property WITHOUT @RootDsl (just a normal annotation)
-            val normalProp: com.google.devtools.ksp.symbol.KSPropertyDeclaration = mockk()
-            val normalAnn: KSAnnotation = mockk()
-            every { normalAnn.shortName } returns mockKSName("SomeOtherAnnotation")
-            every { normalProp.annotations } returns sequenceOf(normalAnn)
-            every { rootClass.getAllProperties() } returns sequenceOf(normalProp)
-
-            every {
-                resolver.getSymbolsWithAnnotation(GeneratedDsl::class.qualifiedName!!)
-            } returns sequenceOf(rootClass)
-            every {
-                resolver.getSymbolsWithAnnotation(SingleEntryTransformDsl::class.qualifiedName!!)
-            } returns emptySequence()
-
-            expect { true }
-            whenever {
-                generator.generate(resolver, codeGenerator, options())
-                try {
-                    verify(exactly = 1) {
-                        rootGenerator.generate(any(), any(), any(), match { it.isEmpty() })
+                        }, any())
                     }
                     true
                 } catch (_: Exception) {

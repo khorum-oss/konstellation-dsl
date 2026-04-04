@@ -44,9 +44,12 @@ interface DslPropSchema {
                 kdoc(it)
             }
 
-            defaultValue?.codeBlock?.let {
-                initializer = it
-            } ?: initNullValue()
+            val codeBlock = defaultValue?.codeBlock
+            if (codeBlock != null) {
+                initializer = codeBlock
+            } else {
+                initNullValue()
+            }
         }
     }
 

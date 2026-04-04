@@ -18,12 +18,10 @@ private val MAP_GROUP_GENERATOR_CONFIG = GroupGenerator.Config(
         builderAdd = "items[key] = %T().apply(block).build()"
     ),
     propertyTypeAssigner = { typeVar, className ->
-        val typeVariable = requireNotNull(typeVar) { "Parameterized Type required for MapGroup" }
-        kpMutableMapOf(typeVariable, className, nullable = false)
+        kpMutableMapOf(typeVar!!, className, nullable = false)
     },
     builtTypeAssigner = { typeVar, className ->
-        val typeVariable = requireNotNull(typeVar) { "Parameterized Type required for MapGroup" }
-        kpMapOf(typeVariable, className, nullable = false)
+        kpMapOf(typeVar!!, className, nullable = false)
     }
 )
 

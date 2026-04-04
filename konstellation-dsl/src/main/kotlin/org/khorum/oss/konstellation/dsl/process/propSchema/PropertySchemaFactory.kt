@@ -200,9 +200,7 @@ abstract class AbstractPropertySchemaFactory<T : PropertySchemaFactoryAdapter, P
     private fun createBuilderProp(
         adapter: T,
     ): BuilderPropSchema {
-        val propertyNonNullableClassName = requireNotNull(adapter.propertyNonNullableClassName) {
-            "Could not determine property non-nullable class name."
-        }
+        val propertyNonNullableClassName = adapter.propertyNonNullableClassName!!
         val nestedBuilderName = propertyNonNullableClassName.simpleName + "DslBuilder"
         val nestedBuilderClassName = ClassName(propertyNonNullableClassName.packageName, nestedBuilderName)
         logger.debug("nestedBuilder: $nestedBuilderClassName", tier = 5)
@@ -219,9 +217,7 @@ abstract class AbstractPropertySchemaFactory<T : PropertySchemaFactoryAdapter, P
     }
 
     private fun createGroupProp(adapter: T): GroupPropSchema {
-        val groupElementClassName = requireNotNull(adapter.groupElementClassName) {
-            "Could not determine group element class name."
-        }
+        val groupElementClassName = adapter.groupElementClassName!!
         logger.debug("listElementClassName: $groupElementClassName", tier = 5)
         return GroupPropSchema(
             adapter.propName,
@@ -233,7 +229,7 @@ abstract class AbstractPropertySchemaFactory<T : PropertySchemaFactoryAdapter, P
     }
 
     private fun createMapGroupProp(adapter: T): MapGroupPropSchema {
-        val mapDetails = requireNotNull(adapter.mapDetails) { "Please add map details to the map parameter" }
+        val mapDetails = adapter.mapDetails!!
 
         return MapGroupPropSchema(
             adapter.propName,
@@ -245,12 +241,11 @@ abstract class AbstractPropertySchemaFactory<T : PropertySchemaFactoryAdapter, P
     }
 
     private fun builderDoc(builderClass: ClassName, declaration: KSClassDeclaration?): String? {
-        val props = declaration
-            ?.getAllProperties()
-            ?.map { it.simpleName.asString() }
-            ?.toList()
-            ?.takeIf { it.isNotEmpty() }
-            ?: return null
+        if (declaration == null) return null
+        val props = declaration.getAllProperties()
+            .map { it.simpleName.asString() }
+            .toList()
+            .ifEmpty { return null }
 
         val list = props.sorted().joinToString("\n") { "* [${builderClass.simpleName}.$it]" }
         return "Available builder functions:\n$list"

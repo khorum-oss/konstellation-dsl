@@ -114,9 +114,7 @@ data class Logger(
     fun infoMultiline(message: String) {
         val lines = message.split("\n")
 
-        if (lines.isEmpty()) return
-
-        // Log the first line normally
+        // Log the first line normally (split always returns at least one element)
         info(lines.first())
 
         // For subsequent lines, maintain proper indentation

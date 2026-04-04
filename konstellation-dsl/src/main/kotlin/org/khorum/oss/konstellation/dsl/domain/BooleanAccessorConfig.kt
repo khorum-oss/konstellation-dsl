@@ -152,13 +152,12 @@ data class BooleanAccessorConfig(
             val paired = pairedTemplate(negationTemplate!!, isNegation = true)
             return extractSemanticName(propName, paired, isNegation = false)
         }
-        // Try valid template, then negation template, then fallback to capitalize
-        return when {
-            validTemplate.isNamedTemplate() ->
-                extractSemanticName(propName, validTemplate!!, isNegation = false)
-            negationTemplate.isNamedTemplate() ->
-                extractSemanticName(propName, negationTemplate!!, isNegation = true)
-            else -> propName.replaceFirstChar { it.uppercaseChar() }
+        // At least one template must be named since resolveSemanticName is only called
+        // from the else branch of resolveValid/NegationFunctionName where template is named
+        return if (validTemplate.isNamedTemplate()) {
+            extractSemanticName(propName, validTemplate!!, isNegation = false)
+        } else {
+            extractSemanticName(propName, negationTemplate!!, isNegation = true)
         }
     }
 }

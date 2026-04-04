@@ -157,7 +157,7 @@ class DefaultPropertySchemaService(
 
         // For @DefaultTrue / @DefaultFalse, extract boolean accessor template parameters
         val booleanAccessorConfig = if (stateType == DefaultStateType.TRUE || stateType == DefaultStateType.FALSE) {
-            extractBooleanAccessorConfig(matchedAnnotation)
+            extractBooleanAccessorConfig(matchedAnnotation!!)
         } else null
 
         return buildDefaultStateValue(stateType, booleanAccessorConfig)
@@ -181,9 +181,7 @@ class DefaultPropertySchemaService(
      * These annotations may carry `validFunctionName`, `validTemplate`, `negationFunctionName`,
      * and `negationTemplate` parameters for generating paired valid/negation accessor functions.
      */
-    private fun extractBooleanAccessorConfig(ann: KSAnnotation?): BooleanAccessorConfig? {
-        if (ann == null) return null
-
+    private fun extractBooleanAccessorConfig(ann: KSAnnotation): BooleanAccessorConfig? {
         val validFunctionName = AnnotationLookup.findArgumentValue<String>(ann, "validFunctionName")
             ?.takeIf { it.isNotBlank() }
         val validTemplateRaw = AnnotationLookup.findArgument(ann, "validTemplate")?.value

@@ -24,7 +24,7 @@ class SingleTransformPropSchema(
         propName = adapter.propName,
         transformTemplate = adapter.transformTemplate,
         actualPropTypeName = adapter.actualPropTypeName,
-        inputTypeName = requireNotNull(adapter.transformType) { "input type name is required" },
+        inputTypeName = adapter.transformType!!,
         nullableAssignment = adapter.hasNullableAssignment,
         annotationMetadata = adapter.annotationMetadata
     )

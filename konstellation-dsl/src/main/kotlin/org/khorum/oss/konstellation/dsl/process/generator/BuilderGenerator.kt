@@ -138,11 +138,12 @@ class DefaultBuilderGenerator(
         val domainClassName = domainConfig.domainClassName
 
         // Check for @DslDescription on the domain class for builder KDoc
-        val classDescription = AnnotationLookup.findAnnotationByName(
+        val descriptionAnnotation = AnnotationLookup.findAnnotationByName(
             domainConfig.domain.annotations, "DslDescription"
-        )?.let {
-            AnnotationLookup.findArgumentValue<String>(it, "value")?.takeIf { v -> v.isNotBlank() }
-        }
+        )
+        val classDescription = descriptionAnnotation?.let {
+            AnnotationLookup.findArgumentValue<String>(it, "value")
+        }?.takeIf { it.isNotBlank() }
 
         type {
             annotations {
