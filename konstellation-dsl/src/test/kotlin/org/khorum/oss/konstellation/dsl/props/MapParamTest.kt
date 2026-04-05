@@ -88,10 +88,10 @@ class MapParamTest : UnitSim() {
     }
 
     @Test
-    fun `propertyValueReturn - non-nullable returns vRequireMapNotEmpty`() = test {
+    fun `propertyValueReturn - non-nullable returns requireMapNotEmpty`() = test {
         given {
             val param = MapPropSchema("codes", STRING, INT, nullableAssignment = false)
-            expect { "vRequireMapNotEmpty(::codes)" }
+            expect { "DslValidation.requireMapNotEmpty(::codes)" }
             whenever { param.propertyValueReturn() }
         }
     }

@@ -69,10 +69,10 @@ class ListParamTest : UnitSim() {
     }
 
     @Test
-    fun `propertyValueReturn - non-nullable collection returns vRequireCollectionNotEmpty`() = test {
+    fun `propertyValueReturn - non-nullable collection returns requireCollectionNotEmpty`() = test {
         given {
             val param = ListPropSchema("items", STRING, nullableAssignment = false)
-            expect { "vRequireCollectionNotEmpty(::items)" }
+            expect { "DslValidation.requireCollectionNotEmpty(::items)" }
             whenever { param.propertyValueReturn() }
         }
     }

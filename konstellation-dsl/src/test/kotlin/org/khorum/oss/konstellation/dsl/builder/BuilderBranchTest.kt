@@ -275,4 +275,78 @@ class BuilderBranchTest : UnitSim() {
             whenever { builder.name }
         }
     }
+
+    @Test
+    fun `typeCheck throws when type already set via booleanType`() = test {
+        given {
+            expect { true }
+            whenever {
+                try {
+                    val builder = KPParameterSpecBuilder()
+                    builder.booleanType()
+                    builder.booleanType()
+                    false
+                } catch (e: KonstellationException) {
+                    e.message!!.contains("type already set")
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `typeCheck throws when type already set via type method`() = test {
+        given {
+            expect { true }
+            whenever {
+                try {
+                    val builder = KPParameterSpecBuilder()
+                    builder.type(STRING)
+                    builder.type(STRING)
+                    false
+                } catch (e: KonstellationException) {
+                    e.message!!.contains("type already set")
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `KPParameterSpecBuilder defaultValue with null`() = test {
+        given {
+            expect { true }
+            whenever {
+                val builder = KPParameterSpecBuilder()
+                builder.name = "param"
+                builder.type = STRING
+                builder.defaultValue(null)
+                builder.build().defaultValue == null
+            }
+        }
+    }
+
+    // KPFunSpecBuilder branches
+    @Test
+    fun `KPFunSpecBuilder with no returns produces function`() = test {
+        given {
+            expect { "doStuff" }
+            whenever {
+                val builder = KPFunSpecBuilder()
+                builder.funName = "doStuff"
+                builder.build().name
+            }
+        }
+    }
+
+    @Test
+    fun `KPFunSpecBuilder with returns set includes return type`() = test {
+        given {
+            expect { true }
+            whenever {
+                val builder = KPFunSpecBuilder()
+                builder.funName = "getName"
+                builder.returns = STRING
+                builder.build().returnType == STRING
+            }
+        }
+    }
 }

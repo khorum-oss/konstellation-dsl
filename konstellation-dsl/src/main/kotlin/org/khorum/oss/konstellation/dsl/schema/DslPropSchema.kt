@@ -40,13 +40,15 @@ interface DslPropSchema {
             type(propTypeName.copy(nullable = true))
 
             // Add KDoc from @DslDescription
-            annotationMetadata.description?.let {
-                kdoc(it)
-            }
+            val desc = annotationMetadata.description
+            if (desc != null) kdoc(desc)
 
-            defaultValue?.codeBlock?.let {
-                initializer = it
-            } ?: initNullValue()
+            val codeBlock = defaultValue?.codeBlock
+            if (codeBlock != null) {
+                initializer = codeBlock
+            } else {
+                initNullValue()
+            }
         }
     }
 
@@ -180,9 +182,9 @@ interface DslPropSchema {
         if (nullableAssignment) return propName
 
         return when {
-            verifyNotNull -> "vRequireNotNull(::$propName)"
-            verifyNotEmpty && isCollection() -> "vRequireCollectionNotEmpty(::$propName)"
-            verifyNotEmpty && isMap() -> "vRequireMapNotEmpty(::$propName)"
+            verifyNotNull -> "DslValidation.requireNotNull(::$propName)"
+            verifyNotEmpty && isCollection() -> "DslValidation.requireCollectionNotEmpty(::$propName)"
+            verifyNotEmpty && isMap() -> "DslValidation.requireMapNotEmpty(::$propName)"
             else -> propName
         }
     }

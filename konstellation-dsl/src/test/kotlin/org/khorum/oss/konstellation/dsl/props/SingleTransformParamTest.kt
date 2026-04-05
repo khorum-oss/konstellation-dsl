@@ -94,7 +94,7 @@ class SingleTransformParamTest : UnitSim() {
     }
 
     @Test
-    fun `propertyValueReturn - non-nullable assignment returns vRequireNotNull`() = test {
+    fun `propertyValueReturn - non-nullable assignment returns requireNotNull`() = test {
         given {
             val param = SingleTransformPropSchema(
                 "test",
@@ -103,7 +103,7 @@ class SingleTransformParamTest : UnitSim() {
                 nullableAssignment = false
             )
 
-            expect { "vRequireNotNull(::test)" }
+            expect { "DslValidation.requireNotNull(::test)" }
 
             whenever { param.propertyValueReturn() }
         }

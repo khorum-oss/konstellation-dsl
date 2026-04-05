@@ -12,27 +12,27 @@ import org.khorum.oss.konstellation.dsl.domain.PropertyAnnotationMetadata
 class DslPropSchemaBranchTest : UnitSim() {
 
     @Test
-    fun `propertyValueReturn - non-nullable collection with verifyNotEmpty returns vRequireCollectionNotEmpty`() =
+    fun `propertyValueReturn - non-nullable collection with verifyNotEmpty returns requireCollectionNotEmpty`() =
         test {
             given {
                 val param = ListPropSchema("items", STRING, nullableAssignment = false)
-                expect { "vRequireCollectionNotEmpty(::items)" }
+                expect { "DslValidation.requireCollectionNotEmpty(::items)" }
                 whenever { param.propertyValueReturn() }
             }
         }
 
     @Test
-    fun `propertyValueReturn - non-nullable map returns vRequireMapNotEmpty`() = test {
+    fun `propertyValueReturn - non-nullable map returns requireMapNotEmpty`() = test {
         given {
             // MapPropSchema uses IterableType.MAP
             val param = MapPropSchema("entries", STRING, STRING, nullableAssignment = false)
-            expect { "vRequireMapNotEmpty(::entries)" }
+            expect { "DslValidation.requireMapNotEmpty(::entries)" }
             whenever { param.propertyValueReturn() }
         }
     }
 
     @Test
-    fun `propertyValueReturn - non-nullable MapGroupPropSchema returns vRequireMapNotEmpty`() = test {
+    fun `propertyValueReturn - non-nullable MapGroupPropSchema returns requireMapNotEmpty`() = test {
         given {
             val param = MapGroupPropSchema(
                 "entries",
@@ -40,7 +40,7 @@ class DslPropSchemaBranchTest : UnitSim() {
                 com.squareup.kotlinpoet.ClassName("test", "EntryDslBuilder"),
                 nullableAssignment = false
             )
-            expect { "vRequireMapNotEmpty(::entries)" }
+            expect { "DslValidation.requireMapNotEmpty(::entries)" }
             whenever { param.propertyValueReturn() }
         }
     }
@@ -164,6 +164,57 @@ class DslPropSchemaBranchTest : UnitSim() {
             val param = DefaultPropSchema("count", com.squareup.kotlinpoet.INT, defaultValue = dv)
             expect { true }
             whenever { param.toPropertySpec().toString().contains("42") }
+        }
+    }
+
+    // --- toPropertySpec default value branches ---
+
+    @Test
+    fun `toPropertySpec without defaultValue initializes with null`() = test {
+        given {
+            val param = DefaultPropSchema("field", STRING, defaultValue = null)
+            expect { true }
+            whenever { param.toPropertySpec().toString().contains("null") }
+        }
+    }
+
+    @Test
+    fun `GroupPropSchema accessor generates a function`() = test {
+        given {
+            val param = GroupPropSchema(
+                "crew",
+                com.squareup.kotlinpoet.ClassName("org.test", "Crew"),
+                com.squareup.kotlinpoet.ClassName("org.test", "CrewDslBuilder")
+            )
+            expect { true }
+            whenever { param.accessors().isNotEmpty() }
+        }
+    }
+
+    @Test
+    fun `MapGroupPropSchema accessor generates a function`() = test {
+        given {
+            val param = MapGroupPropSchema(
+                "entries",
+                com.squareup.kotlinpoet.ClassName("test", "Entry"),
+                com.squareup.kotlinpoet.ClassName("test", "EntryDslBuilder")
+            )
+            expect { true }
+            whenever { param.accessors().isNotEmpty() }
+        }
+    }
+
+    @Test
+    fun `SingleTransformPropSchema accessor generates a function`() = test {
+        given {
+            val param = SingleTransformPropSchema(
+                propName = "value",
+                inputTypeName = com.squareup.kotlinpoet.INT,
+                actualPropTypeName = STRING,
+                transformTemplate = "MyType(%N)"
+            )
+            expect { "value" }
+            whenever { param.accessors().first().name }
         }
     }
 
@@ -397,7 +448,7 @@ class DslPropSchemaBranchTest : UnitSim() {
     // --- verifyNotEmpty && isMap() branch via custom DslPropSchema ---
 
     @Test
-    fun `propertyValueReturn - non-nullable verifyNotEmpty true isMap true returns vRequireMapNotEmpty`() = test {
+    fun `propertyValueReturn - non-nullable verifyNotEmpty true isMap true returns requireMapNotEmpty`() = test {
         given {
             val param = object : DslPropSchema {
                 override val propName = "entries"
@@ -407,7 +458,7 @@ class DslPropSchemaBranchTest : UnitSim() {
                 override val verifyNotEmpty = true
                 override val iterableType = DslPropSchema.IterableType.MAP
             }
-            expect { "vRequireMapNotEmpty(::entries)" }
+            expect { "DslValidation.requireMapNotEmpty(::entries)" }
             whenever { param.propertyValueReturn() }
         }
     }
@@ -514,10 +565,10 @@ class DslPropSchemaBranchTest : UnitSim() {
         }
     }
 
-    // --- propertyValueReturn with verifyNotNull=true (non-nullable, vRequireNotNull) ---
+    // --- propertyValueReturn with verifyNotNull=true (non-nullable, requireNotNull) ---
 
     @Test
-    fun `propertyValueReturn - non-nullable with verifyNotNull true returns vRequireNotNull`() = test {
+    fun `propertyValueReturn - non-nullable with verifyNotNull true returns requireNotNull`() = test {
         given {
             val param = object : DslPropSchema {
                 override val propName = "required"
@@ -526,7 +577,7 @@ class DslPropSchemaBranchTest : UnitSim() {
                 override val verifyNotNull = true
                 override val verifyNotEmpty = false
             }
-            expect { "vRequireNotNull(::required)" }
+            expect { "DslValidation.requireNotNull(::required)" }
             whenever { param.propertyValueReturn() }
         }
     }
@@ -544,7 +595,7 @@ class DslPropSchemaBranchTest : UnitSim() {
                 override val verifyNotEmpty = true
                 override val iterableType = DslPropSchema.IterableType.COLLECTION
             }
-            expect { "vRequireCollectionNotEmpty(::items)" }
+            expect { "DslValidation.requireCollectionNotEmpty(::items)" }
             whenever { param.propertyValueReturn() }
         }
     }
@@ -574,7 +625,7 @@ class DslPropSchemaBranchTest : UnitSim() {
     // --- GroupPropSchema propertyValueReturn for non-nullable ---
 
     @Test
-    fun `GroupPropSchema propertyValueReturn - non-nullable returns vRequireNotNull`() = test {
+    fun `GroupPropSchema propertyValueReturn - non-nullable returns requireNotNull`() = test {
         given {
             val param = GroupPropSchema(
                 "items",
@@ -583,7 +634,7 @@ class DslPropSchemaBranchTest : UnitSim() {
                 nullableAssignment = false
             )
             // verifyNotNull defaults to true, so it takes priority over verifyNotEmpty
-            expect { "vRequireNotNull(::items)" }
+            expect { "DslValidation.requireNotNull(::items)" }
             whenever { param.propertyValueReturn() }
         }
     }
@@ -649,7 +700,7 @@ class DslPropSchemaBranchTest : UnitSim() {
     fun `BooleanPropSchema propertyValueReturn - non-nullable returns propName`() = test {
         given {
             val param = BooleanPropSchema("flag", nullableAssignment = false)
-            expect { "vRequireNotNull(::flag)" }
+            expect { "DslValidation.requireNotNull(::flag)" }
             whenever { param.propertyValueReturn() }
         }
     }
@@ -689,7 +740,7 @@ class DslPropSchemaBranchTest : UnitSim() {
     // --- BuilderPropSchema propertyValueReturn for non-nullable ---
 
     @Test
-    fun `BuilderPropSchema propertyValueReturn - non-nullable returns vRequireNotNull`() = test {
+    fun `BuilderPropSchema propertyValueReturn - non-nullable returns requireNotNull`() = test {
         given {
             val param = BuilderPropSchema(
                 "nested",
@@ -697,7 +748,7 @@ class DslPropSchemaBranchTest : UnitSim() {
                 com.squareup.kotlinpoet.ClassName("test", "NestedDslBuilder"),
                 nullableAssignment = false
             )
-            expect { "vRequireNotNull(::nested)" }
+            expect { "DslValidation.requireNotNull(::nested)" }
             whenever { param.propertyValueReturn() }
         }
     }

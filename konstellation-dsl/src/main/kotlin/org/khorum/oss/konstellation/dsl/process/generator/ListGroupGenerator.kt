@@ -1,6 +1,5 @@
 package org.khorum.oss.konstellation.dsl.process.generator
 
-import org.khorum.oss.konstellation.metaDsl.annotation.GeneratedDsl
 import org.khorum.oss.konstellation.dsl.builder.AnnotationDecorator
 import org.khorum.oss.konstellation.dsl.builder.kpListOf
 import org.khorum.oss.konstellation.dsl.builder.kpMutableListOf
@@ -13,13 +12,12 @@ private val LIST_GROUP_GENERATOR_CONFIG = GroupGenerator.Config(
         checkName = "isListGroup",
         typeName = "Group"
     ),
-    property = GeneratedDsl::withListGroup,
+    annotationName = "GeneratedDsl",
     templates = GroupGenerator.Templates(
         prop = "mutableListOf()",
         itemsReturn = "return items.toList()",
         builderAdd = "items.add(%T().apply(block).build())"
     ),
-    { it.value.toString() == "true" },
     propertyTypeAssigner = { _, className -> kpMutableListOf(className, nullable = false) },
     builtTypeAssigner = { _, nullable -> kpListOf(nullable) },
 )
@@ -32,7 +30,7 @@ private val LIST_GROUP_GENERATOR_CONFIG = GroupGenerator.Config(
  */
 class ListGroupGenerator(
     annotationDecorator: AnnotationDecorator = AnnotationDecorator()
-) : GroupGenerator<Boolean>(
+) : GroupGenerator(
     LIST_GROUP_GENERATOR_CONFIG,
     annotationDecorator
 ) {

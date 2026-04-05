@@ -1,8 +1,6 @@
 package org.khorum.oss.konstellation.dsl.utils
 
 import com.google.devtools.ksp.symbol.KSClassDeclaration
-import org.khorum.oss.konstellation.metaDsl.annotation.GeneratedDsl
-import org.khorum.oss.konstellation.metaDsl.annotation.MapGroupType
 
 /**
  * Extension functions for [KSClassDeclaration] to check if it is a DSL class
@@ -10,17 +8,14 @@ import org.khorum.oss.konstellation.metaDsl.annotation.MapGroupType
  */
 fun KSClassDeclaration?.isGroupDsl(): Boolean {
     if (this == null) return false
-    return AnnotationLookup.anyAnnotationArgMatches(
-        annotations, GeneratedDsl::class, GeneratedDsl::withListGroup.name
-    ) { it == true }
+    return AnnotationLookup.hasAnnotationByName(annotations, "GeneratedDsl")
 }
 
 /**
- * Extension function to retrieve the group type from the annotations of a [KSClassDeclaration].
+ * Extension function to check whether a [KSClassDeclaration] has a `@GeneratedDsl` annotation
+ * and can participate in map group generation.
  */
-fun KSClassDeclaration?.mapGroupType(): MapGroupType? {
-    if (this == null) return null
-    val annotation = AnnotationLookup.findAnnotation(annotations, GeneratedDsl::class) ?: return null
-    val value = AnnotationLookup.findArgument(annotation, GeneratedDsl::withMapGroup.name)?.value ?: return null
-    return MapGroupType.valueOf(value.toString().uppercase())
+fun KSClassDeclaration?.hasMapDsl(): Boolean {
+    if (this == null) return false
+    return AnnotationLookup.hasAnnotationByName(annotations, "GeneratedDsl")
 }

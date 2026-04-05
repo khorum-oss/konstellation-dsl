@@ -6,6 +6,7 @@ import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSType
 import com.squareup.kotlinpoet.CodeBlock
 import org.khorum.oss.konstellation.dsl.domain.DefaultDomainProperty
+import org.khorum.oss.konstellation.dsl.domain.BooleanAccessorConfig
 import org.khorum.oss.konstellation.dsl.domain.DefaultPropertyValue
 import org.khorum.oss.konstellation.dsl.domain.DomainConfig
 import org.khorum.oss.konstellation.dsl.domain.DomainProperty
@@ -142,9 +143,10 @@ class DefaultPropertySchemaService(
         // Otherwise, check for shorthand annotations (e.g. @DefaultEmptyString → EMPTY_STRING).
         // These are meta-annotated with @DefaultState in source, but since @DefaultState has SOURCE
         // retention, the meta-annotation is stripped from the compiled JAR. We resolve by qualified name.
+        var matchedAnnotation: KSAnnotation? = null
         val stateType = annotations.firstNotNullOfOrNull { outerAnn ->
             val qualName = outerAnn.annotationType.resolve().declaration.qualifiedName?.asString()
-            qualName?.let { SHORTHAND_ANNOTATION_MAP[it] }
+            qualName?.let { SHORTHAND_ANNOTATION_MAP[it] }?.also { matchedAnnotation = outerAnn }
         } ?: return null
 
         logger.debug(
@@ -152,15 +154,66 @@ class DefaultPropertySchemaService(
                 "→ ${stateType.name}: ${stateType.codeSnippet}",
             tier = 2
         )
-        return buildDefaultStateValue(stateType)
+
+        // For @DefaultTrue / @DefaultFalse, extract boolean accessor template parameters
+        val booleanAccessorConfig = if (stateType == DefaultStateType.TRUE || stateType == DefaultStateType.FALSE) {
+            extractBooleanAccessorConfig(matchedAnnotation!!)
+        } else null
+
+        return buildDefaultStateValue(stateType, booleanAccessorConfig)
     }
 
-    private fun buildDefaultStateValue(stateType: DefaultStateType): DefaultPropertyValue {
+    private fun buildDefaultStateValue(
+        stateType: DefaultStateType,
+        booleanAccessorConfig: BooleanAccessorConfig? = null
+    ): DefaultPropertyValue {
         return DefaultPropertyValue(
             rawValue = stateType.codeSnippet,
             codeBlock = CodeBlock.of("%L", stateType.codeSnippet),
             packageName = "",
-            className = ""
+            className = "",
+            booleanAccessorConfig = booleanAccessorConfig
+        )
+    }
+
+    /**
+     * Extracts boolean accessor configuration from `@DefaultTrue` / `@DefaultFalse` annotations.
+     * These annotations may carry `validFunctionName`, `validTemplate`, `negationFunctionName`,
+     * and `negationTemplate` parameters for generating paired valid/negation accessor functions.
+     */
+    private fun extractBooleanAccessorConfig(ann: KSAnnotation): BooleanAccessorConfig? {
+        val validFunctionName = AnnotationLookup.findArgumentValue<String>(ann, "validFunctionName")
+            .takeUnlessBlank()
+        val validTemplateArg = AnnotationLookup.findArgument(ann, "validTemplate")
+        val validTemplate = if (validTemplateArg != null) resolveEnumEntryName(validTemplateArg.value) else null
+
+        val negationFunctionName = AnnotationLookup.findArgumentValue<String>(ann, "negationFunctionName")
+            .takeUnlessBlank()
+        val negationTemplateArg = AnnotationLookup.findArgument(ann, "negationTemplate")
+        val negationTemplate = if (negationTemplateArg != null) {
+            resolveEnumEntryName(negationTemplateArg.value)
+        } else null
+
+        // If no template parameters are present, no config needed (backward compatibility)
+        val allParams = listOf(validFunctionName, validTemplate, negationFunctionName, negationTemplate)
+        if (allParams.all { it == null }) {
+            return null
+        }
+
+        // If negation is SELF, blank out valid unless explicitly set
+        val negationIsSelf = negationTemplate == "SELF"
+        val noValidOverride = validTemplate == null && validFunctionName == null
+        val effectiveValidTemplate = if (negationIsSelf && noValidOverride) {
+            "NONE"
+        } else {
+            validTemplate
+        }
+
+        return BooleanAccessorConfig(
+            validFunctionName = validFunctionName,
+            validTemplate = effectiveValidTemplate,
+            negationFunctionName = negationFunctionName,
+            negationTemplate = negationTemplate
         )
     }
 
@@ -255,10 +308,13 @@ class DefaultPropertySchemaService(
                 val annotationName = entry.name
                     .lowercase()
                     .split("_")
-                    .joinToString("") { it.replaceFirstChar(Char::uppercaseChar) }
-                    .let { "Default$it" }
+                    .joinToString("") { part ->
+                        part.first().uppercase() + part.substring(1)
+                    }.let { "Default$it" }
                 "$SHORTHAND_PKG.$annotationName"
             }
     }
 
 }
+
+private fun String?.takeUnlessBlank(): String? = if (this != null && this.isNotBlank()) this else null

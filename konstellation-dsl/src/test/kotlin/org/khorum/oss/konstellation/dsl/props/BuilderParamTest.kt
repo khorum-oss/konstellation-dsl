@@ -83,10 +83,10 @@ class BuilderParamTest : UnitSim() {
     }
 
     @Test
-    fun `propertyValueReturn - non-nullable returns vRequireNotNull`() = test {
+    fun `propertyValueReturn - non-nullable returns requireNotNull`() = test {
         given {
             val param = BuilderPropSchema("test", typeName, buildClassName, nullableAssignment = false)
-            expect { "vRequireNotNull(::test)" }
+            expect { "DslValidation.requireNotNull(::test)" }
             whenever { param.propertyValueReturn() }
         }
     }

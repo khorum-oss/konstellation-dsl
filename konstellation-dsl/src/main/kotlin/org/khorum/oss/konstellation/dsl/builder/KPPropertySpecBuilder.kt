@@ -59,8 +59,8 @@ class KPPropertySpecBuilder : TypedSpec, MutabilitySpec, DefaultKotlinPoetSpec()
             )
             .mutable(mutable)
 
-        spec = initializer?.let { spec.initializer(it) } ?: spec
-        spec = kdocString?.let { spec.addKdoc("%L", it) } ?: spec
+        if (initializer != null) spec = spec.initializer(initializer!!)
+        if (kdocString != null) spec = spec.addKdoc("%L", kdocString!!)
 
         return spec.build()
     }

@@ -1,25 +1,21 @@
 package org.khorum.oss.konstellation.dsl.process.generator
 
-import com.google.devtools.ksp.symbol.KSValueArgument
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeVariableName
-import org.khorum.oss.konstellation.metaDsl.annotation.GeneratedDsl
 import org.khorum.oss.konstellation.dsl.builder.AnnotationDecorator
 import org.khorum.oss.konstellation.dsl.builder.KPTypeSpecBuilder
 import org.khorum.oss.konstellation.dsl.domain.DomainConfig
 import org.khorum.oss.konstellation.dsl.utils.AnnotationLookup
 import org.khorum.oss.konstellation.dsl.utils.VLoggable
-import kotlin.reflect.KProperty1
 
 /**
  * Abstract class for generating DSL groups.
- * @param T The type of the DSL group.
  * @param config The configuration for the group generator.
  * @param annotationDecorator The decorator for handling annotations in the DSL group.
  */
-abstract class GroupGenerator<T>(
-    val config: Config<T>,
+abstract class GroupGenerator(
+    val config: Config,
     val annotationDecorator: AnnotationDecorator
 ) : VLoggable {
 
@@ -27,17 +23,15 @@ abstract class GroupGenerator<T>(
      * Configuration class for the group generator.
      * This class holds the necessary information to generate the DSL group.
      * @param namespace The namespace for the DSL group.
-     * @property property The property of the DSL group that will be used to identify the group.
+     * @property annotationName The annotation simple name to check on the domain class.
      * @property templates The templates used for generating the DSL group.
-     * @property identifierPredicate A predicate function to identify if the annotation argument matches the group.
      * @property propertyTypeAssigner A function to assign the type variable for the DSL group property.
      * @property builtTypeAssigner A function to assign the type variable for the built DSL group.
      */
-    class Config<T>(
+    class Config(
         val namespace: Namespace,
-        val property: KProperty1<GeneratedDsl, T>,
+        val annotationName: String,
         val templates: Templates,
-        val identifierPredicate: (annotationArg: KSValueArgument) -> Boolean,
         val propertyTypeAssigner: (typeVariable: TypeName?, domainClassName: ClassName) -> TypeName,
         val builtTypeAssigner: (typeVariable: TypeName?, domainClassName: ClassName) -> TypeName,
     )
@@ -71,18 +65,16 @@ abstract class GroupGenerator<T>(
     )
 
     /**
-     * Checks if the given domain configuration is a group based on the provided annotation arguments.
-     * This method will look for the `GeneratedDsl` annotation and check if the property matches the group identifier.
+     * Checks if the given domain configuration is a group based on the presence of the
+     * configured annotation (e.g. `@ListDsl`, `@MapDsl`) on the domain class.
      *
      * @param domainConfig The configuration of the domain to check.
      * @return True if the domain is a group, false otherwise.
      */
     protected fun isGroup(domainConfig: DomainConfig): Boolean {
-        val isGroup = AnnotationLookup.filterAnnotations(domainConfig.domain.annotations, GeneratedDsl::class)
-            .flatMap { it.arguments }
-            .filter { it.name?.asString() == config.property.name }
-            .onEach { logger.debug("found arg: ${it.name?.asString()} - ${it.value}", tier = 1) }
-            .any(config.identifierPredicate)
+        val isGroup = AnnotationLookup.hasAnnotationByName(
+            domainConfig.domain.annotations, config.annotationName
+        )
         logger.debug("[DECISION] ${config.namespace.checkName}: $isGroup", tier = 1)
 
         val typeName = config.namespace.typeName
@@ -135,7 +127,8 @@ abstract class GroupGenerator<T>(
                     }
 
                     add {
-                        funName = domainClassName.simpleName.replaceFirstChar { it.lowercase() }
+                        val simpleName = domainClassName.simpleName
+                        funName = simpleName.first().lowercase() + simpleName.substring(1)
 
                         typeVariable?.let {
                             param {

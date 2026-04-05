@@ -3,7 +3,6 @@ package org.khorum.oss.konstellation.dsl.process.root
 import com.google.devtools.ksp.processing.CodeGenerator
 import com.google.devtools.ksp.processing.Dependencies
 import com.google.devtools.ksp.symbol.KSClassDeclaration
-import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.ksp.writeTo
 import org.khorum.oss.konstellation.dsl.builder.kotlinPoet
@@ -19,9 +18,8 @@ interface RootDslAccessorGenerator : DslFileWriter, VLoggable {
 
     fun generate(
         codeGenerator: CodeGenerator,
-        domains: List<KSClassDeclaration>,
-        builderConfig: BuilderConfig,
-        rootDslProperties: List<Triple<KSPropertyDeclaration, String?, String?>> = emptyList()
+        domains: List<Triple<KSClassDeclaration, String?, String?>>,
+        builderConfig: BuilderConfig
     )
 }
 
@@ -33,26 +31,18 @@ class DefaultRootDslAccessorGenerator(
 ) : RootDslAccessorGenerator {
     override fun generate(
         codeGenerator: CodeGenerator,
-        domains: List<KSClassDeclaration>,
-        builderConfig: BuilderConfig,
-        rootDslProperties: List<Triple<KSPropertyDeclaration, String?, String?>>
+        domains: List<Triple<KSClassDeclaration, String?, String?>>,
+        builderConfig: BuilderConfig
     ) {
         val functions = domains
-            .map { rootFunctionGenerator.generate(it, builderConfig) }
-            .toMutableList()
-
-        // Generate functions for @RootDsl properties
-        for ((prop, name, alias) in rootDslProperties) {
-            val propTypeDecl = prop.type.resolve().declaration as? KSClassDeclaration ?: continue
-            val funSpec = rootFunctionGenerator.generate(propTypeDecl, builderConfig, name)
-            functions.add(funSpec)
-
-            // Generate alias function if provided
-            if (alias != null) {
-                val aliasFunSpec = rootFunctionGenerator.generate(propTypeDecl, builderConfig, alias)
-                functions.add(aliasFunSpec)
+            .flatMap { (domain, name, alias) ->
+                buildList {
+                    add(rootFunctionGenerator.generate(domain, builderConfig, name))
+                    if (alias != null) {
+                        add(rootFunctionGenerator.generate(domain, builderConfig, alias))
+                    }
+                }
             }
-        }
 
         val fileSpec = kotlinPoet {
             file {
@@ -61,11 +51,7 @@ class DefaultRootDslAccessorGenerator(
             }
         }
 
-        val containingFiles = (
-            domains.mapNotNull { it.containingFile } +
-            rootDslProperties.mapNotNull { it.first.containingFile }
-        ).toTypedArray()
-
+        val containingFiles = domains.mapNotNull { it.first.containingFile }.toTypedArray()
         val dependencies = Dependencies(aggregating = false, sources = containingFiles)
 
         fileSpec.writeTo(codeGenerator, dependencies)

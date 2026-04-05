@@ -20,14 +20,53 @@ class BooleanPropSchema(
 
     override fun accessors(): List<FunSpec> = kotlinPoet {
         functions {
-            add {
-                funName = propName
-                val param = param {
-                    booleanType()
-                    defaultValue(defaultValue?.rawValue?.toBoolean() ?: true)
+            val config = defaultValue?.booleanAccessorConfig
+
+            if (config == null) {
+                // Backward compatibility: single function with default from annotation
+                add {
+                    funName = propName
+                    val param = param {
+                        booleanType()
+                        val boolDefault = if (defaultValue != null) {
+                            defaultValue.rawValue.toBoolean()
+                        } else true
+                        defaultValue(boolDefault)
+                    }
+                    statements {
+                        addLine("this.%N = %N", propName, param)
+                    }
                 }
-                statements {
-                    addLine("this.%N = %N", propName, param)
+                return@functions
+            }
+
+            // Valid function: sets this.prop = check
+            val validName = config.resolveValidFunctionName(propName)
+            if (validName != null) {
+                add {
+                    funName = validName
+                    val param = param {
+                        booleanType()
+                        defaultValue(true)
+                    }
+                    statements {
+                        addLine("this.%N = %N", propName, param)
+                    }
+                }
+            }
+
+            // Negation function: sets this.prop = !check
+            val negationName = config.resolveNegationFunctionName(propName)
+            if (negationName != null) {
+                add {
+                    funName = negationName
+                    val param = param {
+                        booleanType()
+                        defaultValue(true)
+                    }
+                    statements {
+                        addLine("this.%N = !%N", propName, param)
+                    }
                 }
             }
         }

@@ -5,13 +5,15 @@ import org.khorum.oss.konstellation.metaDsl.annotation.defaults.DefaultValue
 import org.khorum.oss.konstellation.metaDsl.annotation.DeprecatedDsl
 import org.khorum.oss.konstellation.metaDsl.annotation.DslAlias
 import org.khorum.oss.konstellation.metaDsl.annotation.DslDescription
-import org.khorum.oss.konstellation.metaDsl.annotation.DslProperty
 import org.khorum.oss.konstellation.metaDsl.annotation.GeneratedDsl
+import org.khorum.oss.konstellation.metaDsl.annotation.ListDsl
+import org.khorum.oss.konstellation.metaDsl.annotation.MapDsl
+import org.khorum.oss.konstellation.metaDsl.annotation.RootDsl
 import org.khorum.oss.konstellation.metaDsl.annotation.TransientDsl
 import org.khorum.oss.konstellation.metaDsl.annotation.ValidateDsl
 
+@RootDsl
 @GeneratedDsl(
-    isRoot = true,
     debug = true
 )
 data class StarShip(
@@ -52,7 +54,7 @@ data class StarShip(
     @TransientDsl(reason = "Internal tracking only")
     val internalTrackingId: String? = null,
 
-    // @DslProperty examples - demonstrating different accessor configurations
+    // @ListDsl/@MapDsl examples - demonstrating different accessor configurations
 
     // Default: both vararg and provider functions generated
     // Generates: aliases(vararg items: String) and aliases(provider: () -> List<String>)
@@ -60,16 +62,16 @@ data class StarShip(
 
     // Only vararg function generated (no provider)
     // Generates: only tags(vararg items: String)
-    @DslProperty(withProvider = false)
+    @ListDsl(withProvider = false)
     val tags: List<String>? = null,
 
     // Only provider function generated (no vararg)
     // Generates: only metadata(provider: () -> Map<String, String>)
-    @DslProperty(withVararg = false)
+    @MapDsl(withVararg = false)
     val metadata: Map<String, String>? = null,
 
     // Neither function generated (direct property assignment only)
     // No accessor functions generated - must set directly: builder.systemCodes = listOf(...)
-    @DslProperty(withVararg = false, withProvider = false)
+    @ListDsl(withVararg = false, withProvider = false)
     val systemCodes: List<Int>? = null
 )

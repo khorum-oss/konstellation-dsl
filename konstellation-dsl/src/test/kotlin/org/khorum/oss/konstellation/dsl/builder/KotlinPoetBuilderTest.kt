@@ -284,6 +284,35 @@ class KotlinPoetBuilderTest : UnitSim() {
     }
 
     @Nested
+    inner class NestedClassExtensionTest {
+        @Test
+        fun `nestedClass with non-null nestedClassName creates 3-part class name`() = test {
+            given {
+                expect { "org.test.ShipDslBuilder.Group" }
+                whenever {
+                    kotlinPoet {
+                        ClassName("org.test", "Ship")
+                            .nestedClass("DslBuilder", "Group")
+                    }.canonicalName
+                }
+            }
+        }
+
+        @Test
+        fun `nestedClass with null nestedClassName creates 2-part class name`() = test {
+            given {
+                expect { "org.test.ShipDslBuilder" }
+                whenever {
+                    kotlinPoet {
+                        ClassName("org.test", "Ship")
+                            .nestedClass("DslBuilder", null)
+                    }.canonicalName
+                }
+            }
+        }
+    }
+
+    @Nested
     inner class TopLevelKpMutableListOfTest {
         @Test
         fun `kpMutableListOf produces nullable mutable list type`() = test {
