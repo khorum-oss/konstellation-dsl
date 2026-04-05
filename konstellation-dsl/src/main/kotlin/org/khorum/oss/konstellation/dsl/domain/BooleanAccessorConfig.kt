@@ -83,7 +83,7 @@ data class BooleanAccessorConfig(
             val patterns = if (isNegation) NEGATION_TEMPLATE_PATTERNS else VALID_TEMPLATE_PATTERNS
             val pattern = patterns[templateName] ?: return capitalizeFirst(propName)
             val prefix = pattern.substringBefore("{x}")
-            if (prefix.isNotEmpty() && propName.startsWith(prefix)) {
+            if (propName.startsWith(prefix)) {
                 val remainder = propName.removePrefix(prefix)
                 if (remainder.isNotEmpty()) return remainder
             }
@@ -139,7 +139,6 @@ data class BooleanAccessorConfig(
             return templateNames
                 .mapNotNull { VALID_TEMPLATE_PATTERNS[it] }
                 .map { it.substringBefore("{x}") }
-                .filter { it.isNotEmpty() }
                 .sortedByDescending { it.length }
         }
 
