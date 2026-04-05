@@ -32,7 +32,7 @@ data class BooleanAccessorConfig(
             "PRESENT" to "present{x}",
             "IS_PRESENT" to "isPresent{x}",
             "ALWAYS" to "always{x}",
-            "EXISTS" to "exists{x}",
+            "EXISTING" to "existing{x}",
         )
 
         /** Template patterns for NegationFunctionTemplate enum entries. */
@@ -68,7 +68,7 @@ data class BooleanAccessorConfig(
             "PRESENT" to "ABSENT",
             "IS_PRESENT" to "IS_ABSENT",
             "ALWAYS" to "NEVER",
-            "EXISTS" to "ABSENT",
+            "EXISTING" to "ABSENT",
         )
 
         /** Paired templates: negation → valid counterpart. */
@@ -106,8 +106,8 @@ data class BooleanAccessorConfig(
             "IS_DISABLED" to listOf("IS_ENABLED", "ENABLED"),
             "IS_DENIED" to listOf("IS_ENABLED", "ENABLED"),
             "WITHOUT" to listOf("WITH"),
-            "ABSENT" to listOf("IS_PRESENT", "PRESENT", "EXISTS"),
-            "IS_ABSENT" to listOf("IS_PRESENT", "PRESENT", "EXISTS"),
+            "ABSENT" to listOf("IS_PRESENT", "PRESENT", "EXISTING"),
+            "IS_ABSENT" to listOf("IS_PRESENT", "PRESENT", "EXISTING"),
             "NEVER" to listOf("ALWAYS"),
         )
 

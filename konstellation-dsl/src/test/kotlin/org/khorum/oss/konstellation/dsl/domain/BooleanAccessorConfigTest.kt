@@ -409,10 +409,10 @@ class BooleanAccessorConfigTest : UnitSim() {
         }
 
         @Test
-        fun `EXISTS valid to ABSENT negation pair`() = test {
+        fun `EXISTING valid to ABSENT negation pair`() = test {
             given {
                 expect { "ABSENT" }
-                whenever { BooleanAccessorConfig.pairedTemplate("EXISTS", isNegation = false) }
+                whenever { BooleanAccessorConfig.pairedTemplate("EXISTING", isNegation = false) }
             }
         }
 
@@ -473,10 +473,10 @@ class BooleanAccessorConfigTest : UnitSim() {
         }
 
         @Test
-        fun `EXISTS valid template applies pattern`() = test {
+        fun `EXISTING valid template applies pattern`() = test {
             given {
-                val config = BooleanAccessorConfig(validTemplate = "EXISTS")
-                expect { "existsRecord" }
+                val config = BooleanAccessorConfig(validTemplate = "EXISTING")
+                expect { "existingRecord" }
                 whenever { config.resolveValidFunctionName("record") }
             }
         }
@@ -638,14 +638,14 @@ class BooleanAccessorConfigTest : UnitSim() {
         }
 
         @Test
-        fun `EXISTS valid with ABSENT negation`() = test {
+        fun `EXISTING valid with ABSENT negation`() = test {
             given {
                 val config = BooleanAccessorConfig(
-                    validTemplate = "EXISTS",
+                    validTemplate = "EXISTING",
                     negationTemplate = "ABSENT"
                 )
                 expect { "absentRecord" }
-                whenever { config.resolveNegationFunctionName("existsRecord") }
+                whenever { config.resolveNegationFunctionName("existingRecord") }
             }
         }
 
@@ -773,10 +773,10 @@ class BooleanAccessorConfigTest : UnitSim() {
         }
 
         @Test
-        fun `exists prefix with ABSENT negation`() = test {
+        fun `existing prefix with ABSENT negation`() = test {
             given {
                 expect { "absentRecord" }
-                whenever { BooleanAccessorConfig.resolveNegationByAutoDetect("existsRecord", "ABSENT") }
+                whenever { BooleanAccessorConfig.resolveNegationByAutoDetect("existingRecord", "ABSENT") }
             }
         }
 
@@ -926,10 +926,10 @@ class BooleanAccessorConfigTest : UnitSim() {
         }
 
         @Test
-        fun `Exists suffix with ABSENT negation`() = test {
+        fun `Existing suffix with ABSENT negation`() = test {
             given {
                 expect { "recordAbsent" }
-                whenever { BooleanAccessorConfig.resolveNegationByAutoDetect("recordExists", "ABSENT") }
+                whenever { BooleanAccessorConfig.resolveNegationByAutoDetect("recordExisting", "ABSENT") }
             }
         }
 

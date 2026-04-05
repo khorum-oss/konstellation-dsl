@@ -1826,6 +1826,95 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
     }
 
     @Test
+    fun `getParamsFromDomain DefaultFalse with named negation preserves valid SELF`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockShorthandDefaultAnnotation("DefaultFalse")
+
+            // Simulates KSP including default validTemplate=SELF when user only sets negationTemplate
+            val validTemplateDecl: KSClassDeclaration = mockk()
+            every { validTemplateDecl.simpleName } returns mockKSName("SELF")
+
+            val negationTemplateDecl: KSClassDeclaration = mockk()
+            every { negationTemplateDecl.simpleName } returns mockKSName("DOES_NOT_HAVE")
+
+            every { ann.arguments } returns listOf(
+                mockk<KSValueArgument>().also { arg ->
+                    every { arg.name } returns mockKSName("validTemplate")
+                    every { arg.value } returns validTemplateDecl
+                },
+                mockk<KSValueArgument>().also { arg ->
+                    every { arg.name } returns mockKSName("negationTemplate")
+                    every { arg.value } returns negationTemplateDecl
+                },
+                mockk<KSValueArgument>().also { arg ->
+                    every { arg.name } returns mockKSName("validFunctionName")
+                    every { arg.value } returns ""
+                },
+                mockk<KSValueArgument>().also { arg ->
+                    every { arg.name } returns mockKSName("negationFunctionName")
+                    every { arg.value } returns ""
+                }
+            )
+
+            val prop = mockPropWithAnnotations("hasTouch", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                val config = service.getParamsFromDomain(domainConfig).first().defaultValue?.booleanAccessorConfig
+                // Valid SELF must be preserved (not blanked to NONE) when negation is not SELF
+                config != null &&
+                    config.validTemplate == "SELF" &&
+                    config.negationTemplate == "DOES_NOT_HAVE" &&
+                    config.resolveValidFunctionName("hasTouch") == "hasTouch" &&
+                    config.resolveNegationFunctionName("hasTouch") == "doesNotHaveTouch"
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain DefaultFalse with negation only and no valid in args preserves valid`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockShorthandDefaultAnnotation("DefaultFalse")
+
+            // Simulates KSP NOT including default validTemplate (some KSP versions)
+            val negationTemplateDecl: KSClassDeclaration = mockk()
+            every { negationTemplateDecl.simpleName } returns mockKSName("DISABLED")
+
+            every { ann.arguments } returns listOf(
+                mockk<KSValueArgument>().also { arg ->
+                    every { arg.name } returns mockKSName("negationTemplate")
+                    every { arg.value } returns negationTemplateDecl
+                },
+                mockk<KSValueArgument>().also { arg ->
+                    every { arg.name } returns mockKSName("validFunctionName")
+                    every { arg.value } returns ""
+                },
+                mockk<KSValueArgument>().also { arg ->
+                    every { arg.name } returns mockKSName("negationFunctionName")
+                    every { arg.value } returns ""
+                }
+            )
+
+            val prop = mockPropWithAnnotations("someItemEnabled", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                val config = service.getParamsFromDomain(domainConfig).first().defaultValue?.booleanAccessorConfig
+                // validTemplate is null (not in args), but resolveValidFunctionName returns propName
+                config != null &&
+                    config.validTemplate == null &&
+                    config.negationTemplate == "DISABLED" &&
+                    config.resolveValidFunctionName("someItemEnabled") == "someItemEnabled" &&
+                    config.resolveNegationFunctionName("someItemEnabled") == "someItemDisabled"
+            }
+        }
+    }
+
+    @Test
     fun `getParamsFromDomain DefaultState with missing type argument returns null`() = test {
         given {
             val service = DefaultPropertySchemaService()
