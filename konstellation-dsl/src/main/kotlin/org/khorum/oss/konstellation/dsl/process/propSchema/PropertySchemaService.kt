@@ -183,14 +183,16 @@ class DefaultPropertySchemaService(
      */
     private fun extractBooleanAccessorConfig(ann: KSAnnotation): BooleanAccessorConfig? {
         val validFunctionName = AnnotationLookup.findArgumentValue<String>(ann, "validFunctionName")
-            ?.takeIf { it.isNotBlank() }
-        val validTemplateRaw = AnnotationLookup.findArgument(ann, "validTemplate")?.value
-        val validTemplate = resolveEnumEntryName(validTemplateRaw)
+            .takeUnlessBlank()
+        val validTemplateArg = AnnotationLookup.findArgument(ann, "validTemplate")
+        val validTemplate = if (validTemplateArg != null) resolveEnumEntryName(validTemplateArg.value) else null
 
         val negationFunctionName = AnnotationLookup.findArgumentValue<String>(ann, "negationFunctionName")
-            ?.takeIf { it.isNotBlank() }
-        val negationTemplateRaw = AnnotationLookup.findArgument(ann, "negationTemplate")?.value
-        val negationTemplate = resolveEnumEntryName(negationTemplateRaw)
+            .takeUnlessBlank()
+        val negationTemplateArg = AnnotationLookup.findArgument(ann, "negationTemplate")
+        val negationTemplate = if (negationTemplateArg != null) {
+            resolveEnumEntryName(negationTemplateArg.value)
+        } else null
 
         // If no template parameters are present, no config needed (backward compatibility)
         val allParams = listOf(validFunctionName, validTemplate, negationFunctionName, negationTemplate)
@@ -306,10 +308,13 @@ class DefaultPropertySchemaService(
                 val annotationName = entry.name
                     .lowercase()
                     .split("_")
-                    .joinToString("") { it.replaceFirstChar(Char::uppercaseChar) }
-                    .let { "Default$it" }
+                    .joinToString("") { part ->
+                        part.first().uppercase() + part.substring(1)
+                    }.let { "Default$it" }
                 "$SHORTHAND_PKG.$annotationName"
             }
     }
 
 }
+
+private fun String?.takeUnlessBlank(): String? = if (this != null && this.isNotBlank()) this else null

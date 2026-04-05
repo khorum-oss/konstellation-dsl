@@ -41,7 +41,7 @@ class GroupPropSchema(
         functions {
             add {
                 funName = functionName
-                kdoc?.let { kdoc(it) }
+                if (kdoc != null) kdoc(kdoc!!)
                 param {
                     lambdaType {
                         receiver = receiverName

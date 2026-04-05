@@ -127,7 +127,8 @@ abstract class GroupGenerator(
                     }
 
                     add {
-                        funName = domainClassName.simpleName.replaceFirstChar { it.lowercase() }
+                        val simpleName = domainClassName.simpleName
+                        funName = simpleName.first().lowercase() + simpleName.substring(1)
 
                         typeVariable?.let {
                             param {

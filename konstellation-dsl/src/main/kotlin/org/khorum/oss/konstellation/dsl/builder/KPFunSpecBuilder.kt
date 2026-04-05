@@ -97,7 +97,7 @@ class KPFunSpecBuilder : ParamSpecEnabled {
             spec = spec.addParameter(param)
         }
 
-        spec = returns?.let { spec.returns(it) } ?: spec
+        if (returns != null) spec = spec.returns(returns!!)
 
         if (overridden) spec = spec.addModifiers(KModifier.OVERRIDE)
         if (kdoc != null) spec = spec.addKdoc(kdoc!!)

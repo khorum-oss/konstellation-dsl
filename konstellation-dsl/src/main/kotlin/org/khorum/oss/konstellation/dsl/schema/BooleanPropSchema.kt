@@ -28,7 +28,10 @@ class BooleanPropSchema(
                     funName = propName
                     val param = param {
                         booleanType()
-                        defaultValue(defaultValue?.rawValue?.toBoolean() ?: true)
+                        val boolDefault = if (defaultValue != null) {
+                            defaultValue.rawValue.toBoolean()
+                        } else true
+                        defaultValue(boolDefault)
                     }
                     statements {
                         addLine("this.%N = %N", propName, param)

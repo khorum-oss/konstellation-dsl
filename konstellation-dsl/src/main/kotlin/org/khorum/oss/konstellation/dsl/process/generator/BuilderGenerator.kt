@@ -141,9 +141,10 @@ class DefaultBuilderGenerator(
         val descriptionAnnotation = AnnotationLookup.findAnnotationByName(
             domainConfig.domain.annotations, "DslDescription"
         )
-        val classDescription = descriptionAnnotation?.let {
-            AnnotationLookup.findArgumentValue<String>(it, "value")
-        }?.takeIf { it.isNotBlank() }
+        val classDescription = if (descriptionAnnotation != null) {
+            val desc = AnnotationLookup.findArgumentValue<String>(descriptionAnnotation, "value")
+            if (desc != null && desc.isNotBlank()) desc else null
+        } else null
 
         type {
             annotations {

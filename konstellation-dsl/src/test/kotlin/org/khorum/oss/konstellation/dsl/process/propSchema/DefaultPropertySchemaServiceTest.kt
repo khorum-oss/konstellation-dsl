@@ -1856,4 +1856,31 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
             whenever { service.getParamsFromDomain(domainConfig).first().defaultValue }
         }
     }
+
+    @Test
+    fun `getParamsFromDomain annotation with null qualifiedName on type declaration is skipped`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            // Annotation whose type declaration has null qualifiedName
+            val ann: KSAnnotation = mockk()
+            val shortName: KSName = mockk()
+            every { shortName.asString() } returns "SomeAnnotation"
+            every { ann.shortName } returns shortName
+            val annTypeRef: KSTypeReference = mockk()
+            val annResolvedType: KSType = mockk()
+            val annDecl: KSClassDeclaration = mockk()
+            val annQualName: KSName = mockk()
+            every { annQualName.asString() } returns "unknown.package.UnknownAnnotation"
+            every { annDecl.qualifiedName } returns annQualName
+            every { annResolvedType.declaration } returns annDecl
+            every { annTypeRef.resolve() } returns annResolvedType
+            every { ann.annotationType } returns annTypeRef
+
+            val prop = mockPropWithAnnotations("field", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { null }
+            whenever { service.getParamsFromDomain(domainConfig).first().defaultValue }
+        }
+    }
 }

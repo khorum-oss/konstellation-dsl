@@ -40,9 +40,8 @@ interface DslPropSchema {
             type(propTypeName.copy(nullable = true))
 
             // Add KDoc from @DslDescription
-            annotationMetadata.description?.let {
-                kdoc(it)
-            }
+            val desc = annotationMetadata.description
+            if (desc != null) kdoc(desc)
 
             val codeBlock = defaultValue?.codeBlock
             if (codeBlock != null) {

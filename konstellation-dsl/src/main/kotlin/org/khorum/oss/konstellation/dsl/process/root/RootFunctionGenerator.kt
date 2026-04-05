@@ -32,7 +32,9 @@ class DefaultRootFunctionGenerator : RootFunctionGenerator {
             val domainClassName = domain.toClassName()
             val domainBuilderClassName =
                 ClassName(domainClassName.packageName, "${domainClassName.simpleName}DslBuilder")
-            funName = customName ?: domain.simpleName.asString().replaceFirstChar { it.lowercase() }
+            funName = customName ?: domain.simpleName.asString().let { n ->
+                n.first().lowercase() + n.substring(1)
+            }
 
             param {
                 lambdaType {
