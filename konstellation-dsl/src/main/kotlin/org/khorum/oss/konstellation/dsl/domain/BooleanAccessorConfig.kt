@@ -32,12 +32,14 @@ data class BooleanAccessorConfig(
             "PRESENT" to "present{x}",
             "IS_PRESENT" to "isPresent{x}",
             "ALWAYS" to "always{x}",
+            "EXISTS" to "exists{x}",
         )
 
         /** Template patterns for NegationFunctionTemplate enum entries. */
         val NEGATION_TEMPLATE_PATTERNS: Map<String, String> = mapOf(
             "DOES_NOT" to "doesNot{x}",
             "DOES_NOT_HAVE" to "doesNotHave{x}",
+            "DO_NOT" to "doNot{x}",
             "DISABLED" to "disabled{x}",
             "IS_DISABLED" to "isDisabled{x}",
             "NOT" to "not{x}",
@@ -51,6 +53,8 @@ data class BooleanAccessorConfig(
             "ABSENT" to "absent{x}",
             "IS_ABSENT" to "isAbsent{x}",
             "NEVER" to "never{x}",
+            "DENY" to "deny{x}",
+            "IS_DENIED" to "isDenied{x}",
         )
 
         /** Paired templates: valid → negation counterpart. */
@@ -64,6 +68,7 @@ data class BooleanAccessorConfig(
             "PRESENT" to "ABSENT",
             "IS_PRESENT" to "IS_ABSENT",
             "ALWAYS" to "NEVER",
+            "EXISTS" to "ABSENT",
         )
 
         /** Paired templates: negation → valid counterpart. */
@@ -95,14 +100,16 @@ data class BooleanAccessorConfig(
         private val NEGATION_STRIPS_VALID: Map<String, List<String>> = mapOf(
             "IS_NOT" to listOf("IS"),
             "DOES_NOT" to listOf("DOES"),
+            "DO_NOT" to listOf("DOES"),
             "DOES_NOT_HAVE" to listOf("HAS"),
             "LACKS" to listOf("HAS"),
             "HAS_NOT" to listOf("HAS"),
             "DISABLED" to listOf("IS_ENABLED", "ENABLED"),
             "IS_DISABLED" to listOf("IS_ENABLED", "ENABLED"),
+            "IS_DENIED" to listOf("IS_ENABLED", "ENABLED"),
             "WITHOUT" to listOf("WITH"),
-            "ABSENT" to listOf("IS_PRESENT", "PRESENT"),
-            "IS_ABSENT" to listOf("IS_PRESENT", "PRESENT"),
+            "ABSENT" to listOf("IS_PRESENT", "PRESENT", "EXISTS"),
+            "IS_ABSENT" to listOf("IS_PRESENT", "PRESENT", "EXISTS"),
             "NEVER" to listOf("ALWAYS"),
         )
 
@@ -121,36 +128,46 @@ data class BooleanAccessorConfig(
             val negPattern = NEGATION_TEMPLATE_PATTERNS[negTemplate] ?: return null
             val negPrefix = negPattern.substringBefore("{x}")
 
-            val strippableValids = NEGATION_STRIPS_VALID[negTemplate]
-            if (strippableValids != null) {
-                val validPrefixes = strippableValids
-                    .mapNotNull { VALID_TEMPLATE_PATTERNS[it]?.substringBefore("{x}") }
-                    .filter { it.isNotEmpty() }
-                    .sortedByDescending { it.length }
+            val validPrefixes = resolveStrippablePrefixes(negTemplate)
+            return tryPrefixReplacement(propName, validPrefixes, negPrefix)
+                ?: trySuffixReplacement(propName, validPrefixes, negPrefix)
+                ?: (negPrefix + propName.replaceFirstChar { it.uppercase() })
+        }
 
-                // 1. Try prefix match: "hasTouch" starts with "has" → "doesNotHave" + "Touch"
-                for (validPrefix in validPrefixes) {
-                    if (propName.startsWith(validPrefix)) {
-                        val semantic = propName.removePrefix(validPrefix)
-                        if (semantic.isNotEmpty()) {
-                            return negPrefix + semantic
-                        }
-                    }
-                }
+        private fun resolveStrippablePrefixes(negTemplate: String): List<String> {
+            return NEGATION_STRIPS_VALID[negTemplate]
+                ?.mapNotNull { VALID_TEMPLATE_PATTERNS[it]?.substringBefore("{x}") }
+                ?.filter { it.isNotEmpty() }
+                ?.sortedByDescending { it.length }
+                ?: emptyList()
+        }
 
-                // 2. Try suffix match: "someItemEnabled" ends with "Enabled" → "someItem" + "Disabled"
-                for (validPrefix in validPrefixes) {
-                    val validSuffix = validPrefix.replaceFirstChar { it.uppercase() }
-                    if (propName.endsWith(validSuffix) && propName.length > validSuffix.length) {
-                        val root = propName.removeSuffix(validSuffix)
-                        val negSuffix = negPrefix.replaceFirstChar { it.uppercase() }
-                        return root + negSuffix
-                    }
-                }
+        private fun tryPrefixReplacement(
+            propName: String,
+            validPrefixes: List<String>,
+            negPrefix: String
+        ): String? {
+            for (validPrefix in validPrefixes) {
+                if (!propName.startsWith(validPrefix)) continue
+                val semantic = propName.removePrefix(validPrefix)
+                if (semantic.isNotEmpty()) return negPrefix + semantic
             }
+            return null
+        }
 
-            // No related prefix/suffix found — apply as prefix with capitalized name
-            return negPrefix + propName.replaceFirstChar { it.uppercase() }
+        private fun trySuffixReplacement(
+            propName: String,
+            validPrefixes: List<String>,
+            negPrefix: String
+        ): String? {
+            for (validPrefix in validPrefixes) {
+                val validSuffix = validPrefix.replaceFirstChar { it.uppercase() }
+                if (!propName.endsWith(validSuffix) || propName.length <= validSuffix.length) continue
+                val root = propName.removeSuffix(validSuffix)
+                val negSuffix = negPrefix.replaceFirstChar { it.uppercase() }
+                return root + negSuffix
+            }
+            return null
         }
 
         /**

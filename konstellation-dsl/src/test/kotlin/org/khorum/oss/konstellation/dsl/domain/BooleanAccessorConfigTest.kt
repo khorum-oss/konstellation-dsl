@@ -409,6 +409,14 @@ class BooleanAccessorConfigTest : UnitSim() {
         }
 
         @Test
+        fun `EXISTS valid to ABSENT negation pair`() = test {
+            given {
+                expect { "ABSENT" }
+                whenever { BooleanAccessorConfig.pairedTemplate("EXISTS", isNegation = false) }
+            }
+        }
+
+        @Test
         fun `unknown template returns null`() = test {
             given {
                 expect { null }
@@ -461,6 +469,15 @@ class BooleanAccessorConfigTest : UnitSim() {
                 val config = BooleanAccessorConfig(validTemplate = "ALWAYS")
                 expect { "alwaysRetry" }
                 whenever { config.resolveValidFunctionName("retry") }
+            }
+        }
+
+        @Test
+        fun `EXISTS valid template applies pattern`() = test {
+            given {
+                val config = BooleanAccessorConfig(validTemplate = "EXISTS")
+                expect { "existsRecord" }
+                whenever { config.resolveValidFunctionName("record") }
             }
         }
 
@@ -607,6 +624,54 @@ class BooleanAccessorConfigTest : UnitSim() {
                 whenever { config.resolveNegationFunctionName("doesSync") }
             }
         }
+
+        @Test
+        fun `DOES valid with DO_NOT negation`() = test {
+            given {
+                val config = BooleanAccessorConfig(
+                    validTemplate = "DOES",
+                    negationTemplate = "DO_NOT"
+                )
+                expect { "doNotRun" }
+                whenever { config.resolveNegationFunctionName("doesRun") }
+            }
+        }
+
+        @Test
+        fun `EXISTS valid with ABSENT negation`() = test {
+            given {
+                val config = BooleanAccessorConfig(
+                    validTemplate = "EXISTS",
+                    negationTemplate = "ABSENT"
+                )
+                expect { "absentRecord" }
+                whenever { config.resolveNegationFunctionName("existsRecord") }
+            }
+        }
+
+        @Test
+        fun `IS_ENABLED valid with IS_DENIED negation`() = test {
+            given {
+                val config = BooleanAccessorConfig(
+                    validTemplate = "IS_ENABLED",
+                    negationTemplate = "IS_DENIED"
+                )
+                expect { "isDeniedAccess" }
+                whenever { config.resolveNegationFunctionName("isEnabledAccess") }
+            }
+        }
+
+        @Test
+        fun `SELF valid with DENY negation`() = test {
+            given {
+                val config = BooleanAccessorConfig(
+                    validTemplate = "SELF",
+                    negationTemplate = "DENY"
+                )
+                expect { "denyAccess" }
+                whenever { config.resolveNegationFunctionName("access") }
+            }
+        }
     }
 
     @Nested
@@ -700,6 +765,39 @@ class BooleanAccessorConfigTest : UnitSim() {
         }
 
         @Test
+        fun `does prefix with DO_NOT negation`() = test {
+            given {
+                expect { "doNotRun" }
+                whenever { BooleanAccessorConfig.resolveNegationByAutoDetect("doesRun", "DO_NOT") }
+            }
+        }
+
+        @Test
+        fun `exists prefix with ABSENT negation`() = test {
+            given {
+                expect { "absentRecord" }
+                whenever { BooleanAccessorConfig.resolveNegationByAutoDetect("existsRecord", "ABSENT") }
+            }
+        }
+
+        @Test
+        fun `isEnabled prefix with IS_DENIED negation`() = test {
+            given {
+                expect { "isDeniedAccess" }
+                whenever { BooleanAccessorConfig.resolveNegationByAutoDetect("isEnabledAccess", "IS_DENIED") }
+            }
+        }
+
+        @Test
+        fun `DENY does not strip any prefix - preserves full name`() = test {
+            given {
+                // DENY has no semantically related valid template to strip
+                expect { "denyAccess" }
+                whenever { BooleanAccessorConfig.resolveNegationByAutoDetect("access", "DENY") }
+            }
+        }
+
+        @Test
         fun `NOT does not strip is prefix - preserves full name`() = test {
             given {
                 // NOT has no semantically related valid template to strip
@@ -789,6 +887,22 @@ class BooleanAccessorConfigTest : UnitSim() {
             given {
                 expect { "retryNever" }
                 whenever { BooleanAccessorConfig.resolveNegationByAutoDetect("retryAlways", "NEVER") }
+            }
+        }
+
+        @Test
+        fun `Exists suffix with ABSENT negation`() = test {
+            given {
+                expect { "recordAbsent" }
+                whenever { BooleanAccessorConfig.resolveNegationByAutoDetect("recordExists", "ABSENT") }
+            }
+        }
+
+        @Test
+        fun `IsEnabled suffix with IS_DENIED negation`() = test {
+            given {
+                expect { "accessIsDenied" }
+                whenever { BooleanAccessorConfig.resolveNegationByAutoDetect("accessIsEnabled", "IS_DENIED") }
             }
         }
     }
