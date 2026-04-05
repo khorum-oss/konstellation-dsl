@@ -88,6 +88,24 @@ data class BooleanAccessorConfig(
         }
 
         /**
+         * Attempts to strip a known valid template prefix from the property name.
+         * Returns the remainder if a prefix is found, null otherwise.
+         * Longer prefixes are tried first to avoid false matches (e.g. "isEnabled" before "is").
+         */
+        internal fun tryStripKnownValidPrefix(propName: String): String? {
+            return VALID_TEMPLATE_PATTERNS.values
+                .map { it.substringBefore("{x}") }
+                .filter { it.isNotEmpty() }
+                .sortedByDescending { it.length }
+                .firstNotNullOfOrNull { prefix ->
+                    if (propName.startsWith(prefix)) {
+                        val remainder = propName.removePrefix(prefix)
+                        remainder.takeIf { it.isNotEmpty() }
+                    } else null
+                }
+        }
+
+        /**
          * Resolve the function name from a template and semantic name.
          */
         fun applyTemplate(templateName: String, semanticName: String, isNegation: Boolean): String? {
@@ -162,7 +180,22 @@ data class BooleanAccessorConfig(
         return if (validTemplate.isNamedTemplate()) {
             extractSemanticName(propName, validTemplate!!, isNegation = false)
         } else {
-            extractSemanticName(propName, negationTemplate!!, isNegation = true)
+            // validTemplate is not named — try extracting from negation template first,
+            // then auto-detect a known valid prefix from the property name
+            // (e.g. "hasTouch" with DOES_NOT_HAVE → strip "has" → "Touch")
+            val fromNegation = negationTemplate?.let {
+                val patterns = NEGATION_TEMPLATE_PATTERNS
+                val pattern = patterns[it]
+                if (pattern != null) {
+                    val prefix = pattern.substringBefore("{x}")
+                    if (prefix.isNotEmpty() && propName.startsWith(prefix)) {
+                        val remainder = propName.removePrefix(prefix)
+                        remainder.takeIf { r -> r.isNotEmpty() }
+                    } else null
+                } else null
+            }
+            fromNegation ?: tryStripKnownValidPrefix(propName)
+                ?: (propName.first().uppercase() + propName.substring(1))
         }
     }
 }

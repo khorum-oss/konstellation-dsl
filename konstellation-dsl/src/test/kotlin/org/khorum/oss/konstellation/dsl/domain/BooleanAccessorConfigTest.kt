@@ -216,6 +216,32 @@ class BooleanAccessorConfigTest : UnitSim() {
         }
 
         @Test
+        fun `standalone DOES_NOT_HAVE negation strips has prefix from property name`() = test {
+            given {
+                val config = BooleanAccessorConfig(
+                    validTemplate = null,
+                    negationTemplate = "DOES_NOT_HAVE"
+                )
+                // hasTouch → should strip "has" prefix → "doesNotHaveTouch" not "doesNotHaveHasTouch"
+                expect { "doesNotHaveTouch" }
+                whenever { config.resolveNegationFunctionName("hasTouch") }
+            }
+        }
+
+        @Test
+        fun `standalone IS_NOT negation strips is prefix from property name`() = test {
+            given {
+                val config = BooleanAccessorConfig(
+                    validTemplate = null,
+                    negationTemplate = "IS_NOT"
+                )
+                // isVisible → should strip "is" prefix → "isNotVisible"
+                expect { "isNotVisible" }
+                whenever { config.resolveNegationFunctionName("isVisible") }
+            }
+        }
+
+        @Test
         fun `both templates null falls back to capitalized name`() = test {
             given {
                 // resolveValidFunctionName with null template returns propName directly
