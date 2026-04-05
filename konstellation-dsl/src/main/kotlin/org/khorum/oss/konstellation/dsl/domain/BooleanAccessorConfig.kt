@@ -79,7 +79,7 @@ data class BooleanAccessorConfig(
                     if (remainder.isNotEmpty()) return remainder
                 }
             }
-            return propName.replaceFirstChar { it.uppercaseChar() }
+            return propName.first().uppercase() + propName.substring(1)
         }
 
         /**

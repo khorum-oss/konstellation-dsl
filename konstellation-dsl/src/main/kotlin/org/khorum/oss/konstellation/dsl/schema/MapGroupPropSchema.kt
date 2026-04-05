@@ -48,7 +48,6 @@ class MapGroupPropSchema(
         functions {
             add {
                 funName = functionName
-                if (kdoc != null) kdoc(kdoc!!)
                 param {
                     lambdaType {
                         receiver = mapGroupClass

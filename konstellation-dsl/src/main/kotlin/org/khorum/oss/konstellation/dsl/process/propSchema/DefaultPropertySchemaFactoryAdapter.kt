@@ -3,6 +3,7 @@ package org.khorum.oss.konstellation.dsl.process.propSchema
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSType
+import com.google.devtools.ksp.symbol.KSTypeArgument
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.TypeName
@@ -84,32 +85,25 @@ class DefaultPropertySchemaFactoryAdapter(
     override val propertyClassDeclaration: KSClassDeclaration? = classDeclarationInternal
 
     // list only
-    private val collectionFirstElementClassDecl = resolvedPropKSType
-        .arguments
-        .firstOrNull()
-        ?.type
-        ?.resolve()
-        ?.declaration as? KSClassDeclaration
+    private val collectionFirstElementClassDecl = resolveTypeArgDecl(
+        resolvedPropKSType.arguments.firstOrNull()
+    )
 
     // value in map
-    private val collectionSecondElementClassDecl = resolvedPropKSType
-        .arguments
-        .lastOrNull()
-        ?.type
-        ?.resolve()
-        ?.declaration as? KSClassDeclaration
+    private val collectionSecondElementClassDecl = resolveTypeArgDecl(
+        resolvedPropKSType.arguments.lastOrNull()
+    )
 
-    override val isGroupElement: Boolean = collectionFirstElementClassDecl?.let {
-        AnnotationLookup.hasAnnotationByName(it.annotations, "GeneratedDsl")
-    } ?: false
+    override val isGroupElement: Boolean =
+        collectionFirstElementClassDecl != null &&
+            AnnotationLookup.hasAnnotationByName(collectionFirstElementClassDecl.annotations, "GeneratedDsl")
 
     override val groupElementClassName: ClassName? = collectionFirstElementClassDecl?.toClassName()
     override val groupElementClassDeclaration: KSClassDeclaration? = collectionFirstElementClassDecl
 
     private fun hasMapGroup(): Boolean {
-        return collectionSecondElementClassDecl?.let {
-            AnnotationLookup.hasAnnotationByName(it.annotations, "GeneratedDsl")
-        } ?: false
+        return collectionSecondElementClassDecl != null &&
+            AnnotationLookup.hasAnnotationByName(collectionSecondElementClassDecl.annotations, "GeneratedDsl")
     }
 
     override var mapDetails: PropertySchemaFactoryAdapter.MapDetails? = null
@@ -145,4 +139,12 @@ class DefaultPropertySchemaFactoryAdapter(
         override val keyType: TypeName,
         override val valueType: TypeName
     ) : PropertySchemaFactoryAdapter.MapDetails
+
+    companion object {
+        private fun resolveTypeArgDecl(arg: KSTypeArgument?): KSClassDeclaration? {
+            if (arg == null) return null
+            val typeRef = arg.type ?: return null
+            return typeRef.resolve().declaration as? KSClassDeclaration
+        }
+    }
 }
