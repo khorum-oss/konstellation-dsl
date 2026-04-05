@@ -821,6 +821,41 @@ class BooleanAccessorConfigTest : UnitSim() {
                 whenever { BooleanAccessorConfig.resolveNegationByAutoDetect("cool", "NOT") }
             }
         }
+
+        @Test
+        fun `unknown template returns null`() = test {
+            given {
+                expect { null }
+                whenever { BooleanAccessorConfig.resolveNegationByAutoDetect("foo", "UNKNOWN_TEMPLATE") }
+            }
+        }
+
+        @Test
+        fun `enabled prefix with IS_DISABLED negation via enabled strip`() = test {
+            given {
+                // IS_DISABLED also strips ENABLED (not just IS_ENABLED)
+                expect { "isDisabledModule" }
+                whenever { BooleanAccessorConfig.resolveNegationByAutoDetect("enabledModule", "IS_DISABLED") }
+            }
+        }
+
+        @Test
+        fun `prefix match with empty remainder skips to fallback`() = test {
+            given {
+                // Property name is exactly the prefix with nothing after → fallback
+                expect { "lacksHas" }
+                whenever { BooleanAccessorConfig.resolveNegationByAutoDetect("has", "LACKS") }
+            }
+        }
+
+        @Test
+        fun `suffix match skips when property equals suffix`() = test {
+            given {
+                // "Has" ends with "Has" but has no root → skips suffix match → fallback
+                expect { "lacksHas" }
+                whenever { BooleanAccessorConfig.resolveNegationByAutoDetect("Has", "LACKS") }
+            }
+        }
     }
 
     @Nested

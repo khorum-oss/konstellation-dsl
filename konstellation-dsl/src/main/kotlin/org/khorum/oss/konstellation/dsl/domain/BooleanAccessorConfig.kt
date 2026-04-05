@@ -81,15 +81,13 @@ data class BooleanAccessorConfig(
          */
         fun extractSemanticName(propName: String, templateName: String?, isNegation: Boolean): String {
             val patterns = if (isNegation) NEGATION_TEMPLATE_PATTERNS else VALID_TEMPLATE_PATTERNS
-            val pattern = patterns[templateName]
-            if (pattern != null) {
-                val prefix = pattern.substringBefore("{x}")
-                if (prefix.isNotEmpty() && propName.startsWith(prefix)) {
-                    val remainder = propName.removePrefix(prefix)
-                    if (remainder.isNotEmpty()) return remainder
-                }
+            val pattern = patterns[templateName] ?: return capitalizeFirst(propName)
+            val prefix = pattern.substringBefore("{x}")
+            if (prefix.isNotEmpty() && propName.startsWith(prefix)) {
+                val remainder = propName.removePrefix(prefix)
+                if (remainder.isNotEmpty()) return remainder
             }
-            return propName.first().uppercase() + propName.substring(1)
+            return capitalizeFirst(propName)
         }
 
         /**
@@ -127,19 +125,22 @@ data class BooleanAccessorConfig(
         internal fun resolveNegationByAutoDetect(propName: String, negTemplate: String): String? {
             val negPattern = NEGATION_TEMPLATE_PATTERNS[negTemplate] ?: return null
             val negPrefix = negPattern.substringBefore("{x}")
-
             val validPrefixes = resolveStrippablePrefixes(negTemplate)
             return tryPrefixReplacement(propName, validPrefixes, negPrefix)
                 ?: trySuffixReplacement(propName, validPrefixes, negPrefix)
-                ?: (negPrefix + propName.replaceFirstChar { it.uppercase() })
+                ?: applyAsPrefixFallback(propName, negPrefix)
         }
 
+        private fun applyAsPrefixFallback(propName: String, negPrefix: String): String =
+            negPrefix + propName.first().uppercase() + propName.substring(1)
+
         private fun resolveStrippablePrefixes(negTemplate: String): List<String> {
-            return NEGATION_STRIPS_VALID[negTemplate]
-                ?.mapNotNull { VALID_TEMPLATE_PATTERNS[it]?.substringBefore("{x}") }
-                ?.filter { it.isNotEmpty() }
-                ?.sortedByDescending { it.length }
-                ?: emptyList()
+            val templateNames = NEGATION_STRIPS_VALID[negTemplate] ?: return emptyList()
+            return templateNames
+                .mapNotNull { VALID_TEMPLATE_PATTERNS[it] }
+                .map { it.substringBefore("{x}") }
+                .filter { it.isNotEmpty() }
+                .sortedByDescending { it.length }
         }
 
         private fun tryPrefixReplacement(
@@ -161,14 +162,16 @@ data class BooleanAccessorConfig(
             negPrefix: String
         ): String? {
             for (validPrefix in validPrefixes) {
-                val validSuffix = validPrefix.replaceFirstChar { it.uppercase() }
+                val validSuffix = capitalizeFirst(validPrefix)
                 if (!propName.endsWith(validSuffix) || propName.length <= validSuffix.length) continue
                 val root = propName.removeSuffix(validSuffix)
-                val negSuffix = negPrefix.replaceFirstChar { it.uppercase() }
-                return root + negSuffix
+                return root + capitalizeFirst(negPrefix)
             }
             return null
         }
+
+        private fun capitalizeFirst(value: String): String =
+            value.first().uppercase() + value.substring(1)
 
         /**
          * Resolve the function name from a template and semantic name.
@@ -234,25 +237,14 @@ data class BooleanAccessorConfig(
 
     /**
      * Determine the semantic name ({x}) from the property name.
-     * Tries the SELF template first (whichever is SELF), then tries to strip known prefixes.
+     * Only called when validTemplate is a named template (not null, SELF, or NONE).
      */
     private fun resolveSemanticName(propName: String): String {
         // If negation is SELF, the property name IS the negation form — extract {x} from the paired valid template
-        if (negationTemplate == "SELF" && validTemplate.isNamedTemplate()) {
+        if (negationTemplate == "SELF") {
             val paired = pairedTemplate(validTemplate!!, isNegation = false)
             return extractSemanticName(propName, paired, isNegation = true)
         }
-        // If valid is SELF, the property name IS the valid form — extract {x} from the paired negation template
-        if (validTemplate == "SELF" && negationTemplate.isNamedTemplate()) {
-            val paired = pairedTemplate(negationTemplate!!, isNegation = true)
-            return extractSemanticName(propName, paired, isNegation = false)
-        }
-        // At least one template must be named since resolveSemanticName is only called
-        // from the else branch of resolveValid/NegationFunctionName where template is named
-        return if (validTemplate.isNamedTemplate()) {
-            extractSemanticName(propName, validTemplate!!, isNegation = false)
-        } else {
-            extractSemanticName(propName, negationTemplate!!, isNegation = true)
-        }
+        return extractSemanticName(propName, validTemplate!!, isNegation = false)
     }
 }
