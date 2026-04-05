@@ -242,6 +242,19 @@ class BooleanAccessorConfigTest : UnitSim() {
         }
 
         @Test
+        fun `SELF valid with DOES_NOT_HAVE negation strips has prefix`() = test {
+            given {
+                val config = BooleanAccessorConfig(
+                    validTemplate = "SELF",
+                    negationTemplate = "DOES_NOT_HAVE"
+                )
+                // Simulates KSP default validTemplate=SELF with user-set negation
+                expect { "doesNotHaveTouch" }
+                whenever { config.resolveNegationFunctionName("hasTouch") }
+            }
+        }
+
+        @Test
         fun `both templates null falls back to capitalized name`() = test {
             given {
                 // resolveValidFunctionName with null template returns propName directly
@@ -592,6 +605,355 @@ class BooleanAccessorConfigTest : UnitSim() {
                 )
                 expect { "noSync" }
                 whenever { config.resolveNegationFunctionName("doesSync") }
+            }
+        }
+    }
+
+    @Nested
+    inner class AutoDetectPrefixStripping {
+        @Test
+        fun `has prefix with DOES_NOT_HAVE negation`() = test {
+            given {
+                expect { "doesNotHaveTouch" }
+                whenever { BooleanAccessorConfig.resolveNegationByAutoDetect("hasTouch", "DOES_NOT_HAVE") }
+            }
+        }
+
+        @Test
+        fun `is prefix with IS_NOT negation`() = test {
+            given {
+                expect { "isNotVisible" }
+                whenever { BooleanAccessorConfig.resolveNegationByAutoDetect("isVisible", "IS_NOT") }
+            }
+        }
+
+        @Test
+        fun `does prefix with DOES_NOT negation`() = test {
+            given {
+                expect { "doesNotSync" }
+                whenever { BooleanAccessorConfig.resolveNegationByAutoDetect("doesSync", "DOES_NOT") }
+            }
+        }
+
+        @Test
+        fun `with prefix with WITHOUT negation`() = test {
+            given {
+                expect { "withoutCache" }
+                whenever { BooleanAccessorConfig.resolveNegationByAutoDetect("withCache", "WITHOUT") }
+            }
+        }
+
+        @Test
+        fun `has prefix with LACKS negation`() = test {
+            given {
+                expect { "lacksPermission" }
+                whenever { BooleanAccessorConfig.resolveNegationByAutoDetect("hasPermission", "LACKS") }
+            }
+        }
+
+        @Test
+        fun `has prefix with HAS_NOT negation`() = test {
+            given {
+                expect { "hasNotPermission" }
+                whenever { BooleanAccessorConfig.resolveNegationByAutoDetect("hasPermission", "HAS_NOT") }
+            }
+        }
+
+        @Test
+        fun `enabled prefix with DISABLED negation`() = test {
+            given {
+                expect { "disabledModule" }
+                whenever { BooleanAccessorConfig.resolveNegationByAutoDetect("enabledModule", "DISABLED") }
+            }
+        }
+
+        @Test
+        fun `isEnabled prefix with IS_DISABLED negation`() = test {
+            given {
+                expect { "isDisabledService" }
+                whenever { BooleanAccessorConfig.resolveNegationByAutoDetect("isEnabledService", "IS_DISABLED") }
+            }
+        }
+
+        @Test
+        fun `always prefix with NEVER negation`() = test {
+            given {
+                expect { "neverRetry" }
+                whenever { BooleanAccessorConfig.resolveNegationByAutoDetect("alwaysRetry", "NEVER") }
+            }
+        }
+
+        @Test
+        fun `present prefix with ABSENT negation`() = test {
+            given {
+                expect { "absentData" }
+                whenever { BooleanAccessorConfig.resolveNegationByAutoDetect("presentData", "ABSENT") }
+            }
+        }
+
+        @Test
+        fun `isPresent prefix with IS_ABSENT negation`() = test {
+            given {
+                expect { "isAbsentFeature" }
+                whenever { BooleanAccessorConfig.resolveNegationByAutoDetect("isPresentFeature", "IS_ABSENT") }
+            }
+        }
+
+        @Test
+        fun `NOT does not strip is prefix - preserves full name`() = test {
+            given {
+                // NOT has no semantically related valid template to strip
+                expect { "notIsCool" }
+                whenever { BooleanAccessorConfig.resolveNegationByAutoDetect("isCool", "NOT") }
+            }
+        }
+
+        @Test
+        fun `NO does not strip does prefix - preserves full name`() = test {
+            given {
+                expect { "noDoesSync" }
+                whenever { BooleanAccessorConfig.resolveNegationByAutoDetect("doesSync", "NO") }
+            }
+        }
+
+        @Test
+        fun `no known prefix falls back to prefix application`() = test {
+            given {
+                expect { "notCool" }
+                whenever { BooleanAccessorConfig.resolveNegationByAutoDetect("cool", "NOT") }
+            }
+        }
+    }
+
+    @Nested
+    inner class AutoDetectSuffixStripping {
+        @Test
+        fun `Enabled suffix with DISABLED negation`() = test {
+            given {
+                // someItemEnabled → strip "Enabled" suffix → "someItem" + "Disabled"
+                expect { "someItemDisabled" }
+                whenever { BooleanAccessorConfig.resolveNegationByAutoDetect("someItemEnabled", "DISABLED") }
+            }
+        }
+
+        @Test
+        fun `IsEnabled suffix with IS_DISABLED negation`() = test {
+            given {
+                expect { "myServiceIsDisabled" }
+                whenever { BooleanAccessorConfig.resolveNegationByAutoDetect("myServiceIsEnabled", "IS_DISABLED") }
+            }
+        }
+
+        @Test
+        fun `Has suffix with LACKS negation`() = test {
+            given {
+                expect { "itemLacks" }
+                whenever { BooleanAccessorConfig.resolveNegationByAutoDetect("itemHas", "LACKS") }
+            }
+        }
+
+        @Test
+        fun `Has suffix with DOES_NOT_HAVE negation`() = test {
+            given {
+                expect { "touchDoesNotHave" }
+                whenever { BooleanAccessorConfig.resolveNegationByAutoDetect("touchHas", "DOES_NOT_HAVE") }
+            }
+        }
+
+        @Test
+        fun `With suffix with WITHOUT negation`() = test {
+            given {
+                expect { "cacheWithout" }
+                whenever { BooleanAccessorConfig.resolveNegationByAutoDetect("cacheWith", "WITHOUT") }
+            }
+        }
+
+        @Test
+        fun `Present suffix with ABSENT negation`() = test {
+            given {
+                expect { "dataAbsent" }
+                whenever { BooleanAccessorConfig.resolveNegationByAutoDetect("dataPresent", "ABSENT") }
+            }
+        }
+
+        @Test
+        fun `IsPresent suffix with IS_ABSENT negation`() = test {
+            given {
+                expect { "featureIsAbsent" }
+                whenever { BooleanAccessorConfig.resolveNegationByAutoDetect("featureIsPresent", "IS_ABSENT") }
+            }
+        }
+
+        @Test
+        fun `Always suffix with NEVER negation`() = test {
+            given {
+                expect { "retryNever" }
+                whenever { BooleanAccessorConfig.resolveNegationByAutoDetect("retryAlways", "NEVER") }
+            }
+        }
+    }
+
+    @Nested
+    inner class AutoDetectEndToEnd {
+        @Test
+        fun `SELF valid + DISABLED negation with suffix property`() = test {
+            given {
+                val config = BooleanAccessorConfig(
+                    validTemplate = "SELF",
+                    negationTemplate = "DISABLED"
+                )
+                expect { "someItemDisabled" }
+                whenever { config.resolveNegationFunctionName("someItemEnabled") }
+            }
+        }
+
+        @Test
+        fun `SELF valid + DISABLED negation with prefix property`() = test {
+            given {
+                val config = BooleanAccessorConfig(
+                    validTemplate = "SELF",
+                    negationTemplate = "DISABLED"
+                )
+                expect { "disabledModule" }
+                whenever { config.resolveNegationFunctionName("enabledModule") }
+            }
+        }
+
+        @Test
+        fun `null valid + DISABLED negation with suffix property`() = test {
+            given {
+                val config = BooleanAccessorConfig(
+                    validTemplate = null,
+                    negationTemplate = "DISABLED"
+                )
+                expect { "someItemDisabled" }
+                whenever { config.resolveNegationFunctionName("someItemEnabled") }
+            }
+        }
+
+        @Test
+        fun `null valid + LACKS negation with has prefix property`() = test {
+            given {
+                val config = BooleanAccessorConfig(
+                    validTemplate = null,
+                    negationTemplate = "LACKS"
+                )
+                expect { "lacksPermission" }
+                whenever { config.resolveNegationFunctionName("hasPermission") }
+            }
+        }
+
+        @Test
+        fun `SELF valid + WITHOUT negation with with prefix property`() = test {
+            given {
+                val config = BooleanAccessorConfig(
+                    validTemplate = "SELF",
+                    negationTemplate = "WITHOUT"
+                )
+                expect { "withoutCache" }
+                whenever { config.resolveNegationFunctionName("withCache") }
+            }
+        }
+
+        @Test
+        fun `SELF valid + NEVER negation with always prefix property`() = test {
+            given {
+                val config = BooleanAccessorConfig(
+                    validTemplate = "SELF",
+                    negationTemplate = "NEVER"
+                )
+                expect { "neverRetry" }
+                whenever { config.resolveNegationFunctionName("alwaysRetry") }
+            }
+        }
+
+        @Test
+        fun `SELF valid + NOT negation with plain property`() = test {
+            given {
+                val config = BooleanAccessorConfig(
+                    validTemplate = "SELF",
+                    negationTemplate = "NOT"
+                )
+                // "logging" has no known prefix/suffix — apply NOT as prefix
+                expect { "notLogging" }
+                whenever { config.resolveNegationFunctionName("logging") }
+            }
+        }
+    }
+
+    @Nested
+    inner class ValidFunctionPreservation {
+        @Test
+        fun `SELF valid preserved when negation is DOES_NOT_HAVE`() = test {
+            given {
+                val config = BooleanAccessorConfig(
+                    validTemplate = "SELF",
+                    negationTemplate = "DOES_NOT_HAVE"
+                )
+                expect { "hasTouch" }
+                whenever { config.resolveValidFunctionName("hasTouch") }
+            }
+        }
+
+        @Test
+        fun `SELF valid preserved when negation is DISABLED`() = test {
+            given {
+                val config = BooleanAccessorConfig(
+                    validTemplate = "SELF",
+                    negationTemplate = "DISABLED"
+                )
+                expect { "someItemEnabled" }
+                whenever { config.resolveValidFunctionName("someItemEnabled") }
+            }
+        }
+
+        @Test
+        fun `null valid preserved when negation is set`() = test {
+            given {
+                val config = BooleanAccessorConfig(
+                    validTemplate = null,
+                    negationTemplate = "NOT"
+                )
+                // null validTemplate → returns propName (not removed)
+                expect { "enabled" }
+                whenever { config.resolveValidFunctionName("enabled") }
+            }
+        }
+
+        @Test
+        fun `NONE valid explicitly suppresses valid function`() = test {
+            given {
+                val config = BooleanAccessorConfig(
+                    validTemplate = "NONE",
+                    negationTemplate = "NOT"
+                )
+                expect { null }
+                whenever { config.resolveValidFunctionName("enabled") }
+            }
+        }
+
+        @Test
+        fun `valid function only removed when negation is SELF and no valid override`() = test {
+            given {
+                // This simulates the PropertySchemaService blanking logic
+                val config = BooleanAccessorConfig(
+                    validTemplate = "NONE", // set by PropertySchemaService when negation=SELF
+                    negationTemplate = "SELF"
+                )
+                expect { null }
+                whenever { config.resolveValidFunctionName("blocked") }
+            }
+        }
+
+        @Test
+        fun `valid function kept when negation is SELF but valid is explicitly set`() = test {
+            given {
+                val config = BooleanAccessorConfig(
+                    validTemplate = "IS",
+                    negationTemplate = "SELF"
+                )
+                expect { "isBlocked" }
+                whenever { config.resolveValidFunctionName("blocked") }
             }
         }
     }

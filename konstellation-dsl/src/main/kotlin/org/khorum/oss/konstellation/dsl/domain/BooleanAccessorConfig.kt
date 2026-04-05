@@ -88,21 +88,69 @@ data class BooleanAccessorConfig(
         }
 
         /**
-         * Attempts to strip a known valid template prefix from the property name.
-         * Returns the remainder if a prefix is found, null otherwise.
-         * Longer prefixes are tried first to avoid false matches (e.g. "isEnabled" before "is").
+         * Maps each negation template to the valid templates whose prefixes it should strip.
+         * Only semantically related prefixes are stripped to avoid incorrect name mangling
+         * (e.g. NOT should not strip "is" from "isCool" → "notIsCool" is correct).
          */
-        internal fun tryStripKnownValidPrefix(propName: String): String? {
-            return VALID_TEMPLATE_PATTERNS.values
-                .map { it.substringBefore("{x}") }
-                .filter { it.isNotEmpty() }
-                .sortedByDescending { it.length }
-                .firstNotNullOfOrNull { prefix ->
-                    if (propName.startsWith(prefix)) {
-                        val remainder = propName.removePrefix(prefix)
-                        remainder.takeIf { it.isNotEmpty() }
-                    } else null
+        private val NEGATION_STRIPS_VALID: Map<String, List<String>> = mapOf(
+            "IS_NOT" to listOf("IS"),
+            "DOES_NOT" to listOf("DOES"),
+            "DOES_NOT_HAVE" to listOf("HAS"),
+            "LACKS" to listOf("HAS"),
+            "HAS_NOT" to listOf("HAS"),
+            "DISABLED" to listOf("IS_ENABLED", "ENABLED"),
+            "IS_DISABLED" to listOf("IS_ENABLED", "ENABLED"),
+            "WITHOUT" to listOf("WITH"),
+            "ABSENT" to listOf("IS_PRESENT", "PRESENT"),
+            "IS_ABSENT" to listOf("IS_PRESENT", "PRESENT"),
+            "NEVER" to listOf("ALWAYS"),
+        )
+
+        /**
+         * Auto-detect a semantically related valid prefix or suffix in the property name
+         * and apply the negation template in the same position.
+         *
+         * Handles both prefix form ("hasTouch" → "doesNotHaveTouch") and
+         * suffix form ("someItemEnabled" → "someItemDisabled").
+         *
+         * Only strips prefixes/suffixes that are semantically related to the negation
+         * template (e.g. DOES_NOT_HAVE strips "has", DISABLED strips "enabled"/"isEnabled").
+         * Generic negation templates like NOT and NO do not strip any prefix.
+         */
+        internal fun resolveNegationByAutoDetect(propName: String, negTemplate: String): String? {
+            val negPattern = NEGATION_TEMPLATE_PATTERNS[negTemplate] ?: return null
+            val negPrefix = negPattern.substringBefore("{x}")
+
+            val strippableValids = NEGATION_STRIPS_VALID[negTemplate]
+            if (strippableValids != null) {
+                val validPrefixes = strippableValids
+                    .mapNotNull { VALID_TEMPLATE_PATTERNS[it]?.substringBefore("{x}") }
+                    .filter { it.isNotEmpty() }
+                    .sortedByDescending { it.length }
+
+                // 1. Try prefix match: "hasTouch" starts with "has" → "doesNotHave" + "Touch"
+                for (validPrefix in validPrefixes) {
+                    if (propName.startsWith(validPrefix)) {
+                        val semantic = propName.removePrefix(validPrefix)
+                        if (semantic.isNotEmpty()) {
+                            return negPrefix + semantic
+                        }
+                    }
                 }
+
+                // 2. Try suffix match: "someItemEnabled" ends with "Enabled" → "someItem" + "Disabled"
+                for (validPrefix in validPrefixes) {
+                    val validSuffix = validPrefix.replaceFirstChar { it.uppercase() }
+                    if (propName.endsWith(validSuffix) && propName.length > validSuffix.length) {
+                        val root = propName.removeSuffix(validSuffix)
+                        val negSuffix = negPrefix.replaceFirstChar { it.uppercase() }
+                        return root + negSuffix
+                    }
+                }
+            }
+
+            // No related prefix/suffix found — apply as prefix with capitalized name
+            return negPrefix + propName.replaceFirstChar { it.uppercase() }
         }
 
         /**
@@ -154,8 +202,15 @@ data class BooleanAccessorConfig(
             "NONE" -> null
             null -> null // default: no negation unless specified
             else -> {
-                val semanticName = resolveSemanticName(propName)
-                applyTemplate(negationTemplate, semanticName, isNegation = true)
+                if (validTemplate.isNamedTemplate()) {
+                    // Valid template is explicitly set — use standard semantic extraction
+                    val semanticName = resolveSemanticName(propName)
+                    applyTemplate(negationTemplate, semanticName, isNegation = true)
+                } else {
+                    // validTemplate is SELF, null, or NONE — use smart auto-detection
+                    // which handles prefix stripping, suffix replacement, and fallback
+                    resolveNegationByAutoDetect(propName, negationTemplate)
+                }
             }
         }
     }
@@ -180,22 +235,7 @@ data class BooleanAccessorConfig(
         return if (validTemplate.isNamedTemplate()) {
             extractSemanticName(propName, validTemplate!!, isNegation = false)
         } else {
-            // validTemplate is not named — try extracting from negation template first,
-            // then auto-detect a known valid prefix from the property name
-            // (e.g. "hasTouch" with DOES_NOT_HAVE → strip "has" → "Touch")
-            val fromNegation = negationTemplate?.let {
-                val patterns = NEGATION_TEMPLATE_PATTERNS
-                val pattern = patterns[it]
-                if (pattern != null) {
-                    val prefix = pattern.substringBefore("{x}")
-                    if (prefix.isNotEmpty() && propName.startsWith(prefix)) {
-                        val remainder = propName.removePrefix(prefix)
-                        remainder.takeIf { r -> r.isNotEmpty() }
-                    } else null
-                } else null
-            }
-            fromNegation ?: tryStripKnownValidPrefix(propName)
-                ?: (propName.first().uppercase() + propName.substring(1))
+            extractSemanticName(propName, negationTemplate!!, isNegation = true)
         }
     }
 }
