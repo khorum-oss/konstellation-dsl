@@ -24,41 +24,46 @@ data class BooleanAccessorConfig(
         /** Template patterns for ValidFunctionTemplate enum entries. */
         val VALID_TEMPLATE_PATTERNS: Map<String, String> = mapOf(
             "IS" to "is{x}",
-            "WITH" to "with{x}",
             "DOES" to "does{x}",
             "HAS" to "has{x}",
-            "CAN" to "can{x}",
-            "SHOULD" to "should{x}",
-            "WILL" to "will{x}",
-            "ENABLE" to "enable{x}",
-            "ALLOW" to "allow{x}",
+            "ENABLED" to "enabled{x}",
+            "IS_ENABLED" to "isEnabled{x}",
+            "WITH" to "with{x}",
+            "PRESENT" to "present{x}",
+            "IS_PRESENT" to "isPresent{x}",
+            "ALWAYS" to "always{x}",
         )
 
         /** Template patterns for NegationFunctionTemplate enum entries. */
         val NEGATION_TEMPLATE_PATTERNS: Map<String, String> = mapOf(
+            "DOES_NOT" to "doesNot{x}",
+            "DOES_NOT_HAVE" to "doesNotHave{x}",
+            "DISABLED" to "disabled{x}",
+            "IS_DISABLED" to "isDisabled{x}",
             "NOT" to "not{x}",
             "IS_NOT" to "isNot{x}",
-            "WITHOUT" to "without{x}",
-            "DOES_NOT" to "doesNot{x}",
+            "HAS_NOT" to "hasNot{x}",
             "LACKS" to "lacks{x}",
-            "CANNOT" to "cannot{x}",
-            "SHOULD_NOT" to "shouldNot{x}",
-            "WILL_NOT" to "willNot{x}",
-            "DISABLE" to "disable{x}",
-            "DENY" to "deny{x}",
+            "NO" to "no{x}",
+            "WITHOUT" to "without{x}",
+            "MISSING" to "missing{x}",
+            "IS_MISSING" to "isMissing{x}",
+            "ABSENT" to "absent{x}",
+            "IS_ABSENT" to "isAbsent{x}",
+            "NEVER" to "never{x}",
         )
 
         /** Paired templates: valid → negation counterpart. */
         private val VALID_TO_NEGATION_PAIR: Map<String, String> = mapOf(
             "IS" to "IS_NOT",
-            "WITH" to "WITHOUT",
             "DOES" to "DOES_NOT",
             "HAS" to "LACKS",
-            "CAN" to "CANNOT",
-            "SHOULD" to "SHOULD_NOT",
-            "WILL" to "WILL_NOT",
-            "ENABLE" to "DISABLE",
-            "ALLOW" to "DENY",
+            "ENABLED" to "DISABLED",
+            "IS_ENABLED" to "IS_DISABLED",
+            "WITH" to "WITHOUT",
+            "PRESENT" to "ABSENT",
+            "IS_PRESENT" to "IS_ABSENT",
+            "ALWAYS" to "NEVER",
         )
 
         /** Paired templates: negation → valid counterpart. */

@@ -381,53 +381,71 @@ class BooleanAccessorConfigTest : UnitSim() {
     @Nested
     inner class AllTemplatePatterns {
         @Test
-        fun `CAN valid template applies pattern`() = test {
+        fun `ENABLED valid template applies pattern`() = test {
             given {
-                val config = BooleanAccessorConfig(validTemplate = "CAN")
-                expect { "canEdit" }
-                whenever { config.resolveValidFunctionName("edit") }
+                val config = BooleanAccessorConfig(validTemplate = "ENABLED")
+                expect { "enabledModule" }
+                whenever { config.resolveValidFunctionName("module") }
             }
         }
 
         @Test
-        fun `SHOULD valid template applies pattern`() = test {
+        fun `IS_ENABLED valid template applies pattern`() = test {
             given {
-                val config = BooleanAccessorConfig(validTemplate = "SHOULD")
-                expect { "shouldRun" }
-                whenever { config.resolveValidFunctionName("run") }
+                val config = BooleanAccessorConfig(validTemplate = "IS_ENABLED")
+                expect { "isEnabledService" }
+                whenever { config.resolveValidFunctionName("service") }
             }
         }
 
         @Test
-        fun `ENABLE valid template applies pattern`() = test {
+        fun `PRESENT valid template applies pattern`() = test {
             given {
-                val config = BooleanAccessorConfig(validTemplate = "ENABLE")
-                expect { "enableFeature" }
+                val config = BooleanAccessorConfig(validTemplate = "PRESENT")
+                expect { "presentData" }
+                whenever { config.resolveValidFunctionName("data") }
+            }
+        }
+
+        @Test
+        fun `IS_PRESENT valid template applies pattern`() = test {
+            given {
+                val config = BooleanAccessorConfig(validTemplate = "IS_PRESENT")
+                expect { "isPresentFeature" }
                 whenever { config.resolveValidFunctionName("feature") }
             }
         }
 
         @Test
-        fun `DISABLE negation template applies pattern`() = test {
+        fun `ALWAYS valid template applies pattern`() = test {
             given {
-                val config = BooleanAccessorConfig(
-                    validTemplate = "ENABLE",
-                    negationTemplate = "DISABLE"
-                )
-                expect { "disableFeature" }
-                whenever { config.resolveNegationFunctionName("enableFeature") }
+                val config = BooleanAccessorConfig(validTemplate = "ALWAYS")
+                expect { "alwaysRetry" }
+                whenever { config.resolveValidFunctionName("retry") }
             }
         }
 
         @Test
-        fun `CANNOT negation template applies pattern`() = test {
+        fun `DISABLED negation template applies pattern`() = test {
             given {
                 val config = BooleanAccessorConfig(
-                    validTemplate = "CAN",
-                    negationTemplate = "CANNOT"
+                    validTemplate = "ENABLED",
+                    negationTemplate = "DISABLED"
                 )
-                expect { "cannotEdit" }
-                whenever { config.resolveNegationFunctionName("canEdit") }
+                expect { "disabledModule" }
+                whenever { config.resolveNegationFunctionName("enabledModule") }
+            }
+        }
+
+        @Test
+        fun `IS_DISABLED negation template`() = test {
+            given {
+                val config = BooleanAccessorConfig(
+                    validTemplate = "IS_ENABLED",
+                    negationTemplate = "IS_DISABLED"
+                )
+                expect { "isDisabledService" }
+                whenever { config.resolveNegationFunctionName("isEnabledService") }
             }
         }
 
@@ -456,38 +474,98 @@ class BooleanAccessorConfigTest : UnitSim() {
         }
 
         @Test
-        fun `WILL valid with WILL_NOT negation`() = test {
+        fun `HAS valid with DOES_NOT_HAVE negation`() = test {
             given {
                 val config = BooleanAccessorConfig(
-                    validTemplate = "WILL",
-                    negationTemplate = "WILL_NOT"
+                    validTemplate = "HAS",
+                    negationTemplate = "DOES_NOT_HAVE"
                 )
-                expect { "willNotExecute" }
-                whenever { config.resolveNegationFunctionName("willExecute") }
+                expect { "doesNotHaveAuth" }
+                whenever { config.resolveNegationFunctionName("hasAuth") }
             }
         }
 
         @Test
-        fun `ALLOW valid with DENY negation`() = test {
+        fun `HAS valid with HAS_NOT negation`() = test {
             given {
                 val config = BooleanAccessorConfig(
-                    validTemplate = "ALLOW",
-                    negationTemplate = "DENY"
+                    validTemplate = "HAS",
+                    negationTemplate = "HAS_NOT"
                 )
-                expect { "denyAccess" }
-                whenever { config.resolveNegationFunctionName("allowAccess") }
+                expect { "hasNotLicense" }
+                whenever { config.resolveNegationFunctionName("hasLicense") }
             }
         }
 
         @Test
-        fun `SHOULD_NOT negation template`() = test {
+        fun `ALWAYS valid with NEVER negation`() = test {
             given {
                 val config = BooleanAccessorConfig(
-                    validTemplate = "SHOULD",
-                    negationTemplate = "SHOULD_NOT"
+                    validTemplate = "ALWAYS",
+                    negationTemplate = "NEVER"
                 )
-                expect { "shouldNotRun" }
-                whenever { config.resolveNegationFunctionName("shouldRun") }
+                expect { "neverRetry" }
+                whenever { config.resolveNegationFunctionName("alwaysRetry") }
+            }
+        }
+
+        @Test
+        fun `IS valid with MISSING negation`() = test {
+            given {
+                val config = BooleanAccessorConfig(
+                    validTemplate = "IS",
+                    negationTemplate = "MISSING"
+                )
+                expect { "missingVisible" }
+                whenever { config.resolveNegationFunctionName("isVisible") }
+            }
+        }
+
+        @Test
+        fun `IS valid with IS_MISSING negation`() = test {
+            given {
+                val config = BooleanAccessorConfig(
+                    validTemplate = "IS",
+                    negationTemplate = "IS_MISSING"
+                )
+                expect { "isMissingAvailable" }
+                whenever { config.resolveNegationFunctionName("isAvailable") }
+            }
+        }
+
+        @Test
+        fun `PRESENT valid with ABSENT negation`() = test {
+            given {
+                val config = BooleanAccessorConfig(
+                    validTemplate = "PRESENT",
+                    negationTemplate = "ABSENT"
+                )
+                expect { "absentData" }
+                whenever { config.resolveNegationFunctionName("presentData") }
+            }
+        }
+
+        @Test
+        fun `IS_PRESENT valid with IS_ABSENT negation`() = test {
+            given {
+                val config = BooleanAccessorConfig(
+                    validTemplate = "IS_PRESENT",
+                    negationTemplate = "IS_ABSENT"
+                )
+                expect { "isAbsentFeature" }
+                whenever { config.resolveNegationFunctionName("isPresentFeature") }
+            }
+        }
+
+        @Test
+        fun `DOES valid with NO negation`() = test {
+            given {
+                val config = BooleanAccessorConfig(
+                    validTemplate = "DOES",
+                    negationTemplate = "NO"
+                )
+                expect { "noSync" }
+                whenever { config.resolveNegationFunctionName("doesSync") }
             }
         }
     }
