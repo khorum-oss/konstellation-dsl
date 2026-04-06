@@ -92,6 +92,7 @@ class DefaultBuilderGeneratorTest : UnitSim() {
             every { prop.simpleName } returns mockKSName(name)
             every { prop.type } returns typeRef
             every { prop.annotations } returns emptySequence()
+            every { prop.docString } returns ""
             return prop
         }
 
@@ -105,6 +106,7 @@ class DefaultBuilderGeneratorTest : UnitSim() {
             every { domain.simpleName } returns mockKSName("StarShip")
             every { domain.containingFile } returns mockk<KSFile>()
             every { domain.getAllProperties() } returns properties.asSequence()
+            every { domain.docString } returns ""
 
             if (annotations.isEmpty()) {
                 every { domain.annotations } returns emptySequence()
@@ -262,6 +264,7 @@ class DefaultBuilderGeneratorTest : UnitSim() {
             every { prop.simpleName } returns mockKSName("nickname")
             every { prop.type } returns typeRef
             every { prop.annotations } returns emptySequence()
+            every { prop.docString } returns ""
 
             val domain = mockDomain(properties = listOf(prop))
             val generator = DefaultBuilderGenerator()
@@ -306,6 +309,7 @@ class DefaultBuilderGeneratorTest : UnitSim() {
             every { prop.simpleName } returns mockKSName("names")
             every { prop.type } returns typeRef
             every { prop.annotations } returns emptySequence()
+            every { prop.docString } returns ""
 
             val domain = mockDomain(properties = listOf(prop))
             val generator = DefaultBuilderGenerator()
@@ -339,6 +343,7 @@ class DefaultBuilderGeneratorTest : UnitSim() {
             every { prop1.simpleName } returns mockKSName("name")
             every { prop1.type } returns typeRef
             every { prop1.annotations } returns emptySequence()
+            every { prop1.docString } returns ""
 
             // Second property - boolean to exercise different schema type
             val boolTypeRef: KSTypeReference = mockk()
@@ -356,6 +361,7 @@ class DefaultBuilderGeneratorTest : UnitSim() {
             every { prop2.simpleName } returns mockKSName("active")
             every { prop2.type } returns boolTypeRef
             every { prop2.annotations } returns emptySequence()
+            every { prop2.docString } returns ""
 
             val domain = mockDomain(properties = listOf(prop1, prop2))
             val generator = DefaultBuilderGenerator()
@@ -390,6 +396,7 @@ class DefaultBuilderGeneratorTest : UnitSim() {
             every { prop.simpleName } returns mockKSName("requiredField")
             every { prop.type } returns typeRef
             every { prop.annotations } returns emptySequence()
+            every { prop.docString } returns ""
 
             val domain = mockDomain(properties = listOf(prop))
             val generator = DefaultBuilderGenerator()
@@ -450,6 +457,7 @@ class DefaultBuilderGeneratorTest : UnitSim() {
             every { prop.simpleName } returns mockKSName("greeting")
             every { prop.type } returns typeRef
             every { prop.annotations } returns sequenceOf(ann)
+            every { prop.docString } returns ""
 
             val domain = mockDomain(properties = listOf(prop))
             val generator = DefaultBuilderGenerator()
@@ -521,6 +529,7 @@ class DefaultBuilderGeneratorTest : UnitSim() {
             every { prop.simpleName } returns mockKSName("count")
             every { prop.type } returns typeRef
             every { prop.annotations } returns emptySequence()
+            every { prop.docString } returns ""
 
             val domain = mockDomain(properties = listOf(prop))
             val generator = DefaultBuilderGenerator()
@@ -576,6 +585,7 @@ class DefaultBuilderGeneratorTest : UnitSim() {
             every { prop.simpleName } returns mockKSName("optional")
             every { prop.type } returns typeRef
             every { prop.annotations } returns emptySequence()
+            every { prop.docString } returns ""
 
             val domain = mockDomain(properties = listOf(prop))
             val generator = DefaultBuilderGenerator()
@@ -641,6 +651,7 @@ class DefaultBuilderGeneratorTest : UnitSim() {
         every { prop.simpleName } returns mockKSName("tags")
         every { prop.type } returns typeRef
         every { prop.annotations } returns emptySequence()
+        every { prop.docString } returns ""
 
         // Also include a non-nullable string property (exercises hasRequireNotNull)
         val strProp = mockProp("id")
@@ -697,6 +708,7 @@ class DefaultBuilderGeneratorTest : UnitSim() {
             every { prop.simpleName } returns mockKSName("scores")
             every { prop.type } returns typeRef
             every { prop.annotations } returns emptySequence()
+            every { prop.docString } returns ""
 
             val domain = mockDomain(properties = listOf(prop))
             val generator = DefaultBuilderGenerator()
@@ -727,6 +739,7 @@ class DefaultBuilderGeneratorTest : UnitSim() {
             io.mockk.every { domain.simpleName } returns mockKSName("StarShip")
             io.mockk.every { domain.containingFile } returns mockk<KSFile>()
             io.mockk.every { domain.getAllProperties() } returns emptySequence()
+            io.mockk.every { domain.docString } returns ""
 
             // Mock two annotations: GeneratedDsl and DslDescription
             val genAnn: KSAnnotation = mockk()
@@ -849,6 +862,7 @@ class DefaultBuilderGeneratorTest : UnitSim() {
             io.mockk.every { prop.simpleName } returns mockKSName("age")
             io.mockk.every { prop.type } returns typeRef
             io.mockk.every { prop.annotations } returns sequenceOf(validateAnn)
+            io.mockk.every { prop.docString } returns ""
 
             val domain = mockDomain(properties = listOf(prop))
             val generator = DefaultBuilderGenerator()
@@ -900,6 +914,7 @@ class DefaultBuilderGeneratorTest : UnitSim() {
             io.mockk.every { prop.simpleName } returns mockKSName("tags")
             io.mockk.every { prop.type } returns typeRef
             io.mockk.every { prop.annotations } returns emptySequence()
+            io.mockk.every { prop.docString } returns ""
 
             val domain = mockDomain(properties = listOf(prop))
             val generator = DefaultBuilderGenerator()
@@ -978,6 +993,80 @@ class DefaultBuilderGeneratorTest : UnitSim() {
                 generator.generate(codeGen, domain, config, emptyMap(), false)
                 val output = outputStream.toString()
                 output.contains("/**")
+            }
+        }
+    }
+
+    @Test
+    fun `generate falls back to docString when no DslDescription`() = test {
+        given {
+            val outputStream = ByteArrayOutputStream()
+            val codeGen: CodeGenerator = mockk()
+            io.mockk.every {
+                codeGen.createNewFile(any<Dependencies>(), any(), any(), any())
+            } returns outputStream
+
+            val config = mockBuilderConfig()
+
+            val domain: KSClassDeclaration = mockk()
+            io.mockk.every { domain.toClassName() } returns ClassName("org.test", "StarShip")
+            io.mockk.every { domain.packageName } returns mockKSName("org.test")
+            io.mockk.every { domain.simpleName } returns mockKSName("StarShip")
+            io.mockk.every { domain.containingFile } returns mockk<KSFile>()
+            io.mockk.every { domain.getAllProperties() } returns emptySequence()
+            io.mockk.every { domain.annotations } returns emptySequence()
+            io.mockk.every { domain.docString } returns " A starship from KDoc\n"
+
+            val generator = DefaultBuilderGenerator()
+
+            expect { true }
+            whenever {
+                generator.generate(codeGen, domain, config, emptyMap(), false)
+                val output = outputStream.toString()
+                output.contains("A starship from KDoc")
+            }
+        }
+    }
+
+    @Test
+    fun `generate DslDescription takes precedence over docString for class kdoc`() = test {
+        given {
+            val outputStream = ByteArrayOutputStream()
+            val codeGen: CodeGenerator = mockk()
+            io.mockk.every {
+                codeGen.createNewFile(any<Dependencies>(), any(), any(), any())
+            } returns outputStream
+
+            val config = mockBuilderConfig()
+
+            val domain: KSClassDeclaration = mockk()
+            io.mockk.every { domain.toClassName() } returns ClassName("org.test", "StarShip")
+            io.mockk.every { domain.packageName } returns mockKSName("org.test")
+            io.mockk.every { domain.simpleName } returns mockKSName("StarShip")
+            io.mockk.every { domain.containingFile } returns mockk<KSFile>()
+            io.mockk.every { domain.getAllProperties() } returns emptySequence()
+            io.mockk.every { domain.docString } returns "From KDoc"
+
+            val genAnn: KSAnnotation = mockk()
+            io.mockk.every { genAnn.shortName } returns mockKSName("GeneratedDsl")
+            io.mockk.every { genAnn.arguments } returns emptyList()
+
+            val descAnn: KSAnnotation = mockk()
+            io.mockk.every { descAnn.shortName } returns mockKSName("DslDescription")
+            val descArg: KSValueArgument = mockk()
+            io.mockk.every { descArg.name } returns mockKSName("value")
+            io.mockk.every { descArg.value } returns "From annotation"
+            io.mockk.every { descAnn.arguments } returns listOf(descArg)
+
+            io.mockk.every { domain.annotations } returns sequenceOf(genAnn, descAnn)
+
+            val generator = DefaultBuilderGenerator()
+
+            expect { true }
+            whenever {
+                generator.generate(codeGen, domain, config, emptyMap(), false)
+                val output = outputStream.toString()
+                output.contains("From annotation") && !output.contains("From KDoc")
             }
         }
     }

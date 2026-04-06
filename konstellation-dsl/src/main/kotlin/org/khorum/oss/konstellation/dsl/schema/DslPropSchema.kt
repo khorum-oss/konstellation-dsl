@@ -39,8 +39,8 @@ interface DslPropSchema {
             name = propName
             type(propTypeName.copy(nullable = true))
 
-            // Add KDoc from @DslDescription
-            val desc = annotationMetadata.description
+            // Add KDoc from @DslDescription or source KDoc comment
+            val desc = annotationMetadata.effectiveDescription
             if (desc != null) kdoc(desc)
 
             val codeBlock = defaultValue?.codeBlock

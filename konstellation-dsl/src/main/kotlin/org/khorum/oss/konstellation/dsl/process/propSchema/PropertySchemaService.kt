@@ -14,6 +14,7 @@ import org.khorum.oss.konstellation.dsl.schema.DslPropSchema
 import org.khorum.oss.konstellation.dsl.utils.AnnotationLookup
 import org.khorum.oss.konstellation.dsl.utils.Colors
 import org.khorum.oss.konstellation.dsl.utils.VLoggable
+import org.khorum.oss.konstellation.dsl.utils.cleanDocString
 import org.khorum.oss.konstellation.metaDsl.annotation.defaults.DefaultValue
 import org.khorum.oss.konstellation.metaDsl.annotation.defaults.state.DefaultState
 import org.khorum.oss.konstellation.metaDsl.annotation.defaults.state.DefaultStateType
@@ -69,7 +70,10 @@ class DefaultPropertySchemaService(
         return nonTransientProps
             .mapIndexed { i, (prop, annotations) ->
                 val defaultValue = resolveDefaultValue(prop, annotations)
-                val annotationMetadata = annotationExtractor.extract(annotations.asSequence())
+                val annotationMetadata = annotationExtractor.extract(annotations.asSequence()).let { meta ->
+                    val propDocString = cleanDocString(prop.docString)
+                    if (propDocString != null) meta.copy(docString = propDocString) else meta
+                }
 
                 defaultValue?.let {
                     logger.debug(

@@ -380,6 +380,7 @@ class ParameterFactoryTest : UnitSim() {
 
             val classDecl: KSClassDeclaration = io.mockk.mockk()
             io.mockk.every { classDecl.getAllProperties() } returns sequenceOf(propDecl)
+            io.mockk.every { classDecl.docString } returns ""
 
             val adapter = TestParamFactoryAdaptor(
                 actualPropTypeName = Example::class.asTypeName(),
@@ -402,6 +403,7 @@ class ParameterFactoryTest : UnitSim() {
         given {
             val classDecl: KSClassDeclaration = io.mockk.mockk()
             io.mockk.every { classDecl.getAllProperties() } returns emptySequence()
+            io.mockk.every { classDecl.docString } returns ""
 
             val adapter = TestParamFactoryAdaptor(
                 actualPropTypeName = Example::class.asTypeName(),

@@ -30,9 +30,11 @@ class SingleTransformPropSchema(
     )
 
     override fun accessors(): List<FunSpec> = kotlinPoet {
+        val desc = annotationMetadata.effectiveDescription
         functions {
             add {
                 funName = functionName
+                desc?.let { kdoc(it) }
                 val param = param {
                     name = propName
                     type(inputTypeName)

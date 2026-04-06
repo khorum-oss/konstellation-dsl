@@ -37,10 +37,12 @@ class GroupPropSchema(
             extensionName = "DslBuilder",
             nestedClassName = "Group"
         )
+        val desc = annotationMetadata.effectiveDescription
 
         functions {
             add {
                 funName = functionName
+                desc?.let { kdoc(it) }
                 param {
                     lambdaType {
                         receiver = receiverName

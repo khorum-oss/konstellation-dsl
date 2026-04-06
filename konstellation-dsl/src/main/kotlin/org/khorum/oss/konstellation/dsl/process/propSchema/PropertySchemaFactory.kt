@@ -27,6 +27,7 @@ import org.khorum.oss.konstellation.dsl.schema.MapGroupPropSchema
 import org.khorum.oss.konstellation.dsl.schema.MapPropSchema
 import org.khorum.oss.konstellation.dsl.schema.SingleTransformPropSchema
 import org.khorum.oss.konstellation.dsl.utils.VLoggable
+import org.khorum.oss.konstellation.dsl.utils.cleanDocString
 import kotlin.reflect.KClass
 
 
@@ -242,13 +243,18 @@ abstract class AbstractPropertySchemaFactory<T : PropertySchemaFactoryAdapter, P
 
     private fun builderDoc(builderClass: ClassName, declaration: KSClassDeclaration?): String? {
         if (declaration == null) return null
+
+        val classDoc = cleanDocString(declaration.docString)
+
         val props = declaration.getAllProperties()
             .map { it.simpleName.asString() }
             .toList()
-            .ifEmpty { return null }
+            .ifEmpty { return classDoc }
 
         val list = props.sorted().joinToString("\n") { "* [${builderClass.simpleName}.$it]" }
-        return "Available builder functions:\n$list"
+        val builderList = "Available builder functions:\n$list"
+
+        return listOfNotNull(classDoc, builderList).joinToString("\n\n")
     }
 
     /**

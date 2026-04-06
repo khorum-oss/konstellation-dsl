@@ -54,12 +54,14 @@ class MapPropSchema(
 
     override fun accessors(): List<FunSpec> = kotlinPoet {
         val pairType = pairTypeOf(mapKeyType, mapValueType, nullable = false)
+        val desc = annotationMetadata.effectiveDescription
 
         functions {
             // Vararg function: areaCodes(vararg items: Pair<String, String>)
             if (withVararg) {
                 add {
                     funName = functionName
+                    desc?.let { kdoc(it) }
                     varargParam {
                         type(pairType)
                     }
@@ -73,6 +75,7 @@ class MapPropSchema(
             if (withProvider) {
                 add {
                     funName = functionName
+                    desc?.let { kdoc(it) }
                     param {
                         name = "block"
                         lambdaType {

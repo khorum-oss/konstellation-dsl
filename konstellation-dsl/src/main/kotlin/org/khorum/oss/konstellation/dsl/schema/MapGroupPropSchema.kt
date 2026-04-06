@@ -44,10 +44,12 @@ class MapGroupPropSchema(
             valueClassName.simpleName + "DslBuilder",
             "MapGroup"
         ).parameterizedBy(mapKeyType.copy(nullable = false))
+        val desc = annotationMetadata.effectiveDescription
 
         functions {
             add {
                 funName = functionName
+                desc?.let { kdoc(it) }
                 param {
                     lambdaType {
                         receiver = mapGroupClass

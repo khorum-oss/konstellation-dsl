@@ -4,6 +4,7 @@ import com.squareup.kotlinpoet.STRING
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.asTypeName
 import org.khorum.oss.geordi.UnitSim
+import org.khorum.oss.konstellation.dsl.domain.PropertyAnnotationMetadata
 import org.khorum.oss.konstellation.dsl.schema.MapGroupPropSchema
 import org.junit.jupiter.api.Test
 
@@ -101,6 +102,28 @@ class MapBuilderParamTest : UnitSim() {
             )
             expect { "DslValidation.requireMapNotEmpty(::test)" }
             whenever { param.propertyValueReturn() }
+        }
+    }
+
+    @Test
+    fun `accessors - includes KDoc from docString`() = test {
+        given {
+            val metadata = PropertyAnnotationMetadata(docString = "Mapped builder items")
+            val param = MapGroupPropSchema(
+                "items", STRING, TestObj::class.asTypeName() as TypeName,
+                annotationMetadata = metadata
+            )
+            expect { true }
+            whenever { param.accessors().first().toString().contains("Mapped builder items") }
+        }
+    }
+
+    @Test
+    fun `accessors - no KDoc when no description`() = test {
+        given {
+            val param = MapGroupPropSchema("items", STRING, TestObj::class.asTypeName() as TypeName)
+            expect { false }
+            whenever { param.accessors().first().toString().contains("/**") }
         }
     }
 

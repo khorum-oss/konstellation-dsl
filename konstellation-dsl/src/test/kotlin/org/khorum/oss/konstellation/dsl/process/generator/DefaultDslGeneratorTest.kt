@@ -57,6 +57,7 @@ class DefaultDslGeneratorTest : UnitSim() {
             every { cls.toClassName() } returns com.squareup.kotlinpoet.ClassName("org.test", "TestDomain")
             // Return empty properties for @RootDsl scanning
             every { cls.getAllProperties() } returns emptySequence()
+            every { cls.docString } returns ""
             return cls
         }
 

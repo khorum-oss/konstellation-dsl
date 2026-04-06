@@ -40,6 +40,7 @@ class RootDslAccessorGeneratorTest : UnitSim() {
         every { domain.simpleName } returns simpleName
         val file: KSFile = mockk()
         every { domain.containingFile } returns file
+        every { domain.docString } returns ""
         return domain
     }
 

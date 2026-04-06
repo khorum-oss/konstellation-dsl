@@ -4,6 +4,7 @@ import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.STRING
 import org.khorum.oss.geordi.UnitSim
 import org.khorum.oss.konstellation.dsl.domain.DefaultPropertyValue
+import org.khorum.oss.konstellation.dsl.domain.PropertyAnnotationMetadata
 import org.khorum.oss.konstellation.dsl.schema.ListPropSchema
 import org.junit.jupiter.api.Test
 
@@ -172,6 +173,44 @@ class ListParamTest : UnitSim() {
             expect { "protected var test: kotlin.collections.List<kotlin.String>? = emptyList()" }
 
             whenever { param.toPropertySpec().toString().trimIndent() }
+        }
+    }
+
+    @Test
+    fun `accessors - includes KDoc from docString`() = test {
+        given {
+            val metadata = PropertyAnnotationMetadata(docString = "The list of crew members")
+            val param = ListPropSchema("crew", STRING, annotationMetadata = metadata)
+            expect { true }
+            whenever { param.accessors().first().toString().contains("The list of crew members") }
+        }
+    }
+
+    @Test
+    fun `accessors - no KDoc when no description`() = test {
+        given {
+            val param = ListPropSchema("crew", STRING)
+            expect { false }
+            whenever { param.accessors().first().toString().contains("/**") }
+        }
+    }
+
+    @Test
+    fun `accessors - KDoc on provider function`() = test {
+        given {
+            val metadata = PropertyAnnotationMetadata(docString = "The list of crew members")
+            val param = ListPropSchema("crew", STRING, withVararg = false, withProvider = true, annotationMetadata = metadata)
+            expect { true }
+            whenever { param.accessors().first().toString().contains("The list of crew members") }
+        }
+    }
+
+    @Test
+    fun `accessors - no KDoc on provider function when no description`() = test {
+        given {
+            val param = ListPropSchema("crew", STRING, withVararg = false, withProvider = true)
+            expect { false }
+            whenever { param.accessors().first().toString().contains("/**") }
         }
     }
 }

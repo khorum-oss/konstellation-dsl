@@ -6,6 +6,7 @@ import org.khorum.oss.konstellation.dsl.schema.BooleanPropSchema
 import org.junit.jupiter.api.Test
 import org.khorum.oss.konstellation.dsl.domain.BooleanAccessorConfig
 import org.khorum.oss.konstellation.dsl.domain.DefaultPropertyValue
+import org.khorum.oss.konstellation.dsl.domain.PropertyAnnotationMetadata
 
 class BooleanParamTest : UnitSim() {
 
@@ -318,6 +319,87 @@ class BooleanParamTest : UnitSim() {
             val param = BooleanPropSchema("enabled", defaultValue = defaultValue)
             expect { true }
             whenever { param.toPropertySpec().toString().contains("true") }
+        }
+    }
+
+    @Test
+    fun `accessors - includes KDoc from docString`() = test {
+        given {
+            val metadata = PropertyAnnotationMetadata(docString = "Whether the feature is active")
+            val param = BooleanPropSchema("active", annotationMetadata = metadata)
+            expect { true }
+            whenever { param.accessors().first().toString().contains("Whether the feature is active") }
+        }
+    }
+
+    @Test
+    fun `accessors - no KDoc when no description`() = test {
+        given {
+            val param = BooleanPropSchema("active")
+            expect { false }
+            whenever { param.accessors().first().toString().contains("/**") }
+        }
+    }
+
+    @Test
+    fun `accessors - KDoc on valid function with BooleanAccessorConfig`() = test {
+        given {
+            val metadata = PropertyAnnotationMetadata(docString = "Coolness flag")
+            val config = BooleanAccessorConfig(
+                validTemplate = "SELF",
+                negationTemplate = "NOT"
+            )
+            val param = BooleanPropSchema("isCool", defaultValue = DefaultPropertyValue(
+                rawValue = "true",
+                codeBlock = CodeBlock.of("%L", true),
+                packageName = "",
+                className = "",
+                booleanAccessorConfig = config
+            ), annotationMetadata = metadata)
+
+            expect { true }
+            whenever { param.accessors().first().toString().contains("Coolness flag") }
+        }
+    }
+
+    @Test
+    fun `accessors - KDoc on negation function with BooleanAccessorConfig`() = test {
+        given {
+            val metadata = PropertyAnnotationMetadata(docString = "Coolness flag")
+            val config = BooleanAccessorConfig(
+                validTemplate = "SELF",
+                negationTemplate = "NOT"
+            )
+            val param = BooleanPropSchema("isCool", defaultValue = DefaultPropertyValue(
+                rawValue = "true",
+                codeBlock = CodeBlock.of("%L", true),
+                packageName = "",
+                className = "",
+                booleanAccessorConfig = config
+            ), annotationMetadata = metadata)
+
+            expect { true }
+            whenever { param.accessors().last().toString().contains("Coolness flag") }
+        }
+    }
+
+    @Test
+    fun `accessors - no KDoc on valid function when no description with BooleanAccessorConfig`() = test {
+        given {
+            val config = BooleanAccessorConfig(
+                validTemplate = "SELF",
+                negationTemplate = "NOT"
+            )
+            val param = BooleanPropSchema("isCool", defaultValue = DefaultPropertyValue(
+                rawValue = "true",
+                codeBlock = CodeBlock.of("%L", true),
+                packageName = "",
+                className = "",
+                booleanAccessorConfig = config
+            ))
+
+            expect { false }
+            whenever { param.accessors().first().toString().contains("/**") }
         }
     }
 }

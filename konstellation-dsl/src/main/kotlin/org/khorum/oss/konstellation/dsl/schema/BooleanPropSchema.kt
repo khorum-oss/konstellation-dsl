@@ -21,11 +21,13 @@ class BooleanPropSchema(
     override fun accessors(): List<FunSpec> = kotlinPoet {
         functions {
             val config = defaultValue?.booleanAccessorConfig
+            val desc = annotationMetadata.effectiveDescription
 
             if (config == null) {
                 // Backward compatibility: single function with default from annotation
                 add {
                     funName = propName
+                    desc?.let { kdoc(it) }
                     val param = param {
                         booleanType()
                         val boolDefault = if (defaultValue != null) {
@@ -45,6 +47,7 @@ class BooleanPropSchema(
             if (validName != null) {
                 add {
                     funName = validName
+                    desc?.let { kdoc(it) }
                     val param = param {
                         booleanType()
                         defaultValue(true)
@@ -60,6 +63,7 @@ class BooleanPropSchema(
             if (negationName != null) {
                 add {
                     funName = negationName
+                    desc?.let { kdoc(it) }
                     val param = param {
                         booleanType()
                         defaultValue(true)
