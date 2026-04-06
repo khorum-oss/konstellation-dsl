@@ -113,76 +113,80 @@ open class DomainConfig(
 
         if (startLine < 1 || startLine > sourceLines.size) return null
 
-        // Find the function declaration line and extract its body.
-        // Handles both expression-body ("= expr") and block-body ("{ ... }").
         val fnLines = sourceLines.subList(startLine - 1, sourceLines.size)
         val joined = fnLines.joinToString("\n")
 
-        // Expression body: fun name(): Type = expr
-        val eqIndex = findExpressionBodyStart(joined)
-        if (eqIndex != null) {
-            val exprBody = extractExpressionBody(joined, eqIndex)
-            if (exprBody != null) return exprBody.trim()
-        }
-
-        // Block body: fun name(): Type { ... }
-        return extractBlockBody(joined)?.trim()
+        return parseFunctionBody(joined)
     }
 
-    /**
-     * Finds the `=` that starts an expression body, skipping any `=` inside the parameter list.
-     */
-    private fun findExpressionBodyStart(source: String): Int? {
-        var parenDepth = 0
-        var i = 0
-        // Skip past the fun keyword and parameter list
-        while (i < source.length) {
-            when (source[i]) {
-                '(' -> parenDepth++
-                ')' -> parenDepth--
-                '=' -> if (parenDepth == 0 && i + 1 < source.length && source[i + 1] != '=') return i
-                '{' -> if (parenDepth == 0) return null // block body, not expression
+    companion object {
+        /**
+         * Parses a function body from source text starting at the function declaration.
+         * Handles both expression-body (`= expr`) and block-body (`{ ... }`) functions.
+         */
+        internal fun parseFunctionBody(source: String): String? {
+            val eqIndex = findExpressionBodyStart(source)
+            if (eqIndex != null) {
+                val exprBody = extractExpressionBody(source, eqIndex)
+                if (exprBody != null) return exprBody.trim()
             }
-            i++
+            return extractBlockBody(source)?.trim()
         }
-        return null
-    }
 
-    private fun extractExpressionBody(source: String, eqIndex: Int): String? {
-        val afterEq = source.substring(eqIndex + 1)
-        var depth = 0
-        val result = StringBuilder()
-        for (ch in afterEq) {
-            val isTerminator = (ch == '\n' || ch == ')' || ch == '}') && depth == 0
-            if (isTerminator) break
-            when (ch) {
-                '(', '{' -> { depth++; result.append(ch) }
-                ')', '}' -> { depth--; result.append(ch) }
-                else -> result.append(ch)
+        /**
+         * Finds the `=` that starts an expression body, skipping any `=` inside the parameter list.
+         */
+        internal fun findExpressionBodyStart(source: String): Int? {
+            var parenDepth = 0
+            var i = 0
+            while (i < source.length) {
+                when (source[i]) {
+                    '(' -> parenDepth++
+                    ')' -> parenDepth--
+                    '=' -> if (parenDepth == 0 && i + 1 < source.length && source[i + 1] != '=') return i
+                    '{' -> if (parenDepth == 0) return null
+                }
+                i++
             }
+            return null
         }
-        val body = result.toString().trim()
-        return body.ifEmpty { null }
-    }
 
-    private fun extractBlockBody(source: String): String? {
-        val braceStart = source.indexOf('{')
-        if (braceStart == -1) return null
-
-        var depth = 0
-        var i = braceStart
-        while (i < source.length) {
-            when (source[i]) {
-                '{' -> depth++
-                '}' -> {
-                    depth--
-                    if (depth == 0) {
-                        return source.substring(braceStart, i + 1)
-                    }
+        internal fun extractExpressionBody(source: String, eqIndex: Int): String? {
+            val afterEq = source.substring(eqIndex + 1)
+            var depth = 0
+            val result = StringBuilder()
+            for (ch in afterEq) {
+                val isTerminator = (ch == '\n' || ch == ')' || ch == '}') && depth == 0
+                if (isTerminator) break
+                when (ch) {
+                    '(', '{' -> { depth++; result.append(ch) }
+                    ')', '}' -> { depth--; result.append(ch) }
+                    else -> result.append(ch)
                 }
             }
-            i++
+            val body = result.toString().trim()
+            return body.ifEmpty { null }
         }
-        return null
+
+        internal fun extractBlockBody(source: String): String? {
+            val braceStart = source.indexOf('{')
+            if (braceStart == -1) return null
+
+            var depth = 0
+            var i = braceStart
+            while (i < source.length) {
+                when (source[i]) {
+                    '{' -> depth++
+                    '}' -> {
+                        depth--
+                        if (depth == 0) {
+                            return source.substring(braceStart, i + 1)
+                        }
+                    }
+                }
+                i++
+            }
+            return null
+        }
     }
 }

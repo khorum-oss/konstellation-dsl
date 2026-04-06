@@ -143,6 +143,14 @@ class DomainConfigTest : UnitSim() {
         }
     }
 
+    @Test
+    fun `injectedMethods is empty when domain has no annotated functions`() = test {
+        given {
+            expect { emptyList<InjectedMethod>() }
+            whenever { DomainConfig(builderConfig(), emptyMap(), mockDomain, false).injectedMethods }
+        }
+    }
+
     private fun mockGeneratedDslAnnotation(name: String): KSAnnotation {
         val ann: KSAnnotation = mockk()
         val shortName: KSName = mockk()

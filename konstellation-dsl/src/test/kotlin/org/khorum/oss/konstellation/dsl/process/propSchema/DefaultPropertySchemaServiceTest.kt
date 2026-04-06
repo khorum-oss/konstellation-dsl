@@ -257,6 +257,7 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
             every { classDecl.toClassName() } returns ClassName("kotlin", "String")
             every { classDecl.annotations } returns emptySequence()
             every { classDecl.qualifiedName } returns mockKSName("kotlin.String")
+            every { classDecl.packageName } returns mockKSName("kotlin")
 
             val resolvedType: KSType = mockk()
             every { resolvedType.isMarkedNullable } returns false
@@ -2165,6 +2166,62 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
             whenever {
                 val schemas = service.getParamsFromDomain(domainConfig)
                 schemas.first().defaultValue?.codeBlock?.toString()
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain DefaultEnum with blank value returns no default`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockDefaultEnumAnnotation(value = "", packageName = "", className = "")
+            val prop = mockPropWithAnnotations("rank", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { null }
+            whenever {
+                service.getParamsFromDomain(domainConfig).first().defaultValue
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain DefaultEnum with DefaultState prefers DefaultState`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val enumAnn = mockDefaultEnumAnnotation(value = "CAPTAIN")
+            val stateAnn = mockDefaultStateAnnotation("EMPTY_STRING")
+            val prop = mockPropWithAnnotations("field", sequenceOf(stateAnn, enumAnn))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                val schemas = service.getParamsFromDomain(domainConfig)
+                val dv = schemas.first().defaultValue
+                // DefaultState takes precedence — its codeSnippet is "" for EMPTY_STRING
+                dv != null && dv.rawValue == "\"\""
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain DefaultEnum with DefaultValue prefers DefaultEnum`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val enumAnn = mockDefaultEnumAnnotation(
+                value = "ENSIGN",
+                packageName = "com.example",
+                className = "Rank"
+            )
+            val valueAnn = mockDefaultValueAnnotation(
+                listOf("value" to "fallback", "packageName" to "kotlin", "className" to "String")
+            )
+            val prop = mockPropWithAnnotations("rank", sequenceOf(enumAnn, valueAnn))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { "ENSIGN" }
+            whenever {
+                service.getParamsFromDomain(domainConfig).first().defaultValue?.rawValue
             }
         }
     }
