@@ -52,11 +52,13 @@ class ListPropSchema(
     }
 
     override fun accessors(): List<FunSpec> = kotlinPoet {
+        val desc = annotationMetadata.effectiveDescription
         functions {
             // Vararg function: names(vararg name: String)
             if (withVararg) {
                 add {
                     funName = functionName
+                    desc?.let { kdoc(it) }
                     varargParam {
                         type(collectionType, nullable = false)
                     }
@@ -70,6 +72,7 @@ class ListPropSchema(
             if (withProvider) {
                 add {
                     funName = functionName
+                    desc?.let { kdoc(it) }
                     param {
                         name = "block"
                         lambdaType {

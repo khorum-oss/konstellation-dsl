@@ -21,6 +21,7 @@ import org.khorum.oss.konstellation.dsl.process.propSchema.DefaultPropertySchema
 import org.khorum.oss.konstellation.dsl.schema.DslPropSchema
 import org.khorum.oss.konstellation.dsl.utils.AnnotationLookup
 import org.khorum.oss.konstellation.dsl.utils.VLoggable
+import org.khorum.oss.konstellation.dsl.utils.cleanDocString
 import org.khorum.oss.konstellation.dsl.utils.isGroupDsl
 import org.khorum.oss.konstellation.dsl.utils.hasMapDsl
 
@@ -155,8 +156,9 @@ class DefaultBuilderGenerator(
             public()
             name = domainConfig.builderName
 
-            // Add KDoc from @DslDescription on the class
-            classDescription?.let { kdoc(it) }
+            // Add KDoc from @DslDescription on the class, falling back to source KDoc
+            val effectiveClassDoc = classDescription ?: cleanDocString(domainConfig.domain.docString)
+            effectiveClassDoc?.let { kdoc(it) }
 
             superInterface(domainConfig.parameterizedDslBuilder)
             logger.debug("DSL Builder Interface added", tier = 1, branch = true)

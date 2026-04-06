@@ -25,6 +25,7 @@ class RootFunctionGeneratorTest : UnitSim() {
         val simpleName: KSName = mockk()
         every { simpleName.asString() } returns "StarShip"
         every { domain.simpleName } returns simpleName
+        every { domain.docString } returns ""
     }
 
     @AfterEach
@@ -90,6 +91,28 @@ class RootFunctionGeneratorTest : UnitSim() {
         given {
             expect { "starShip" }
             whenever { generator.generate(domain, builderConfig(), null).name }
+        }
+    }
+
+    @Test
+    fun `generate includes KDoc from domain docString`() = test {
+        given {
+            every { domain.docString } returns " A powerful starship\n"
+            expect { true }
+            whenever {
+                generator.generate(domain, builderConfig()).toString().contains("A powerful starship")
+            }
+        }
+    }
+
+    @Test
+    fun `generate without docString has no KDoc`() = test {
+        given {
+            every { domain.docString } returns ""
+            expect { false }
+            whenever {
+                generator.generate(domain, builderConfig()).toString().contains("/**")
+            }
         }
     }
 }

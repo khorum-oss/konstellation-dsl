@@ -267,6 +267,7 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
             every { prop.simpleName } returns mockKSName(name)
             every { prop.type } returns typeRef
             every { prop.annotations } returns annotations
+            every { prop.docString } returns ""
             return prop
         }
     }
@@ -738,6 +739,7 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
             every { prop.simpleName } returns mockKSName("intField")
             every { prop.type } returns typeRef
             every { prop.annotations } returns sequenceOf(ann)
+            every { prop.docString } returns ""
 
             val domainConfig = mockDomainConfig(sequenceOf(prop))
 

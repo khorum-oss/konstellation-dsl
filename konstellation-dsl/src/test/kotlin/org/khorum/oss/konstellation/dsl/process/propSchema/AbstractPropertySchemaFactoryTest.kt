@@ -244,6 +244,7 @@ class AbstractPropertySchemaFactoryTest : UnitSim() {
         given {
             val classDecl: KSClassDeclaration = mockk()
             every { classDecl.getAllProperties() } returns emptySequence()
+            every { classDecl.docString } returns ""
             val adapter = TestAdapter(
                 propName = "inner",
                 actualPropTypeName = ClassName("org.test", "Inner"),
@@ -266,6 +267,7 @@ class AbstractPropertySchemaFactoryTest : UnitSim() {
 
             val classDecl: KSClassDeclaration = mockk()
             every { classDecl.getAllProperties() } returns sequenceOf(propDecl)
+            every { classDecl.docString } returns ""
 
             val adapter = TestAdapter(
                 propName = "engine",

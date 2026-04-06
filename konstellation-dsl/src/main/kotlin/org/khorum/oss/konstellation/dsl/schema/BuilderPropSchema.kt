@@ -24,7 +24,9 @@ class BuilderPropSchema(
         functions {
             add {
                 funName = functionName
-                _kdoc?.let { kdoc(it) }
+                val propDesc = annotationMetadata.effectiveDescription
+                val combinedKdoc = listOfNotNull(propDesc, _kdoc).joinToString("\n\n")
+                if (combinedKdoc.isNotBlank()) kdoc(combinedKdoc)
                 param {
                     lambdaType {
                         receiver = nestedBuilderClassName

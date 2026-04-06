@@ -4,6 +4,7 @@ import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.STRING
 import org.khorum.oss.geordi.UnitSim
 import org.khorum.oss.konstellation.dsl.domain.DefaultPropertyValue
+import org.khorum.oss.konstellation.dsl.domain.PropertyAnnotationMetadata
 import org.khorum.oss.konstellation.dsl.schema.ListPropSchema
 import org.junit.jupiter.api.Test
 
@@ -172,6 +173,16 @@ class ListParamTest : UnitSim() {
             expect { "protected var test: kotlin.collections.List<kotlin.String>? = emptyList()" }
 
             whenever { param.toPropertySpec().toString().trimIndent() }
+        }
+    }
+
+    @Test
+    fun `accessors - includes KDoc from docString`() = test {
+        given {
+            val metadata = PropertyAnnotationMetadata(docString = "The list of crew members")
+            val param = ListPropSchema("crew", STRING, annotationMetadata = metadata)
+            expect { true }
+            whenever { param.accessors().first().toString().contains("The list of crew members") }
         }
     }
 }

@@ -5,6 +5,7 @@ import com.squareup.kotlinpoet.INT
 import com.squareup.kotlinpoet.STRING
 import org.khorum.oss.geordi.UnitSim
 import org.khorum.oss.konstellation.dsl.domain.DefaultPropertyValue
+import org.khorum.oss.konstellation.dsl.domain.PropertyAnnotationMetadata
 import org.khorum.oss.konstellation.dsl.schema.MapPropSchema
 import org.junit.jupiter.api.Test
 
@@ -175,6 +176,16 @@ class MapParamTest : UnitSim() {
             }
 
             whenever { param.toPropertySpec().toString().trimIndent() }
+        }
+    }
+
+    @Test
+    fun `accessors - includes KDoc from docString`() = test {
+        given {
+            val metadata = PropertyAnnotationMetadata(docString = "Area code mappings")
+            val param = MapPropSchema("areaCodes", STRING, INT, annotationMetadata = metadata)
+            expect { true }
+            whenever { param.accessors().first().toString().contains("Area code mappings") }
         }
     }
 }

@@ -6,6 +6,7 @@ import org.khorum.oss.konstellation.dsl.schema.BooleanPropSchema
 import org.junit.jupiter.api.Test
 import org.khorum.oss.konstellation.dsl.domain.BooleanAccessorConfig
 import org.khorum.oss.konstellation.dsl.domain.DefaultPropertyValue
+import org.khorum.oss.konstellation.dsl.domain.PropertyAnnotationMetadata
 
 class BooleanParamTest : UnitSim() {
 
@@ -318,6 +319,16 @@ class BooleanParamTest : UnitSim() {
             val param = BooleanPropSchema("enabled", defaultValue = defaultValue)
             expect { true }
             whenever { param.toPropertySpec().toString().contains("true") }
+        }
+    }
+
+    @Test
+    fun `accessors - includes KDoc from docString`() = test {
+        given {
+            val metadata = PropertyAnnotationMetadata(docString = "Whether the feature is active")
+            val param = BooleanPropSchema("active", annotationMetadata = metadata)
+            expect { true }
+            whenever { param.accessors().first().toString().contains("Whether the feature is active") }
         }
     }
 }

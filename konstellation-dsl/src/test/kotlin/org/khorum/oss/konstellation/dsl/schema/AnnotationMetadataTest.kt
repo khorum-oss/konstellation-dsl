@@ -32,6 +32,59 @@ class AnnotationMetadataTest : UnitSim() {
         }
     }
 
+    @Test
+    fun `toPropertySpec includes KDoc from docString when no DslDescription`() = test {
+        given {
+            val metadata = PropertyAnnotationMetadata(docString = "From source KDoc")
+            val param = DefaultPropSchema("host", STRING, annotationMetadata = metadata)
+            expect { true }
+            whenever { param.toPropertySpec().toString().contains("From source KDoc") }
+        }
+    }
+
+    @Test
+    fun `DslDescription takes precedence over docString`() = test {
+        given {
+            val metadata = PropertyAnnotationMetadata(
+                description = "From annotation",
+                docString = "From source KDoc"
+            )
+            val param = DefaultPropSchema("host", STRING, annotationMetadata = metadata)
+            val output = param.toPropertySpec().toString()
+            expect { true }
+            whenever { output.contains("From annotation") && !output.contains("From source KDoc") }
+        }
+    }
+
+    @Test
+    fun `effectiveDescription returns description when both present`() = test {
+        given {
+            val metadata = PropertyAnnotationMetadata(
+                description = "annotation desc",
+                docString = "kdoc desc"
+            )
+            expect { "annotation desc" }
+            whenever { metadata.effectiveDescription }
+        }
+    }
+
+    @Test
+    fun `effectiveDescription returns docString when description is null`() = test {
+        given {
+            val metadata = PropertyAnnotationMetadata(docString = "kdoc desc")
+            expect { "kdoc desc" }
+            whenever { metadata.effectiveDescription }
+        }
+    }
+
+    @Test
+    fun `effectiveDescription returns null when both are null`() = test {
+        given {
+            expect { null }
+            whenever { PropertyAnnotationMetadata().effectiveDescription }
+        }
+    }
+
     // --- @ValidateDsl validation ---
 
     @Test

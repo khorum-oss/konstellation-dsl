@@ -8,6 +8,7 @@ data class PropertyAnnotationMetadata(
     val isTransient: Boolean = false,
     val transientReason: String? = null,
     val description: String? = null,
+    val docString: String? = null,
     val aliases: List<String> = emptyList(),
     val deprecatedMessage: String? = null,
     val deprecatedReplaceWith: String? = null,
@@ -27,4 +28,10 @@ data class PropertyAnnotationMetadata(
     val hasMapDsl: Boolean = false,
     val mapDslWithVararg: Boolean? = null,
     val mapDslWithProvider: Boolean? = null,
-)
+) {
+    /**
+     * Returns the effective documentation string for this property.
+     * `@DslDescription` takes precedence; falls back to the source KDoc comment.
+     */
+    val effectiveDescription: String? get() = description ?: docString
+}

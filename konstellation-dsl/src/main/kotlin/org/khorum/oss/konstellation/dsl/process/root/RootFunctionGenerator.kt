@@ -6,6 +6,7 @@ import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.ksp.toClassName
 import org.khorum.oss.konstellation.dsl.builder.kotlinPoet
 import org.khorum.oss.konstellation.dsl.domain.BuilderConfig
+import org.khorum.oss.konstellation.dsl.utils.cleanDocString
 
 /**
  * Interface for generating the root DSL function.
@@ -35,6 +36,8 @@ class DefaultRootFunctionGenerator : RootFunctionGenerator {
             funName = customName ?: domain.simpleName.asString().let { n ->
                 n.first().lowercase() + n.substring(1)
             }
+
+            cleanDocString(domain.docString)?.let { kdoc(it) }
 
             param {
                 lambdaType {
