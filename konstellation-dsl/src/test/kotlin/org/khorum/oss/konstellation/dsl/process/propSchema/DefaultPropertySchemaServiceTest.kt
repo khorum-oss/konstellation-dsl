@@ -1974,4 +1974,48 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
             whenever { service.getParamsFromDomain(domainConfig).first().defaultValue }
         }
     }
+
+    @Test
+    fun `getParamsFromDomain extracts docString from property`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+
+            val typeRef: KSTypeReference = mockk()
+            every { typeRef.toTypeName() } returns STRING
+
+            val classDecl: KSClassDeclaration = mockk()
+            every { classDecl.toClassName() } returns ClassName("kotlin", "String")
+            every { classDecl.annotations } returns emptySequence()
+            every { classDecl.qualifiedName } returns mockKSName("kotlin.String")
+
+            val resolvedType: KSType = mockk()
+            every { resolvedType.isMarkedNullable } returns false
+            every { resolvedType.declaration } returns classDecl
+            every { resolvedType.arguments } returns emptyList()
+            every { typeRef.resolve() } returns resolvedType
+
+            val prop: KSPropertyDeclaration = mockk()
+            every { prop.simpleName } returns mockKSName("name")
+            every { prop.type } returns typeRef
+            every { prop.annotations } returns emptySequence()
+            every { prop.docString } returns " The ship name\n"
+
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { "The ship name" }
+            whenever { service.getParamsFromDomain(domainConfig).first().annotationMetadata.docString }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain sets null docString when property has empty docString`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val prop = mockPropWithAnnotations("name", emptySequence())
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { null }
+            whenever { service.getParamsFromDomain(domainConfig).first().annotationMetadata.docString }
+        }
+    }
 }

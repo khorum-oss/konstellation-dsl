@@ -188,4 +188,32 @@ class MapParamTest : UnitSim() {
             whenever { param.accessors().first().toString().contains("Area code mappings") }
         }
     }
+
+    @Test
+    fun `accessors - no KDoc when no description`() = test {
+        given {
+            val param = MapPropSchema("areaCodes", STRING, INT)
+            expect { false }
+            whenever { param.accessors().first().toString().contains("/**") }
+        }
+    }
+
+    @Test
+    fun `accessors - KDoc on provider function`() = test {
+        given {
+            val metadata = PropertyAnnotationMetadata(docString = "Area code mappings")
+            val param = MapPropSchema("areaCodes", STRING, INT, withVararg = false, withProvider = true, annotationMetadata = metadata)
+            expect { true }
+            whenever { param.accessors().first().toString().contains("Area code mappings") }
+        }
+    }
+
+    @Test
+    fun `accessors - no KDoc on provider function when no description`() = test {
+        given {
+            val param = MapPropSchema("areaCodes", STRING, INT, withVararg = false, withProvider = true)
+            expect { false }
+            whenever { param.accessors().first().toString().contains("/**") }
+        }
+    }
 }

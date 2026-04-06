@@ -3,6 +3,7 @@ package org.khorum.oss.konstellation.dsl.props
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.asTypeName
 import org.khorum.oss.geordi.UnitSim
+import org.khorum.oss.konstellation.dsl.domain.PropertyAnnotationMetadata
 import org.khorum.oss.konstellation.dsl.schema.SingleTransformPropSchema
 import org.junit.jupiter.api.Test
 
@@ -136,6 +137,30 @@ class SingleTransformParamTest : UnitSim() {
 
             expect { false }
             whenever { param.propTypeName.isNullable }
+        }
+    }
+
+    @Test
+    fun `accessors - includes KDoc from docString`() = test {
+        given {
+            val metadata = PropertyAnnotationMetadata(docString = "Transform input value")
+            val param = SingleTransformPropSchema(
+                "test", inputTypeName, propTypeName,
+                nullableAssignment = true, annotationMetadata = metadata
+            )
+            expect { true }
+            whenever { param.accessors().first().toString().contains("Transform input value") }
+        }
+    }
+
+    @Test
+    fun `accessors - no KDoc when no description`() = test {
+        given {
+            val param = SingleTransformPropSchema(
+                "test", inputTypeName, propTypeName, nullableAssignment = true
+            )
+            expect { false }
+            whenever { param.accessors().first().toString().contains("/**") }
         }
     }
 

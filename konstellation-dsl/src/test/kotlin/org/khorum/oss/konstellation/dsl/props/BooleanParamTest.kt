@@ -331,4 +331,75 @@ class BooleanParamTest : UnitSim() {
             whenever { param.accessors().first().toString().contains("Whether the feature is active") }
         }
     }
+
+    @Test
+    fun `accessors - no KDoc when no description`() = test {
+        given {
+            val param = BooleanPropSchema("active")
+            expect { false }
+            whenever { param.accessors().first().toString().contains("/**") }
+        }
+    }
+
+    @Test
+    fun `accessors - KDoc on valid function with BooleanAccessorConfig`() = test {
+        given {
+            val metadata = PropertyAnnotationMetadata(docString = "Coolness flag")
+            val config = BooleanAccessorConfig(
+                validTemplate = "SELF",
+                negationTemplate = "NOT"
+            )
+            val param = BooleanPropSchema("isCool", defaultValue = DefaultPropertyValue(
+                rawValue = "true",
+                codeBlock = CodeBlock.of("%L", true),
+                packageName = "",
+                className = "",
+                booleanAccessorConfig = config
+            ), annotationMetadata = metadata)
+
+            expect { true }
+            whenever { param.accessors().first().toString().contains("Coolness flag") }
+        }
+    }
+
+    @Test
+    fun `accessors - KDoc on negation function with BooleanAccessorConfig`() = test {
+        given {
+            val metadata = PropertyAnnotationMetadata(docString = "Coolness flag")
+            val config = BooleanAccessorConfig(
+                validTemplate = "SELF",
+                negationTemplate = "NOT"
+            )
+            val param = BooleanPropSchema("isCool", defaultValue = DefaultPropertyValue(
+                rawValue = "true",
+                codeBlock = CodeBlock.of("%L", true),
+                packageName = "",
+                className = "",
+                booleanAccessorConfig = config
+            ), annotationMetadata = metadata)
+
+            expect { true }
+            whenever { param.accessors().last().toString().contains("Coolness flag") }
+        }
+    }
+
+    @Test
+    fun `accessors - no KDoc on valid function when no description with BooleanAccessorConfig`() = test {
+        given {
+            val config = BooleanAccessorConfig(
+                validTemplate = "SELF",
+                negationTemplate = "NOT"
+            )
+            val param = BooleanPropSchema("isCool", defaultValue = DefaultPropertyValue(
+                rawValue = "true",
+                codeBlock = CodeBlock.of("%L", true),
+                packageName = "",
+                className = "",
+                booleanAccessorConfig = config
+            ))
+
+            expect { false }
+            whenever { param.accessors().first().toString().contains("/**") }
+        }
+    }
 }

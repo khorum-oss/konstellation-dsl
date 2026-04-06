@@ -131,6 +131,37 @@ class BuilderParamTest : UnitSim() {
         }
     }
 
+    @Test
+    fun `accessors - propDesc only when no builder kdoc`() = test {
+        given {
+            val metadata = PropertyAnnotationMetadata(docString = "The engine config")
+            val param = BuilderPropSchema(
+                "engine", typeName, buildClassName, true,
+                kdoc = null,
+                annotationMetadata = metadata
+            )
+
+            expect { true }
+            whenever {
+                val accessor = param.accessors().first().toString()
+                accessor.contains("The engine config") && !accessor.contains("Available builder")
+            }
+        }
+    }
+
+    @Test
+    fun `accessors - no KDoc when neither propDesc nor builder kdoc`() = test {
+        given {
+            val param = BuilderPropSchema(
+                "engine", typeName, buildClassName, true,
+                kdoc = null
+            )
+
+            expect { false }
+            whenever { param.accessors().first().toString().contains("/**") }
+        }
+    }
+
     class TestResponse
     class TestBuilder
 }
