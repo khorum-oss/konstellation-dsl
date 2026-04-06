@@ -15,6 +15,7 @@ import org.khorum.oss.konstellation.dsl.utils.AnnotationLookup
 import org.khorum.oss.konstellation.dsl.utils.Colors
 import org.khorum.oss.konstellation.dsl.utils.VLoggable
 import org.khorum.oss.konstellation.dsl.utils.cleanDocString
+import org.khorum.oss.konstellation.metaDsl.annotation.defaults.DefaultEnum
 import org.khorum.oss.konstellation.metaDsl.annotation.defaults.DefaultValue
 import org.khorum.oss.konstellation.metaDsl.annotation.defaults.state.DefaultState
 import org.khorum.oss.konstellation.metaDsl.annotation.defaults.state.DefaultStateType
@@ -96,8 +97,9 @@ class DefaultPropertySchemaService(
     }
 
     /**
-     * Resolves the default value for a property, checking both `@DefaultState` and `@DefaultValue`.
-     * Emits a warning if both are present (mutual exclusivity) — `@DefaultState` takes precedence.
+     * Resolves the default value for a property, checking `@DefaultState`, `@DefaultEnum`, and `@DefaultValue`.
+     * Emits a warning if multiple are present (mutual exclusivity).
+     * Precedence: @DefaultState > @DefaultEnum > @DefaultValue.
      */
     private fun resolveDefaultValue(
         prop: KSPropertyDeclaration,
@@ -105,18 +107,25 @@ class DefaultPropertySchemaService(
     ): DefaultPropertyValue? {
         val fromDefaultValue = extractDefaultPropertyValue(prop, annotations)
         val fromDefaultState = extractDefaultState(prop, annotations)
+        val fromDefaultEnum = extractDefaultEnum(prop, annotations)
         val propNameStr = prop.simpleName.asString()
 
-        if (fromDefaultValue != null && fromDefaultState != null) {
+        val presentAnnotations = listOfNotNull(
+            fromDefaultState?.let { "@DefaultState" },
+            fromDefaultEnum?.let { "@DefaultEnum" },
+            fromDefaultValue?.let { "@DefaultValue" }
+        )
+
+        if (presentAnnotations.size > 1) {
+            val names = presentAnnotations.joinToString(" and ") { Colors.yellow(it) }
+            val winner = presentAnnotations.first()
             logger.warn(
-                "Property '$propNameStr' has both ${Colors.yellow("@DefaultValue")} and " +
-                    "${Colors.yellow("@DefaultState")}. These are mutually exclusive — " +
-                    "@DefaultState will take precedence."
+                "Property '$propNameStr' has both $names. " +
+                    "These are mutually exclusive — $winner will take precedence."
             )
-            return fromDefaultState
         }
 
-        return fromDefaultState ?: fromDefaultValue
+        return fromDefaultState ?: fromDefaultEnum ?: fromDefaultValue
     }
 
     /**
@@ -218,6 +227,59 @@ class DefaultPropertySchemaService(
             validTemplate = effectiveValidTemplate,
             negationFunctionName = negationFunctionName,
             negationTemplate = negationTemplate
+        )
+    }
+
+    /**
+     * If the property has @DefaultEnum("ENTRY_NAME"), return a [DefaultPropertyValue] that
+     * initializes the property to the specified enum entry.
+     *
+     * When `packageName` and `className` are empty, the enum class is inferred from the
+     * property's declared type.
+     */
+    private fun extractDefaultEnum(
+        prop: KSPropertyDeclaration,
+        annotations: List<KSAnnotation>
+    ): DefaultPropertyValue? {
+        val ann: KSAnnotation = annotations.firstOrNull {
+            it.annotationType.resolve().declaration.qualifiedName?.asString() == DefaultEnum::class.qualifiedName
+        } ?: return null
+
+        val value = AnnotationLookup.findArgumentValue<String>(ann, DefaultEnum::value.name)
+        if (value.isNullOrBlank()) {
+            logger.warn("@DefaultEnum on '${prop.simpleName.asString()}' has no value — ignoring")
+            return null
+        }
+
+        var packageName = AnnotationLookup.findArgumentValue<Any>(ann, DefaultEnum::packageName.name)?.toString() ?: ""
+        var className = AnnotationLookup.findArgumentValue<Any>(ann, DefaultEnum::className.name)?.toString() ?: ""
+
+        // Auto-infer enum class from property type when packageName/className are empty
+        if (packageName.isEmpty() && className.isEmpty()) {
+            val propTypeDecl = prop.type.resolve().declaration
+            val qualifiedName = propTypeDecl.qualifiedName?.asString()
+            val propPackage = propTypeDecl.packageName.asString()
+
+            if (qualifiedName != null && propPackage.isNotEmpty()) {
+                packageName = propPackage
+                // className is the part after the package: e.g. "Passenger.Rank" from "com.example.Passenger.Rank"
+                className = qualifiedName.removePrefix("$propPackage.")
+            }
+        }
+
+        val propName = prop.simpleName.asString()
+        val enumReference = "$className.$value"
+
+        logger.debug(
+            "Property '$propName' has ${Colors.yellow("@DefaultEnum")} → $enumReference",
+            tier = 2
+        )
+
+        return DefaultPropertyValue(
+            rawValue = value,
+            codeBlock = CodeBlock.of("%L", enumReference),
+            packageName = packageName,
+            className = className
         )
     }
 

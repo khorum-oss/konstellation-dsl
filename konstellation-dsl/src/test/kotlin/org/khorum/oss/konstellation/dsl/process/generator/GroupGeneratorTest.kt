@@ -58,6 +58,7 @@ class GroupGeneratorTest : UnitSim() {
             every { domain.simpleName } returns simpleName
             val file: KSFile = mockk()
             every { domain.containingFile } returns file
+            every { domain.declarations } returns emptySequence()
             return domain
         }
 

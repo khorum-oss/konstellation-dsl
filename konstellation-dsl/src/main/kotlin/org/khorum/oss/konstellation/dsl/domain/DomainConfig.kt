@@ -1,12 +1,17 @@
 package org.khorum.oss.konstellation.dsl.domain
 
+import com.google.devtools.ksp.getDeclaredFunctions
 import com.google.devtools.ksp.processing.Dependencies
+import com.google.devtools.ksp.symbol.FileLocation
 import com.google.devtools.ksp.symbol.KSClassDeclaration
+import com.google.devtools.ksp.symbol.KSFunctionDeclaration
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.ksp.toClassName
+import com.squareup.kotlinpoet.ksp.toTypeName
 import org.khorum.oss.konstellation.dsl.utils.AnnotationLookup
 import org.khorum.oss.konstellation.metaDsl.annotation.GeneratedDsl
+import java.io.File
 
 /**
  * Configuration for a domain in the DSL.
@@ -61,10 +66,130 @@ open class DomainConfig(
     open val fileClassName = ClassName(packageName, "${builderBaseName}$dslBuildFilePostfix")
     val dependencies = Dependencies(aggregating = false, sources = listOfNotNull(domain.containingFile).toTypedArray())
 
+    /**
+     * Methods annotated with `@InjectDslMethod` on the domain class body.
+     * These are copied into the generated builder.
+     */
+    val injectedMethods: List<InjectedMethod> = resolveInjectedMethods()
+
     private fun resolveCustomName(): String? {
         val annotation = AnnotationLookup.findAnnotation(domain.annotations, GeneratedDsl::class)
             ?: return null
         val name = AnnotationLookup.findArgumentValue<String>(annotation, GeneratedDsl::name.name)
         return name?.takeIf { it.isNotBlank() }
+    }
+
+    private fun resolveInjectedMethods(): List<InjectedMethod> {
+        return domain.getDeclaredFunctions()
+            .filter { AnnotationLookup.hasAnnotationByName(it.annotations, "InjectDslMethod") }
+            .mapNotNull { fn -> extractInjectedMethod(fn) }
+            .toList()
+    }
+
+    private fun extractInjectedMethod(fn: KSFunctionDeclaration): InjectedMethod? {
+        val name = fn.simpleName.asString()
+        val returnType = fn.returnType?.toTypeName() ?: return null
+        val parameters = fn.parameters.mapNotNull { param ->
+            val paramName = param.name?.asString() ?: return@mapNotNull null
+            val paramType = param.type.toTypeName()
+            InjectedMethodParameter(paramName, paramType)
+        }
+        val body = extractFunctionBody(fn) ?: return null
+
+        return InjectedMethod(name, parameters, returnType, body)
+    }
+
+    @Suppress("ReturnCount")
+    private fun extractFunctionBody(fn: KSFunctionDeclaration): String? {
+        val location = fn.location as? FileLocation ?: return null
+        val filePath = location.filePath
+        val startLine = location.lineNumber // 1-based
+
+        val sourceLines = try {
+            File(filePath).readLines()
+        } catch (_: Exception) {
+            return null
+        }
+
+        if (startLine < 1 || startLine > sourceLines.size) return null
+
+        // Find the function declaration line and extract its body.
+        // Handles both expression-body ("= expr") and block-body ("{ ... }").
+        val fnLines = sourceLines.subList(startLine - 1, sourceLines.size)
+        val joined = fnLines.joinToString("\n")
+
+        // Expression body: fun name(): Type = expr
+        val eqIndex = findExpressionBodyStart(joined)
+        if (eqIndex != null) {
+            val exprBody = extractExpressionBody(joined, eqIndex)
+            if (exprBody != null) return exprBody.trim()
+        }
+
+        // Block body: fun name(): Type { ... }
+        return extractBlockBody(joined)?.trim()
+    }
+
+    /**
+     * Finds the `=` that starts an expression body, skipping any `=` inside the parameter list.
+     */
+    private fun findExpressionBodyStart(source: String): Int? {
+        var parenDepth = 0
+        var i = 0
+        // Skip past the fun keyword and parameter list
+        while (i < source.length) {
+            when (source[i]) {
+                '(' -> parenDepth++
+                ')' -> parenDepth--
+                '=' -> if (parenDepth == 0 && i + 1 < source.length && source[i + 1] != '=') return i
+                '{' -> if (parenDepth == 0) return null // block body, not expression
+            }
+            i++
+        }
+        return null
+    }
+
+    private fun extractExpressionBody(source: String, eqIndex: Int): String? {
+        val afterEq = source.substring(eqIndex + 1)
+        // The expression ends at the end of the logical statement.
+        // For simple expressions, take until we hit an unbalanced newline or end of class body.
+        var depth = 0
+        val result = StringBuilder()
+        for (ch in afterEq) {
+            when (ch) {
+                '(', '{' -> { depth++; result.append(ch) }
+                ')', '}' -> {
+                    if (depth == 0) break
+                    depth--; result.append(ch)
+                }
+                '\n' -> {
+                    if (depth == 0) break
+                    result.append(ch)
+                }
+                else -> result.append(ch)
+            }
+        }
+        val body = result.toString().trim()
+        return body.ifEmpty { null }
+    }
+
+    private fun extractBlockBody(source: String): String? {
+        val braceStart = source.indexOf('{')
+        if (braceStart == -1) return null
+
+        var depth = 0
+        var i = braceStart
+        while (i < source.length) {
+            when (source[i]) {
+                '{' -> depth++
+                '}' -> {
+                    depth--
+                    if (depth == 0) {
+                        return source.substring(braceStart, i + 1)
+                    }
+                }
+            }
+            i++
+        }
+        return null
     }
 }

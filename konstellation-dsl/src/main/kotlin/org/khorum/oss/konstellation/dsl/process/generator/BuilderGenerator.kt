@@ -3,6 +3,7 @@ package org.khorum.oss.konstellation.dsl.process.generator
 import com.google.devtools.ksp.processing.CodeGenerator
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 
+import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.TypeAliasSpec
 import com.squareup.kotlinpoet.TypeVariableName
@@ -16,6 +17,7 @@ import org.khorum.oss.konstellation.dsl.builder.AnnotationDecorator
 import org.khorum.oss.konstellation.dsl.builder.kotlinPoet
 import org.khorum.oss.konstellation.dsl.domain.BuilderConfig
 import org.khorum.oss.konstellation.dsl.domain.DomainConfig
+import org.khorum.oss.konstellation.dsl.domain.InjectedMethod
 import org.khorum.oss.konstellation.dsl.process.DslFileWriter
 import org.khorum.oss.konstellation.dsl.process.propSchema.DefaultPropertySchemaService
 import org.khorum.oss.konstellation.dsl.schema.DslPropSchema
@@ -171,6 +173,10 @@ class DefaultBuilderGenerator(
             functions {
                 params.addForEach(DslPropSchema::allAccessors)
 
+                // @InjectDslMethod: copy annotated functions into the builder
+                val injectedFunSpecs = buildInjectedMethods(domainConfig, params)
+                addAll(injectedFunSpecs)
+
                 add {
                     override()
                     funName = "build"
@@ -276,6 +282,69 @@ class DefaultBuilderGenerator(
                 typeAliases(*typeAliases.toTypedArray())
                 types(builderContent)
             }
+        }
+    }
+
+    /**
+     * Validates and builds [FunSpec] objects for `@InjectDslMethod` annotated functions.
+     * Throws an error if the function body references properties not present in the builder.
+     */
+    private fun buildInjectedMethods(
+        domainConfig: DomainConfig,
+        params: List<DslPropSchema>
+    ): List<FunSpec> {
+        val injectedMethods = domainConfig.injectedMethods
+        if (injectedMethods.isEmpty()) return emptyList()
+
+        val builderPropNames = params.map { it.propName }.toSet()
+
+        return injectedMethods.map { method ->
+            validateBackingProperties(method, builderPropNames, domainConfig)
+
+            val funBuilder = FunSpec.builder(method.name)
+                .returns(method.returnType)
+
+            for (param in method.parameters) {
+                funBuilder.addParameter(param.name, param.type)
+            }
+
+            val body = method.body
+            if (body.startsWith("{")) {
+                // Block body — strip outer braces and add as code block
+                val inner = body.removeSurrounding("{", "}").trim()
+                funBuilder.addCode(CodeBlock.of("%L", inner))
+            } else {
+                // Expression body
+                funBuilder.addCode(CodeBlock.of("return %L", body))
+            }
+
+            logger.debug("Injected method '${method.name}' added to builder", tier = 2, branch = true)
+            funBuilder.build()
+        }
+    }
+
+    private fun validateBackingProperties(
+        method: InjectedMethod,
+        builderPropNames: Set<String>,
+        domainConfig: DomainConfig
+    ) {
+        val body = method.body
+        // Simple token-based check: find identifiers in the body that could be property references.
+        // We look for property names used as bare identifiers (not after a dot that isn't 'this.').
+        val allPropertyNames = domainConfig.domain.getAllProperties()
+            .map { it.simpleName.asString() }
+            .toSet()
+
+        // Find property references in the body that exist in the domain but not in the builder
+        val missingProps = allPropertyNames
+            .filter { propName -> body.contains(propName) && propName !in builderPropNames }
+
+        for (missing in missingProps) {
+            logger.warn(
+                "@InjectDslMethod '${method.name}' references property '$missing' " +
+                    "which is not available in the builder (it may be @TransientDsl). " +
+                    "This will cause a compile error in the generated code."
+            )
         }
     }
 

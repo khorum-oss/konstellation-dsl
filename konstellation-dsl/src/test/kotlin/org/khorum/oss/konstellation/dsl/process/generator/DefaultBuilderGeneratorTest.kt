@@ -107,6 +107,7 @@ class DefaultBuilderGeneratorTest : UnitSim() {
             every { domain.containingFile } returns mockk<KSFile>()
             every { domain.getAllProperties() } returns properties.asSequence()
             every { domain.docString } returns ""
+            every { domain.declarations } returns emptySequence()
 
             if (annotations.isEmpty()) {
                 every { domain.annotations } returns emptySequence()
@@ -740,6 +741,7 @@ class DefaultBuilderGeneratorTest : UnitSim() {
             io.mockk.every { domain.containingFile } returns mockk<KSFile>()
             io.mockk.every { domain.getAllProperties() } returns emptySequence()
             io.mockk.every { domain.docString } returns ""
+            io.mockk.every { domain.declarations } returns emptySequence()
 
             // Mock two annotations: GeneratedDsl and DslDescription
             val genAnn: KSAnnotation = mockk()
@@ -1016,6 +1018,7 @@ class DefaultBuilderGeneratorTest : UnitSim() {
             io.mockk.every { domain.getAllProperties() } returns emptySequence()
             io.mockk.every { domain.annotations } returns emptySequence()
             io.mockk.every { domain.docString } returns " A starship from KDoc\n"
+            io.mockk.every { domain.declarations } returns emptySequence()
 
             val generator = DefaultBuilderGenerator()
 
@@ -1046,6 +1049,7 @@ class DefaultBuilderGeneratorTest : UnitSim() {
             io.mockk.every { domain.containingFile } returns mockk<KSFile>()
             io.mockk.every { domain.getAllProperties() } returns emptySequence()
             io.mockk.every { domain.docString } returns "From KDoc"
+            io.mockk.every { domain.declarations } returns emptySequence()
 
             val genAnn: KSAnnotation = mockk()
             io.mockk.every { genAnn.shortName } returns mockKSName("GeneratedDsl")
