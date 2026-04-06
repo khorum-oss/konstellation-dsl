@@ -150,21 +150,14 @@ open class DomainConfig(
 
     private fun extractExpressionBody(source: String, eqIndex: Int): String? {
         val afterEq = source.substring(eqIndex + 1)
-        // The expression ends at the end of the logical statement.
-        // For simple expressions, take until we hit an unbalanced newline or end of class body.
         var depth = 0
         val result = StringBuilder()
         for (ch in afterEq) {
+            val isTerminator = (ch == '\n' || ch == ')' || ch == '}') && depth == 0
+            if (isTerminator) break
             when (ch) {
                 '(', '{' -> { depth++; result.append(ch) }
-                ')', '}' -> {
-                    if (depth == 0) break
-                    depth--; result.append(ch)
-                }
-                '\n' -> {
-                    if (depth == 0) break
-                    result.append(ch)
-                }
+                ')', '}' -> { depth--; result.append(ch) }
                 else -> result.append(ch)
             }
         }
