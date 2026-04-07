@@ -59,6 +59,7 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
             every { domain.containingFile } returns mockk<KSFile>()
             every { domain.annotations } returns emptySequence()
             every { domain.getAllProperties() } returns properties
+            every { domain.declarations } returns emptySequence()
 
             val config = BuilderConfig(
                 mapOf(
@@ -256,6 +257,7 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
             every { classDecl.toClassName() } returns ClassName("kotlin", "String")
             every { classDecl.annotations } returns emptySequence()
             every { classDecl.qualifiedName } returns mockKSName("kotlin.String")
+            every { classDecl.packageName } returns mockKSName("kotlin")
 
             val resolvedType: KSType = mockk()
             every { resolvedType.isMarkedNullable } returns false
@@ -267,6 +269,76 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
             every { prop.simpleName } returns mockKSName(name)
             every { prop.type } returns typeRef
             every { prop.annotations } returns annotations
+            every { prop.docString } returns ""
+            return prop
+        }
+
+        private fun mockDefaultEnumAnnotation(
+            value: String,
+            packageName: String = "",
+            className: String = ""
+        ): KSAnnotation {
+            val annTypeRef: KSTypeReference = mockk()
+            val annResolvedType: KSType = mockk()
+            val annDecl: KSClassDeclaration = mockk()
+            val annQualName: KSName = mockk()
+            every { annQualName.asString() } returns "org.khorum.oss.konstellation.metaDsl.annotation.defaults.DefaultEnum"
+            every { annDecl.qualifiedName } returns annQualName
+            every { annResolvedType.declaration } returns annDecl
+            every { annTypeRef.resolve() } returns annResolvedType
+
+            val ann: KSAnnotation = mockk()
+            every { ann.annotationType } returns annTypeRef
+            val shortName: KSName = mockk()
+            every { shortName.asString() } returns "DefaultEnum"
+            every { ann.shortName } returns shortName
+            every { ann.arguments } returns listOf(
+                mockk<KSValueArgument>().also { arg ->
+                    every { arg.name } returns mockKSName("value")
+                    every { arg.value } returns value
+                },
+                mockk<KSValueArgument>().also { arg ->
+                    every { arg.name } returns mockKSName("packageName")
+                    every { arg.value } returns packageName
+                },
+                mockk<KSValueArgument>().also { arg ->
+                    every { arg.name } returns mockKSName("className")
+                    every { arg.value } returns className
+                }
+            )
+            return ann
+        }
+
+        private fun mockPropWithDefaultEnum(
+            propName: String = "rank",
+            value: String,
+            packageName: String = "",
+            className: String = "",
+            enumQualifiedName: String = "com.example.Rank",
+            enumPackageName: String = "com.example"
+        ): KSPropertyDeclaration {
+            val ann = mockDefaultEnumAnnotation(value, packageName, className)
+
+            val typeRef: KSTypeReference = mockk()
+            every { typeRef.toTypeName() } returns STRING
+
+            // Mock the property type declaration (the enum class)
+            val enumDecl: KSClassDeclaration = mockk()
+            every { enumDecl.toClassName() } returns ClassName(enumPackageName, enumQualifiedName.removePrefix("$enumPackageName."))
+            every { enumDecl.annotations } returns emptySequence()
+            every { enumDecl.qualifiedName } returns mockKSName(enumQualifiedName)
+            every { enumDecl.packageName } returns mockKSName(enumPackageName)
+
+            val resolvedType: KSType = mockk()
+            every { resolvedType.isMarkedNullable } returns false
+            every { resolvedType.declaration } returns enumDecl
+            every { resolvedType.arguments } returns emptyList()
+            every { typeRef.resolve() } returns resolvedType
+
+            val prop: KSPropertyDeclaration = mockk()
+            every { prop.simpleName } returns mockKSName(propName)
+            every { prop.type } returns typeRef
+            every { prop.annotations } returns sequenceOf(ann)
             every { prop.docString } returns ""
             return prop
         }
@@ -2016,6 +2088,410 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
 
             expect { null }
             whenever { service.getParamsFromDomain(domainConfig).first().annotationMetadata.docString }
+        }
+    }
+
+    // --- @DefaultEnum tests ---
+
+    @Test
+    fun `getParamsFromDomain extracts DefaultEnum with inferred type`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val prop = mockPropWithDefaultEnum(
+                value = "CAPTAIN",
+                enumQualifiedName = "com.example.Rank",
+                enumPackageName = "com.example"
+            )
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                val schemas = service.getParamsFromDomain(domainConfig)
+                val dv = schemas.first().defaultValue
+                dv != null && dv.rawValue == "CAPTAIN"
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain DefaultEnum infers package and class from property type`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val prop = mockPropWithDefaultEnum(
+                value = "ENSIGN",
+                enumQualifiedName = "com.example.Rank",
+                enumPackageName = "com.example"
+            )
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { "Rank.ENSIGN" }
+            whenever {
+                val schemas = service.getParamsFromDomain(domainConfig)
+                schemas.first().defaultValue?.codeBlock?.toString()
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain extracts DefaultEnum with explicit package and class`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val prop = mockPropWithDefaultEnum(
+                value = "BRIDGE",
+                packageName = "com.example",
+                className = "Department"
+            )
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { "Department.BRIDGE" }
+            whenever {
+                val schemas = service.getParamsFromDomain(domainConfig)
+                schemas.first().defaultValue?.codeBlock?.toString()
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain DefaultEnum with nested enum infers correct className`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val prop = mockPropWithDefaultEnum(
+                value = "CIVILIAN",
+                enumQualifiedName = "com.example.Passenger.Rank",
+                enumPackageName = "com.example"
+            )
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { "Passenger.Rank.CIVILIAN" }
+            whenever {
+                val schemas = service.getParamsFromDomain(domainConfig)
+                schemas.first().defaultValue?.codeBlock?.toString()
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain DefaultEnum with blank value returns no default`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val ann = mockDefaultEnumAnnotation(value = "", packageName = "", className = "")
+            val prop = mockPropWithAnnotations("rank", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { null }
+            whenever {
+                service.getParamsFromDomain(domainConfig).first().defaultValue
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain DefaultEnum with DefaultState prefers DefaultState`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val enumAnn = mockDefaultEnumAnnotation(value = "CAPTAIN")
+            val stateAnn = mockDefaultStateAnnotation("EMPTY_STRING")
+            val prop = mockPropWithAnnotations("field", sequenceOf(stateAnn, enumAnn))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                val schemas = service.getParamsFromDomain(domainConfig)
+                val dv = schemas.first().defaultValue
+                // DefaultState takes precedence — its codeSnippet is "" for EMPTY_STRING
+                dv != null && dv.rawValue == "\"\""
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain DefaultEnum with DefaultValue prefers DefaultEnum`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val enumAnn = mockDefaultEnumAnnotation(
+                value = "ENSIGN",
+                packageName = "com.example",
+                className = "Rank"
+            )
+            val valueAnn = mockDefaultValueAnnotation(
+                listOf("value" to "fallback", "packageName" to "kotlin", "className" to "String")
+            )
+            val prop = mockPropWithAnnotations("rank", sequenceOf(enumAnn, valueAnn))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { "ENSIGN" }
+            whenever {
+                service.getParamsFromDomain(domainConfig).first().defaultValue?.rawValue
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain DefaultEnum annotation with null qualifiedName is skipped`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+
+            // Mock annotation where annotationType qualifiedName is null
+            val annTypeRef: KSTypeReference = mockk()
+            val annResolvedType: KSType = mockk()
+            val annDecl: KSClassDeclaration = mockk()
+            io.mockk.every { annDecl.qualifiedName } answers { null }
+            every { annResolvedType.declaration } returns annDecl
+            every { annTypeRef.resolve() } returns annResolvedType
+
+            val ann: KSAnnotation = mockk()
+            every { ann.annotationType } returns annTypeRef
+            every { ann.shortName } returns mockKSName("DefaultEnum")
+
+            val prop = mockPropWithAnnotations("rank", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { null }
+            whenever { service.getParamsFromDomain(domainConfig).first().defaultValue }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain DefaultEnum auto-infer skips when property type has null qualifiedName`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+
+            val enumAnn = mockDefaultEnumAnnotation(value = "CAPTAIN")
+
+            val typeRef: KSTypeReference = mockk()
+            every { typeRef.toTypeName() } returns STRING
+
+            val enumDecl: KSClassDeclaration = mockk()
+            every { enumDecl.toClassName() } returns ClassName("", "Unknown")
+            every { enumDecl.annotations } returns emptySequence()
+            io.mockk.every { enumDecl.qualifiedName } answers { null }
+            every { enumDecl.packageName } returns mockKSName("")
+
+            val resolvedType: KSType = mockk()
+            every { resolvedType.isMarkedNullable } returns false
+            every { resolvedType.declaration } returns enumDecl
+            every { resolvedType.arguments } returns emptyList()
+            every { typeRef.resolve() } returns resolvedType
+
+            val prop: KSPropertyDeclaration = mockk()
+            every { prop.simpleName } returns mockKSName("rank")
+            every { prop.type } returns typeRef
+            every { prop.annotations } returns sequenceOf(enumAnn)
+            every { prop.docString } returns ""
+
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                val schemas = service.getParamsFromDomain(domainConfig)
+                val dv = schemas.first().defaultValue
+                // Should still produce a default value, but with empty packageName/className
+                dv != null && dv.rawValue == "CAPTAIN" && dv.codeBlock.toString() == ".CAPTAIN"
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain DefaultEnum with explicit packageName skips auto-inference`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val prop = mockPropWithDefaultEnum(
+                value = "CAPTAIN",
+                packageName = "com.example",
+                className = "Rank",
+                enumQualifiedName = "com.example.Rank",
+                enumPackageName = "com.example"
+            )
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                val schemas = service.getParamsFromDomain(domainConfig)
+                val dv = schemas.first().defaultValue
+                dv != null && dv.rawValue == "CAPTAIN" && dv.codeBlock.toString() == "Rank.CAPTAIN"
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain DefaultEnum with only packageName set still uses explicit value`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val prop = mockPropWithDefaultEnum(
+                value = "ENSIGN",
+                packageName = "com.example",
+                className = "",
+                enumQualifiedName = "com.example.Rank",
+                enumPackageName = "com.example"
+            )
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                val schemas = service.getParamsFromDomain(domainConfig)
+                val dv = schemas.first().defaultValue
+                // packageName is set but className is empty — doesn't trigger auto-inference
+                dv != null && dv.rawValue == "ENSIGN"
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain DefaultEnum with only className set still uses explicit value`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val prop = mockPropWithDefaultEnum(
+                value = "ENSIGN",
+                packageName = "",
+                className = "Rank",
+                enumQualifiedName = "com.example.Rank",
+                enumPackageName = "com.example"
+            )
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                val schemas = service.getParamsFromDomain(domainConfig)
+                val dv = schemas.first().defaultValue
+                // className set but packageName empty — doesn't trigger auto-inference
+                dv != null && dv.rawValue == "ENSIGN"
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain DefaultEnum with null packageName and className args infers from type`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+
+            // Create @DefaultEnum annotation where packageName/className arg values are null
+            val annTypeRef: KSTypeReference = mockk()
+            val annResolvedType: KSType = mockk()
+            val annDecl: KSClassDeclaration = mockk()
+            val annQualName: KSName = mockk()
+            every { annQualName.asString() } returns "org.khorum.oss.konstellation.metaDsl.annotation.defaults.DefaultEnum"
+            every { annDecl.qualifiedName } returns annQualName
+            every { annResolvedType.declaration } returns annDecl
+            every { annTypeRef.resolve() } returns annResolvedType
+
+            val ann: KSAnnotation = mockk()
+            every { ann.annotationType } returns annTypeRef
+            every { ann.shortName } returns mockKSName("DefaultEnum")
+            every { ann.arguments } returns listOf(
+                mockk<KSValueArgument>().also { arg ->
+                    every { arg.name } returns mockKSName("value")
+                    every { arg.value } returns "CAPTAIN"
+                },
+                mockk<KSValueArgument>().also { arg ->
+                    every { arg.name } returns mockKSName("packageName")
+                    io.mockk.every { arg.value } answers { null }
+                },
+                mockk<KSValueArgument>().also { arg ->
+                    every { arg.name } returns mockKSName("className")
+                    io.mockk.every { arg.value } answers { null }
+                }
+            )
+
+            // Use mockPropWithDefaultEnum-style property with proper enum type
+            val typeRef: KSTypeReference = mockk()
+            every { typeRef.toTypeName() } returns STRING
+            val enumDecl: KSClassDeclaration = mockk()
+            every { enumDecl.toClassName() } returns ClassName("com.example", "Rank")
+            every { enumDecl.annotations } returns emptySequence()
+            every { enumDecl.qualifiedName } returns mockKSName("com.example.Rank")
+            every { enumDecl.packageName } returns mockKSName("com.example")
+            val resolvedType: KSType = mockk()
+            every { resolvedType.isMarkedNullable } returns false
+            every { resolvedType.declaration } returns enumDecl
+            every { resolvedType.arguments } returns emptyList()
+            every { typeRef.resolve() } returns resolvedType
+
+            val prop: KSPropertyDeclaration = mockk()
+            every { prop.simpleName } returns mockKSName("rank")
+            every { prop.type } returns typeRef
+            every { prop.annotations } returns sequenceOf(ann)
+            every { prop.docString } returns ""
+
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                val schemas = service.getParamsFromDomain(domainConfig)
+                val dv = schemas.first().defaultValue
+                // null args trigger ?.toString() ?: "" → empty strings → auto-inference kicks in
+                dv != null && dv.rawValue == "CAPTAIN" && dv.codeBlock.toString() == "Rank.CAPTAIN"
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain DefaultEnum infer with empty propPackage skips inference`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+
+            val enumAnn = mockDefaultEnumAnnotation(value = "CAPTAIN")
+
+            val typeRef: KSTypeReference = mockk()
+            every { typeRef.toTypeName() } returns STRING
+            val enumDecl: KSClassDeclaration = mockk()
+            every { enumDecl.toClassName() } returns ClassName("", "Rank")
+            every { enumDecl.annotations } returns emptySequence()
+            every { enumDecl.qualifiedName } returns mockKSName("Rank")
+            every { enumDecl.packageName } returns mockKSName("")
+            val resolvedType: KSType = mockk()
+            every { resolvedType.isMarkedNullable } returns false
+            every { resolvedType.declaration } returns enumDecl
+            every { resolvedType.arguments } returns emptyList()
+            every { typeRef.resolve() } returns resolvedType
+
+            val prop: KSPropertyDeclaration = mockk()
+            every { prop.simpleName } returns mockKSName("rank")
+            every { prop.type } returns typeRef
+            every { prop.annotations } returns sequenceOf(enumAnn)
+            every { prop.docString } returns ""
+
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                val schemas = service.getParamsFromDomain(domainConfig)
+                val dv = schemas.first().defaultValue
+                // propPackage is empty → if condition false → packageName/className stay empty
+                dv != null && dv.rawValue == "CAPTAIN"
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain DefaultEnum with null value returns no default`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+
+            // Create annotation where value argument is null (not blank, null)
+            val annTypeRef: KSTypeReference = mockk()
+            val annResolvedType: KSType = mockk()
+            val annDecl: KSClassDeclaration = mockk()
+            val annQualName: KSName = mockk()
+            every { annQualName.asString() } returns "org.khorum.oss.konstellation.metaDsl.annotation.defaults.DefaultEnum"
+            every { annDecl.qualifiedName } returns annQualName
+            every { annResolvedType.declaration } returns annDecl
+            every { annTypeRef.resolve() } returns annResolvedType
+
+            val ann: KSAnnotation = mockk()
+            every { ann.annotationType } returns annTypeRef
+            every { ann.shortName } returns mockKSName("DefaultEnum")
+            every { ann.arguments } returns listOf(
+                mockk<KSValueArgument>().also { arg ->
+                    every { arg.name } returns mockKSName("value")
+                    io.mockk.every { arg.value } answers { null }
+                }
+            )
+
+            val prop = mockPropWithAnnotations("rank", sequenceOf(ann))
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { null }
+            whenever { service.getParamsFromDomain(domainConfig).first().defaultValue }
         }
     }
 }

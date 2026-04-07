@@ -156,6 +156,64 @@ data class SensorConfig(
 
 ---
 
+## `@DefaultEnum` (property-level)
+
+Sets the builder property's initial value to a specific enum entry. When `packageName` and `className` are omitted, the enum class is inferred from the property's declared type.
+
+**Mutual exclusivity:** A property should not have multiple default annotations. Precedence: `@DefaultState` > `@DefaultEnum` > `@DefaultValue`. A warning is emitted when more than one is present.
+
+**Parameters:**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `value` | `String` | *required* | The enum entry name (e.g. `"ENSIGN"`) |
+| `packageName` | `String` | `""` | Package of the enum class (inferred if empty) |
+| `className` | `String` | `""` | Simple name of the enum class (inferred if empty) |
+
+```kotlin
+@GeneratedDsl
+data class CrewAssignment(
+    // Inferred: Rank is the property type, so packageName/className are auto-detected
+    @DefaultEnum("ENSIGN")
+    val rank: Rank,
+
+    // Explicit: useful for nested enums or when the type doesn't match
+    @DefaultEnum("BRIDGE", packageName = "com.example", className = "CrewAssignment.Department")
+    val department: Department,
+)
+
+// Generated builder properties:
+// var rank: Rank? = Rank.ENSIGN
+// var department: Department? = CrewAssignment.Department.BRIDGE
+```
+
+---
+
+## `@InjectDslMethod` (function-level)
+
+Copies a function from the domain class into the generated DSL builder. The function body is extracted from source and emitted directly in the builder, allowing computed helper methods alongside builder properties.
+
+```kotlin
+@GeneratedDsl
+data class CrewAssignment(
+    val name: String,
+    val rank: Rank,
+) {
+    @InjectDslMethod
+    fun designation(): String = "$name - $rank"
+}
+
+// Generated builder includes:
+// fun designation(): String = "$name - $rank"
+```
+
+**Notes:**
+- Supports both expression-body (`= expr`) and block-body (`{ ... }`) functions
+- Parameters on the function are preserved in the generated method
+- A warning is emitted if the function body references properties not available in the builder (e.g. `@TransientDsl` properties)
+
+---
+
 ## `@ListDsl` (property-level)
 
 Configures list property behavior: size constraints, element transformations, and accessor generation.
@@ -419,7 +477,7 @@ fun timeout(value: Long) { this.timeout = Duration.ofMillis(value) }
 When multiple annotations affect the same property:
 
 1. `@TransientDsl` — if present, the property is skipped entirely
-2. `@DefaultState` / `@DefaultValue` — sets the builder property initial value (`@DefaultState` takes precedence if both present)
+2. `@DefaultState` / `@DefaultEnum` / `@DefaultValue` — sets the builder property initial value (`@DefaultState` > `@DefaultEnum` > `@DefaultValue`)
 3. `@ListDsl` / `@MapDsl` — controls `withVararg`/`withProvider` (takes precedence over `@DslProperty`)
 4. `@DslProperty` — fallback for `withVararg`/`withProvider`
 5. `@DeprecatedDsl` — applied to all generated accessors (including aliases)

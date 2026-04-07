@@ -35,6 +35,7 @@ class DomainConfigTest : UnitSim() {
         every { mockDomain.toClassName() } returns ClassName("org.khorum.oss.test", "StarShip")
         every { mockDomain.containingFile } returns mockFile
         every { mockDomain.annotations } returns emptySequence()
+        every { mockDomain.declarations } returns emptySequence()
     }
 
     @AfterEach
@@ -139,6 +140,14 @@ class DomainConfigTest : UnitSim() {
 
             expect { ClassName("org.khorum.oss.test", "CustomShipDsl") }
             whenever { DomainConfig(builderConfig(), emptyMap(), mockDomain, false).fileClassName }
+        }
+    }
+
+    @Test
+    fun `injectedMethods is empty when domain has no annotated functions`() = test {
+        given {
+            expect { emptyList<InjectedMethod>() }
+            whenever { DomainConfig(builderConfig(), emptyMap(), mockDomain, false).injectedMethods }
         }
     }
 

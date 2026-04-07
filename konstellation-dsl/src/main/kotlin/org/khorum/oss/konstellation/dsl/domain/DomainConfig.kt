@@ -1,12 +1,17 @@
 package org.khorum.oss.konstellation.dsl.domain
 
+import com.google.devtools.ksp.getDeclaredFunctions
 import com.google.devtools.ksp.processing.Dependencies
+import com.google.devtools.ksp.symbol.FileLocation
 import com.google.devtools.ksp.symbol.KSClassDeclaration
+import com.google.devtools.ksp.symbol.KSFunctionDeclaration
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.ksp.toClassName
+import com.squareup.kotlinpoet.ksp.toTypeName
 import org.khorum.oss.konstellation.dsl.utils.AnnotationLookup
 import org.khorum.oss.konstellation.metaDsl.annotation.GeneratedDsl
+import java.io.File
 
 /**
  * Configuration for a domain in the DSL.
@@ -61,10 +66,136 @@ open class DomainConfig(
     open val fileClassName = ClassName(packageName, "${builderBaseName}$dslBuildFilePostfix")
     val dependencies = Dependencies(aggregating = false, sources = listOfNotNull(domain.containingFile).toTypedArray())
 
+    /**
+     * Methods annotated with `@InjectDslMethod` on the domain class body.
+     * These are copied into the generated builder.
+     */
+    val injectedMethods: List<InjectedMethod> = resolveInjectedMethods()
+
     private fun resolveCustomName(): String? {
         val annotation = AnnotationLookup.findAnnotation(domain.annotations, GeneratedDsl::class)
             ?: return null
         val name = AnnotationLookup.findArgumentValue<String>(annotation, GeneratedDsl::name.name)
         return name?.takeIf { it.isNotBlank() }
+    }
+
+    private fun resolveInjectedMethods(): List<InjectedMethod> {
+        return domain.getDeclaredFunctions()
+            .filter { AnnotationLookup.hasAnnotationByName(it.annotations, "InjectDslMethod") }
+            .mapNotNull { fn -> extractInjectedMethod(fn) }
+            .toList()
+    }
+
+    private fun extractInjectedMethod(fn: KSFunctionDeclaration): InjectedMethod? {
+        val name = fn.simpleName.asString()
+        val returnTypeRef = fn.returnType ?: return null
+        val returnType = returnTypeRef.toTypeName()
+        val parameters = fn.parameters.mapNotNull { param ->
+            val ksName = param.name ?: return@mapNotNull null
+            val paramName = ksName.asString()
+            val paramType = param.type.toTypeName()
+            InjectedMethodParameter(paramName, paramType)
+        }
+        val body = extractFunctionBody(fn) ?: return null
+
+        return InjectedMethod(name, parameters, returnType, body)
+    }
+
+    @Suppress("ReturnCount")
+    private fun extractFunctionBody(fn: KSFunctionDeclaration): String? {
+        val location = fn.location as? FileLocation ?: return null
+        val filePath = location.filePath
+        val startLine = location.lineNumber // 1-based
+
+        val sourceLines = try {
+            File(filePath).readLines()
+        } catch (_: Exception) {
+            return null
+        }
+
+        if (startLine < 1 || startLine > sourceLines.size) return null
+
+        val fnLines = sourceLines.subList(startLine - 1, sourceLines.size)
+        val joined = fnLines.joinToString("\n")
+
+        return parseFunctionBody(joined)
+    }
+
+    companion object {
+        /**
+         * Parses a function body from source text starting at the function declaration.
+         * Handles both expression-body (`= expr`) and block-body (`{ ... }`) functions.
+         */
+        internal fun parseFunctionBody(source: String): String? {
+            val eqIndex = findExpressionBodyStart(source)
+            if (eqIndex != null) {
+                val exprBody = extractExpressionBody(source, eqIndex)
+                if (exprBody != null) return exprBody.trim()
+            }
+            return extractBlockBody(source)?.trim()
+        }
+
+        /**
+         * Finds the `=` that starts an expression body, skipping any `=` inside the parameter list.
+         */
+        internal fun findExpressionBodyStart(source: String): Int? {
+            var parenDepth = 0
+            var i = 0
+            while (i < source.length) {
+                when (source[i]) {
+                    '(' -> parenDepth++
+                    ')' -> parenDepth--
+                    '=' -> if (parenDepth == 0 && isExpressionBodyEquals(source, i)) return i
+                    '{' -> if (parenDepth == 0) return null
+                }
+                i++
+            }
+            return null
+        }
+
+        /**
+         * Checks if the `=` at position [i] is a single `=` (expression body) rather than `==`.
+         */
+        private fun isExpressionBodyEquals(source: String, i: Int): Boolean =
+            i + 1 < source.length && source[i + 1] != '='
+
+        internal fun extractExpressionBody(source: String, eqIndex: Int): String? {
+            val afterEq = source.substring(eqIndex + 1)
+            var depth = 0
+            val result = StringBuilder()
+            for (ch in afterEq) {
+                val isTerminator = (ch == '\n' || ch == ')' || ch == '}') && depth == 0
+                if (isTerminator) break
+                when (ch) {
+                    '(', '{' -> { depth++; result.append(ch) }
+                    ')', '}' -> { depth--; result.append(ch) }
+                    else -> result.append(ch)
+                }
+            }
+            val body = result.toString().trim()
+            return body.ifEmpty { null }
+        }
+
+        internal fun extractBlockBody(source: String): String? {
+            val braceStart = source.indexOf('{')
+            if (braceStart == -1) return null
+
+            var depth = 0
+            var i = braceStart
+            while (i < source.length) {
+                when (source[i]) {
+                    '{' -> depth++
+                    '}' -> {
+                        depth--
+                        if (depth == 0) {
+                            return source.substring(braceStart, i + 1)
+                        }
+                    }
+                    else -> Unit
+                }
+                i++
+            }
+            return null
+        }
     }
 }
