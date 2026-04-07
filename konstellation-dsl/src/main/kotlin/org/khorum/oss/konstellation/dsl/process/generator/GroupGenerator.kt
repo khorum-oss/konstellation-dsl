@@ -90,7 +90,11 @@ abstract class GroupGenerator(
      * @param builder The KotlinPoet builder to generate the DSL group.
      * @param domainConfig The configuration of the domain for which the DSL group is generated.
      */
-    fun generate(builder: KPTypeSpecBuilder, domainConfig: DomainConfig, effectiveClassDoc: String? = null) = with(builder) {
+    fun generate(
+        builder: KPTypeSpecBuilder,
+        domainConfig: DomainConfig,
+        effectiveClassDoc: String? = null
+    ) = with(builder) {
         val isGroup = isGroup(domainConfig)
 
         if (!isGroup) return@with
