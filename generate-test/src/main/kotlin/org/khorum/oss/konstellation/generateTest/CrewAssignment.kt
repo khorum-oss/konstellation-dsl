@@ -17,7 +17,6 @@ data class CrewAssignment(
     val department: Department,
 ) {
 
-    @Suppress("WRONG_ANNOTATION_TARGET")
     @InjectDslMethod
     fun designation(): String = "$name - $rank"
 

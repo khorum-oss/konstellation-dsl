@@ -134,7 +134,7 @@ Controls how generated accessors behave for **private** properties. Key differen
 
 **Effect:** Set the builder property's initial value using a predefined `DefaultStateType` enum constant. Preferred over `@DefaultValue` for standard defaults.
 
-**Mutual exclusivity:** If both `@DefaultState` and `@DefaultValue` are present on the same property, `@DefaultState` takes precedence and a warning is emitted during KSP processing.
+**Mutual exclusivity:** If multiple default annotations (`@DefaultState`, `@DefaultEnum`, `@DefaultValue`) are present on the same property, precedence is `@DefaultState` > `@DefaultEnum` > `@DefaultValue`, and a warning is emitted during KSP processing.
 
 **Processing logic:**
 1. Extract the `DefaultStateType` enum entry from the annotation argument (KSP represents enum annotation values as `KSClassDeclaration`)
@@ -314,11 +314,11 @@ data class Config(
 
 ---
 
-### `@InjectDslMethod` (property-level) — Method Injection
+### `@InjectDslMethod` (function-level) — Method Injection
 
-**Effect:** Marks a property whose value should be injected as a method into the generated builder rather than being a simple setter property.
+**Effect:** Marks a function on the domain class whose body should be copied into the generated DSL builder. The function's name, parameters, return type, and body are extracted from source and emitted in the builder class.
 
-The processor should generate a method in the builder that allows the user to define the property's value through a function call pattern rather than direct assignment.
+The processor extracts the function body (expression or block) from the source file at KSP processing time and generates a matching method in the builder.
 
 ---
 
