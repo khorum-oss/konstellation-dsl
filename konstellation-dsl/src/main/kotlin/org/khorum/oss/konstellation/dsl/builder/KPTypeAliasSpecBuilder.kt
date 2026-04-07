@@ -20,6 +20,7 @@ class KPTypeAliasSpecBuilder {
      */
     var type: TypeName? = null
     private var typeVariables: MutableList<TypeVariableName> = mutableListOf()
+    private var kdocString: String? = null
 
     /**
      * Sets the name of the type alias.
@@ -48,6 +49,13 @@ class KPTypeAliasSpecBuilder {
     }
 
     /**
+     * Sets the KDoc comment for the type alias.
+     */
+    fun kdoc(doc: String) {
+        kdocString = doc
+    }
+
+    /**
      * Builds the [TypeAliasSpec] with the specified name, type, and type variables.
      * @return A [TypeAliasSpec] object representing the type alias.
      */
@@ -61,6 +69,8 @@ class KPTypeAliasSpecBuilder {
         for (variable in typeVariables) {
             spec.addTypeVariable(variable)
         }
+
+        kdocString?.let { spec.addKdoc("%L", it) }
 
         return spec.build()
     }
