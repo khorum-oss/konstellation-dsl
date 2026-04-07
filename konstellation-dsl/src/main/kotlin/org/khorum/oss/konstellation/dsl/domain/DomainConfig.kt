@@ -88,9 +88,11 @@ open class DomainConfig(
 
     private fun extractInjectedMethod(fn: KSFunctionDeclaration): InjectedMethod? {
         val name = fn.simpleName.asString()
-        val returnType = fn.returnType?.toTypeName() ?: return null
+        val returnTypeRef = fn.returnType ?: return null
+        val returnType = returnTypeRef.toTypeName()
         val parameters = fn.parameters.mapNotNull { param ->
-            val paramName = param.name?.asString() ?: return@mapNotNull null
+            val ksName = param.name ?: return@mapNotNull null
+            val paramName = ksName.asString()
             val paramType = param.type.toTypeName()
             InjectedMethodParameter(paramName, paramType)
         }
@@ -143,13 +145,19 @@ open class DomainConfig(
                 when (source[i]) {
                     '(' -> parenDepth++
                     ')' -> parenDepth--
-                    '=' -> if (parenDepth == 0 && i + 1 < source.length && source[i + 1] != '=') return i
+                    '=' -> if (parenDepth == 0 && isExpressionBodyEquals(source, i)) return i
                     '{' -> if (parenDepth == 0) return null
                 }
                 i++
             }
             return null
         }
+
+        /**
+         * Checks if the `=` at position [i] is a single `=` (expression body) rather than `==`.
+         */
+        private fun isExpressionBodyEquals(source: String, i: Int): Boolean =
+            i + 1 < source.length && source[i + 1] != '='
 
         internal fun extractExpressionBody(source: String, eqIndex: Int): String? {
             val afterEq = source.substring(eqIndex + 1)
@@ -183,6 +191,7 @@ open class DomainConfig(
                             return source.substring(braceStart, i + 1)
                         }
                     }
+                    else -> Unit
                 }
                 i++
             }

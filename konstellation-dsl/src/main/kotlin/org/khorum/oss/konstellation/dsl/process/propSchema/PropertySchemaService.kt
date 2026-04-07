@@ -251,8 +251,8 @@ class DefaultPropertySchemaService(
             return null
         }
 
-        var packageName = AnnotationLookup.findArgumentValue<Any>(ann, DefaultEnum::packageName.name)?.toString() ?: ""
-        var className = AnnotationLookup.findArgumentValue<Any>(ann, DefaultEnum::className.name)?.toString() ?: ""
+        var packageName = argToString(AnnotationLookup.findArgumentValue<Any>(ann, DefaultEnum::packageName.name))
+        var className = argToString(AnnotationLookup.findArgumentValue<Any>(ann, DefaultEnum::className.name))
 
         // Auto-infer enum class from property type when packageName/className are empty
         if (packageName.isEmpty() && className.isEmpty()) {
@@ -384,3 +384,5 @@ class DefaultPropertySchemaService(
 }
 
 private fun String?.takeUnlessBlank(): String? = if (this != null && this.isNotBlank()) this else null
+
+private fun argToString(value: Any?): String = if (value != null) value.toString() else ""
