@@ -2290,4 +2290,72 @@ class DefaultPropertySchemaServiceTest : UnitSim() {
             }
         }
     }
+
+    @Test
+    fun `getParamsFromDomain DefaultEnum with explicit packageName skips auto-inference`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val prop = mockPropWithDefaultEnum(
+                value = "CAPTAIN",
+                packageName = "com.example",
+                className = "Rank",
+                enumQualifiedName = "com.example.Rank",
+                enumPackageName = "com.example"
+            )
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                val schemas = service.getParamsFromDomain(domainConfig)
+                val dv = schemas.first().defaultValue
+                dv != null && dv.rawValue == "CAPTAIN" && dv.codeBlock.toString() == "Rank.CAPTAIN"
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain DefaultEnum with only packageName set still uses explicit value`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val prop = mockPropWithDefaultEnum(
+                value = "ENSIGN",
+                packageName = "com.example",
+                className = "",
+                enumQualifiedName = "com.example.Rank",
+                enumPackageName = "com.example"
+            )
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                val schemas = service.getParamsFromDomain(domainConfig)
+                val dv = schemas.first().defaultValue
+                // packageName is set but className is empty — doesn't trigger auto-inference
+                dv != null && dv.rawValue == "ENSIGN"
+            }
+        }
+    }
+
+    @Test
+    fun `getParamsFromDomain DefaultEnum with only className set still uses explicit value`() = test {
+        given {
+            val service = DefaultPropertySchemaService()
+            val prop = mockPropWithDefaultEnum(
+                value = "ENSIGN",
+                packageName = "",
+                className = "Rank",
+                enumQualifiedName = "com.example.Rank",
+                enumPackageName = "com.example"
+            )
+            val domainConfig = mockDomainConfig(sequenceOf(prop))
+
+            expect { true }
+            whenever {
+                val schemas = service.getParamsFromDomain(domainConfig)
+                val dv = schemas.first().defaultValue
+                // className set but packageName empty — doesn't trigger auto-inference
+                dv != null && dv.rawValue == "ENSIGN"
+            }
+        }
+    }
 }

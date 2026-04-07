@@ -182,4 +182,45 @@ class DomainConfigSourceParsingTest {
         // { increments depth, } decrements, \n at depth 0 terminates
         assertEquals("mapOf(1 to { x -> x })", DomainConfig.extractExpressionBody(source, eqIndex))
     }
+
+    // --- Additional branch coverage for compound conditions ---
+
+    @Test
+    fun `findExpressionBodyStart with equals at end of source`() {
+        // i + 1 < source.length is false when = is the last char
+        assertNull(DomainConfig.findExpressionBodyStart("fun foo() ="))
+    }
+
+    @Test
+    fun `findExpressionBodyStart with multiple param defaults and expression body`() {
+        val source = "fun foo(a: Int = 1, b: String = \"x\") = a"
+        val idx = DomainConfig.findExpressionBodyStart(source)!!
+        assertTrue(idx > source.lastIndexOf(')'))
+    }
+
+    @Test
+    fun `extractExpressionBody with only whitespace after equals`() {
+        val source = "fun foo() =   "
+        val eqIndex = source.indexOf('=')
+        assertNull(DomainConfig.extractExpressionBody(source, eqIndex))
+    }
+
+    @Test
+    fun `parseFunctionBody with expression body containing nested call`() {
+        val result = DomainConfig.parseFunctionBody("fun foo() = bar(baz())")
+        assertEquals("bar(baz())", result)
+    }
+
+    @Test
+    fun `extractBlockBody with only opening brace`() {
+        assertNull(DomainConfig.extractBlockBody("{"))
+    }
+
+    @Test
+    fun `findExpressionBodyStart with no parens and direct expression`() {
+        // Function with no parameter list (unlikely but exercises no-paren path)
+        val source = "val x = 42"
+        val idx = DomainConfig.findExpressionBodyStart(source)
+        assertNotNull(idx)
+    }
 }
