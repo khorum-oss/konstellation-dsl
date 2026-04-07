@@ -140,4 +140,46 @@ class DomainConfigSourceParsingTest {
         assertTrue(result.endsWith("}"))
         assertTrue(result.contains("val x = 1"))
     }
+
+    // --- Branch coverage tests ---
+
+    @Test
+    fun `parseFunctionBody falls through to block body when expression body is empty`() {
+        // "= " followed by newline yields null from extractExpressionBody, falls through to extractBlockBody
+        val result = DomainConfig.parseFunctionBody("fun foo() = \n{ return 1 }")
+        // extractExpressionBody returns null (whitespace only), then extractBlockBody finds the block
+        assertEquals("{ return 1 }", result)
+    }
+
+    @Test
+    fun `findExpressionBodyStart ignores brace inside parentheses`() {
+        val source = "fun foo(body: () -> Unit = { println() }) = 42"
+        val idx = DomainConfig.findExpressionBodyStart(source)!!
+        // Should find the = before 42, not return null at the { inside parens
+        assertTrue(idx > source.lastIndexOf(')'))
+        assertEquals('=', source[idx])
+    }
+
+    @Test
+    fun `extractExpressionBody stops at closing paren at depth 0`() {
+        // The trailing ) at depth 0 is a terminator
+        val source = "fun foo() = bar(1))"
+        val eqIndex = source.indexOf(" = ") + 1
+        assertEquals("bar(1)", DomainConfig.extractExpressionBody(source, eqIndex))
+    }
+
+    @Test
+    fun `extractExpressionBody stops at closing brace at depth 0`() {
+        val source = "fun foo() = 42}"
+        val eqIndex = source.indexOf(" = ") + 1
+        assertEquals("42", DomainConfig.extractExpressionBody(source, eqIndex))
+    }
+
+    @Test
+    fun `extractExpressionBody handles nested braces in expression`() {
+        val source = "fun foo() = mapOf(1 to { x -> x })\nnextLine"
+        val eqIndex = source.indexOf(" = ") + 1
+        // { increments depth, } decrements, \n at depth 0 terminates
+        assertEquals("mapOf(1 to { x -> x })", DomainConfig.extractExpressionBody(source, eqIndex))
+    }
 }

@@ -9,6 +9,7 @@ import com.google.devtools.ksp.symbol.KSFile
 import com.google.devtools.ksp.symbol.KSFunctionDeclaration
 import com.google.devtools.ksp.symbol.KSName
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
+import com.google.devtools.ksp.symbol.KSValueParameter
 import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSTypeReference
 import com.google.devtools.ksp.symbol.KSValueArgument
@@ -1207,6 +1208,129 @@ class DefaultBuilderGeneratorTest : UnitSim() {
                 generator.generate(codeGen, domain, config, emptyMap(), false)
                 val output = outputStream.toString()
                 !output.contains("designation") && output.contains("build()")
+            }
+        }
+    }
+
+    @Test
+    fun `generate with injected method with parameters produces parameter declarations`() = test {
+        given {
+            val outputStream = ByteArrayOutputStream()
+            val codeGen: CodeGenerator = mockk()
+            io.mockk.every {
+                codeGen.createNewFile(any<Dependencies>(), any(), any(), any())
+            } returns outputStream
+
+            val config = mockBuilderConfig()
+
+            val tempFile = File.createTempFile("TestDomain", ".kt")
+            tempFile.writeText("fun greet(greeting: String): String = \"\$greeting \$name\"")
+            tempFile.deleteOnExit()
+
+            val fnAnn: KSAnnotation = mockk()
+            io.mockk.every { fnAnn.shortName } returns mockKSName("InjectDslMethod")
+
+            val fnReturnTypeRef: KSTypeReference = mockk()
+            io.mockk.every { fnReturnTypeRef.toTypeName() } returns STRING
+
+            // Mock a parameter on the function
+            val paramTypeRef: KSTypeReference = mockk()
+            io.mockk.every { paramTypeRef.toTypeName() } returns STRING
+            val valueParam: KSValueParameter = mockk()
+            io.mockk.every { valueParam.name } returns mockKSName("greeting")
+            io.mockk.every { valueParam.type } returns paramTypeRef
+
+            val fnDecl: KSFunctionDeclaration = mockk()
+            io.mockk.every { fnDecl.simpleName } returns mockKSName("greet")
+            io.mockk.every { fnDecl.annotations } returns sequenceOf(fnAnn)
+            io.mockk.every { fnDecl.returnType } returns fnReturnTypeRef
+            io.mockk.every { fnDecl.parameters } returns listOf(valueParam)
+
+            val fileLocation: FileLocation = mockk()
+            io.mockk.every { fileLocation.filePath } returns tempFile.absolutePath
+            io.mockk.every { fileLocation.lineNumber } returns 1
+            io.mockk.every { fnDecl.location } returns fileLocation
+
+            val domain: KSClassDeclaration = mockk()
+            io.mockk.every { domain.toClassName() } returns ClassName("org.test", "StarShip")
+            io.mockk.every { domain.packageName } returns mockKSName("org.test")
+            io.mockk.every { domain.simpleName } returns mockKSName("StarShip")
+            io.mockk.every { domain.containingFile } returns mockk<KSFile>()
+            io.mockk.every { domain.getAllProperties() } returns sequenceOf(mockProp("name"))
+            io.mockk.every { domain.docString } returns ""
+            io.mockk.every { domain.annotations } returns emptySequence()
+            io.mockk.every { domain.declarations } returns sequenceOf(fnDecl)
+
+            val generator = DefaultBuilderGenerator()
+
+            expect { true }
+            whenever {
+                generator.generate(codeGen, domain, config, emptyMap(), false)
+                val output = outputStream.toString()
+                output.contains("fun greet(greeting: String)") && output.contains("String")
+            }
+        }
+    }
+
+    @Test
+    fun `generate with injected method referencing missing property emits warning`() = test {
+        given {
+            val outputStream = ByteArrayOutputStream()
+            val codeGen: CodeGenerator = mockk()
+            io.mockk.every {
+                codeGen.createNewFile(any<Dependencies>(), any(), any(), any())
+            } returns outputStream
+
+            val config = mockBuilderConfig()
+
+            val tempFile = File.createTempFile("TestDomain", ".kt")
+            tempFile.writeText("fun designation(): String = \"\$name - \$rank\"")
+            tempFile.deleteOnExit()
+
+            val fnAnn: KSAnnotation = mockk()
+            io.mockk.every { fnAnn.shortName } returns mockKSName("InjectDslMethod")
+
+            val fnReturnTypeRef: KSTypeReference = mockk()
+            io.mockk.every { fnReturnTypeRef.toTypeName() } returns STRING
+
+            val fnDecl: KSFunctionDeclaration = mockk()
+            io.mockk.every { fnDecl.simpleName } returns mockKSName("designation")
+            io.mockk.every { fnDecl.annotations } returns sequenceOf(fnAnn)
+            io.mockk.every { fnDecl.returnType } returns fnReturnTypeRef
+            io.mockk.every { fnDecl.parameters } returns emptyList()
+
+            val fileLocation: FileLocation = mockk()
+            io.mockk.every { fileLocation.filePath } returns tempFile.absolutePath
+            io.mockk.every { fileLocation.lineNumber } returns 1
+            io.mockk.every { fnDecl.location } returns fileLocation
+
+            // rank is a @TransientDsl property — present in domain but excluded from builder params
+            val transientAnn: KSAnnotation = mockk()
+            io.mockk.every { transientAnn.shortName } returns mockKSName("TransientDsl")
+            io.mockk.every { transientAnn.arguments } returns emptyList()
+            val rankProp = mockProp("rank")
+            io.mockk.every { rankProp.annotations } returns sequenceOf(transientAnn)
+
+            val domain: KSClassDeclaration = mockk()
+            io.mockk.every { domain.toClassName() } returns ClassName("org.test", "StarShip")
+            io.mockk.every { domain.packageName } returns mockKSName("org.test")
+            io.mockk.every { domain.simpleName } returns mockKSName("StarShip")
+            io.mockk.every { domain.containingFile } returns mockk<KSFile>()
+            io.mockk.every { domain.getAllProperties() } returns sequenceOf(
+                mockProp("name"), rankProp
+            )
+            io.mockk.every { domain.docString } returns ""
+            io.mockk.every { domain.annotations } returns emptySequence()
+            io.mockk.every { domain.declarations } returns sequenceOf(fnDecl)
+
+            val generator = DefaultBuilderGenerator()
+
+            expect { true }
+            whenever {
+                // Should complete without error; warning is logged but not fatal
+                generator.generate(codeGen, domain, config, emptyMap(), false)
+                val output = outputStream.toString()
+                output.contains("fun designation()")
             }
         }
     }
