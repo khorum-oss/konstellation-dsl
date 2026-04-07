@@ -93,7 +93,10 @@ class DefaultBuilderGenerator(
     ) = debugLog(domainConfig) {
         val schemas: List<DslPropSchema> = parameterService.getParamsFromDomain(domainConfig)
 
-        val builderContent: TypeSpec = generateBuilderFileContent(domainConfig, schemas)
+        // Resolve class-level doc for builder and scope type aliases
+        val effectiveClassDoc = resolveClassDoc(domainConfig)
+
+        val builderContent: TypeSpec = generateBuilderFileContent(domainConfig, schemas, effectiveClassDoc)
 
         val builderScopeTypeAlias: String = domainConfig.builderName
 
@@ -105,7 +108,7 @@ class DefaultBuilderGenerator(
         if (hasGroup) typeAliasNames.add("${builderScopeTypeAlias}.Group")
         if (hasMapGroup) typeAliasNames.add("${builderScopeTypeAlias}.MapGroup")
 
-        val typeAliases: List<TypeAliasSpec> = generateTypeAliases(typeAliasNames, domainConfig)
+        val typeAliases: List<TypeAliasSpec> = generateTypeAliases(typeAliasNames, domainConfig, effectiveClassDoc)
 
         val fileSpec = createFileSpec(schemas, domainConfig, typeAliases, builderContent)
 
@@ -136,18 +139,10 @@ class DefaultBuilderGenerator(
      */
     private fun generateBuilderFileContent(
         domainConfig: DomainConfig,
-        params: List<DslPropSchema>
+        params: List<DslPropSchema>,
+        effectiveClassDoc: String?
     ): TypeSpec = kotlinPoet {
         val domainClassName = domainConfig.domainClassName
-
-        // Check for @DslDescription on the domain class for builder KDoc
-        val descriptionAnnotation = AnnotationLookup.findAnnotationByName(
-            domainConfig.domain.annotations, "DslDescription"
-        )
-        val classDescription = if (descriptionAnnotation != null) {
-            val desc = AnnotationLookup.findArgumentValue<String>(descriptionAnnotation, "value")
-            if (desc != null && desc.isNotBlank()) desc else null
-        } else null
 
         type {
             annotations {
@@ -159,7 +154,6 @@ class DefaultBuilderGenerator(
             name = domainConfig.builderName
 
             // Add KDoc from @DslDescription on the class, falling back to source KDoc
-            val effectiveClassDoc = classDescription ?: cleanDocString(domainConfig.domain.docString)
             effectiveClassDoc?.let { kdoc(it) }
 
             superInterface(domainConfig.parameterizedDslBuilder)
@@ -205,14 +199,15 @@ class DefaultBuilderGenerator(
                 }
             }
 
-            listGroupGenerator.generate(this, domainConfig)
-            mapGroupGenerator.generate(this, domainConfig)
+            listGroupGenerator.generate(this, domainConfig, effectiveClassDoc)
+            mapGroupGenerator.generate(this, domainConfig, effectiveClassDoc)
         }
     }
 
     private fun generateTypeAliases(
         typeAliasNames: List<String>,
-        domainConfig: DomainConfig
+        domainConfig: DomainConfig,
+        effectiveClassDoc: String?
     ): List<TypeAliasSpec> {
         return typeAliasNames
             .onEach {
@@ -242,6 +237,7 @@ class DefaultBuilderGenerator(
                         name = it.name
                         type = it.type
                         if (hasMap) typeVariables(TypeVariableName("K"))
+                        effectiveClassDoc?.let { doc -> kdoc(doc) }
                     }
                 }
             }
@@ -346,6 +342,17 @@ class DefaultBuilderGenerator(
                     "This will cause a compile error in the generated code."
             )
         }
+    }
+
+    private fun resolveClassDoc(domainConfig: DomainConfig): String? {
+        val descriptionAnnotation = AnnotationLookup.findAnnotationByName(
+            domainConfig.domain.annotations, "DslDescription"
+        )
+        val classDescription = if (descriptionAnnotation != null) {
+            val desc = AnnotationLookup.findArgumentValue<String>(descriptionAnnotation, "value")
+            if (desc != null && desc.isNotBlank()) desc else null
+        } else null
+        return classDescription ?: cleanDocString(domainConfig.domain.docString)
     }
 
     companion object {
