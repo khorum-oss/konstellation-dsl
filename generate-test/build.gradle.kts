@@ -8,6 +8,7 @@ dependencies {
     ksp(project(":konstellation-dsl"))
     implementation(rootProject.libs.konstellation.meta.dsl)
     implementation(rootProject.libs.kotlin.test.junit5)
+    implementation(project(":cross-module-test"))
     testImplementation(project(":core-test"))
 }
 

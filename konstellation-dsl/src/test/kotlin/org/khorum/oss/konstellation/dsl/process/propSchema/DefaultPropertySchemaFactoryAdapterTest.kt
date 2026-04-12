@@ -385,6 +385,62 @@ class DefaultPropertySchemaFactoryAdapterTest : UnitSim() {
         }
     }
 
+    /**
+     * Cross-module regression: `@GeneratedDsl` has `SOURCE` retention, so for
+     * property types loaded from another module's compiled JAR the annotation
+     * is stripped and KSP cannot see it. When that happens, the adapter should
+     * fall back to looking up `${qualifiedName}DslBuilder` on the active
+     * [com.google.devtools.ksp.processing.Resolver] so the type is still
+     * recognised as a DSL builder type and the parent builder gets a nested
+     * `fun <propName>(block)` accessor instead of silently falling through to
+     * `DefaultPropSchema`.
+     */
+    @Test
+    fun `hasGeneratedDslAnnotation falls back to resolver lookup when annotation is missing`() = test {
+        given {
+            val classDecl: KSClassDeclaration = mockk()
+            io.mockk.every { classDecl.toClassName() } returns ClassName("org.test", "CrossModule")
+            io.mockk.every { classDecl.annotations } returns emptySequence()
+            io.mockk.every { classDecl.qualifiedName } returns mockKSName("org.test.CrossModule")
+
+            val builderName = mockKSName("org.test.CrossModuleDslBuilder")
+            val builderDecl: KSClassDeclaration = mockk()
+            val resolver: com.google.devtools.ksp.processing.Resolver = mockk {
+                io.mockk.every { getKSNameFromString("org.test.CrossModuleDslBuilder") } returns builderName
+                io.mockk.every { getClassDeclarationByName(builderName) } returns builderDecl
+            }
+
+            val adapter = org.khorum.oss.konstellation.dsl.process.ResolverContext.withResolver(resolver) {
+                DefaultPropertySchemaFactoryAdapter(mockProp(declarationClass = classDecl), null)
+            }
+
+            expect { true }
+            whenever { adapter.hasGeneratedDslAnnotation }
+        }
+    }
+
+    @Test
+    fun `hasGeneratedDslAnnotation fallback returns false when resolver cannot find builder`() = test {
+        given {
+            val classDecl: KSClassDeclaration = mockk()
+            io.mockk.every { classDecl.toClassName() } returns ClassName("org.test", "Plain")
+            io.mockk.every { classDecl.annotations } returns emptySequence()
+            io.mockk.every { classDecl.qualifiedName } returns mockKSName("org.test.Plain")
+
+            val builderName = mockKSName("org.test.PlainDslBuilder")
+            val resolver: com.google.devtools.ksp.processing.Resolver = mockk()
+            io.mockk.every { resolver.getKSNameFromString("org.test.PlainDslBuilder") } returns builderName
+            io.mockk.every { resolver.getClassDeclarationByName(builderName) } answers { null }
+
+            val adapter = org.khorum.oss.konstellation.dsl.process.ResolverContext.withResolver(resolver) {
+                DefaultPropertySchemaFactoryAdapter(mockProp(declarationClass = classDecl), null)
+            }
+
+            expect { false }
+            whenever { adapter.hasGeneratedDslAnnotation }
+        }
+    }
+
     @Test
     fun `propertyNonNullableClassName returns class name from declaration`() = test {
         given {

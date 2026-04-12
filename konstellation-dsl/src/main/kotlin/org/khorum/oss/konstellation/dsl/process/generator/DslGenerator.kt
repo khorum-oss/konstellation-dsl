@@ -7,6 +7,7 @@ import com.squareup.kotlinpoet.ksp.toClassName
 import org.khorum.oss.konstellation.dsl.domain.BuilderConfig
 import org.khorum.oss.konstellation.dsl.domain.DefaultDomainProperty
 import org.khorum.oss.konstellation.dsl.domain.DomainProperty
+import org.khorum.oss.konstellation.dsl.process.ResolverContext
 import org.khorum.oss.konstellation.dsl.process.propSchema.DefaultPropertySchemaFactory
 import org.khorum.oss.konstellation.dsl.process.propSchema.DefaultPropertySchemaFactoryAdapter
 import org.khorum.oss.konstellation.dsl.process.propSchema.PropertySchemaFactory
@@ -74,7 +75,11 @@ class DefaultDslGenerator(
      * - **dslBuilderClasspath** ~required~ the classpath to the custom DslBuilder class
      * - **dslMarkerClass** ~required~ the class that contains a [DslMarker] to denote the host dsl name.
      */
-    override fun generate(resolver: Resolver, codeGenerator: CodeGenerator, options: Map<String, String?>) {
+    override fun generate(
+        resolver: Resolver,
+        codeGenerator: CodeGenerator,
+        options: Map<String, String?>
+    ) = ResolverContext.withResolver(resolver) {
         val builderConfig = BuilderConfig(options, logger)
 
         if (builderConfig.isIgnored) {
@@ -82,7 +87,7 @@ class DefaultDslGenerator(
                 "------------------------ [SKIP] GENERATE for project: ${builderConfig.projectRootClasspath}",
                 tier = 0
             )
-            return
+            return@withResolver
         }
 
         logger.debug("------------------------ GENERATE for project: ${builderConfig.projectRootClasspath}", tier = 0)
@@ -118,7 +123,7 @@ class DefaultDslGenerator(
 
         if (rootClasses.isEmpty()) {
             logger.debug("No root classes found.")
-            return
+            return@withResolver
         }
         rootDslAccessorGenerator.generate(
             codeGenerator, rootClasses, builderConfig
