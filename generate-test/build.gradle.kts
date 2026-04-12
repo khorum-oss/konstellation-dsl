@@ -23,9 +23,9 @@ kotlin {
 }
 
 ksp {
-    arg("projectRootClasspath", "org.khorum.oss.konstellation.generateTest")
-    arg("dslBuilderClasspath", "org.khorum.oss.konstellation.generateTest")
-    arg("dslMarkerClass", "org.khorum.oss.konstellation.generateTest.TestDslMarker")
+    arg("projectRootClasspath", "org.khorum.oss.konstellation.generatetest")
+    arg("dslBuilderClasspath", "org.khorum.oss.konstellation.generatetest")
+    arg("dslMarkerClass", "org.khorum.oss.konstellation.generatetest.TestDslMarker")
 }
 
 tasks.named("compileTestKotlin") {
