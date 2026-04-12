@@ -1,4 +1,4 @@
-package org.khorum.oss.konstellation.crossModuleTest
+package org.khorum.oss.konstellation.crossmoduletest
 
 import org.khorum.oss.konstellation.metaDsl.annotation.GeneratedDsl
 import org.khorum.oss.konstellation.metaDsl.annotation.RootDsl

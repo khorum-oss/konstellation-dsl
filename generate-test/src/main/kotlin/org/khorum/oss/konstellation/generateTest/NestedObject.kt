@@ -1,6 +1,6 @@
 package org.khorum.oss.konstellation.generateTest
 
-import org.khorum.oss.konstellation.crossModuleTest.CrossModuleNested
+import org.khorum.oss.konstellation.crossmoduletest.CrossModuleNested
 import org.khorum.oss.konstellation.metaDsl.annotation.GeneratedDsl
 
 /**

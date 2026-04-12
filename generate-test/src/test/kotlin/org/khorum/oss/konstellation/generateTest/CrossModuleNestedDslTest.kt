@@ -1,7 +1,7 @@
 package org.khorum.oss.konstellation.generateTest
 
 import org.khorum.oss.geordi.UnitSim
-import org.khorum.oss.konstellation.crossModuleTest.CrossModuleNested
+import org.khorum.oss.konstellation.crossmoduletest.CrossModuleNested
 import org.junit.jupiter.api.Test
 
 /**

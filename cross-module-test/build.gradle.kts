@@ -18,7 +18,7 @@ kotlin {
 }
 
 ksp {
-    arg("projectRootClasspath", "org.khorum.oss.konstellation.crossModuleTest")
-    arg("dslBuilderClasspath", "org.khorum.oss.konstellation.crossModuleTest")
-    arg("dslMarkerClass", "org.khorum.oss.konstellation.crossModuleTest.CrossModuleDslMarker")
+    arg("projectRootClasspath", "org.khorum.oss.konstellation.crossmoduletest")
+    arg("dslBuilderClasspath", "org.khorum.oss.konstellation.crossmoduletest")
+    arg("dslMarkerClass", "org.khorum.oss.konstellation.crossmoduletest.CrossModuleDslMarker")
 }
