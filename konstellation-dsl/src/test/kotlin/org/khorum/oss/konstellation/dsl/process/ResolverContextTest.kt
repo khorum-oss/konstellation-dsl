@@ -81,6 +81,21 @@ class ResolverContextTest : UnitSim() {
     }
 
     @Test
+    fun `hasGeneratedDslBuilderFor returns false when declaration has no qualified name`() = test {
+        given {
+            val resolver: Resolver = mockk(relaxed = true)
+            val decl: KSClassDeclaration = mockk(relaxed = true)
+            io.mockk.every { decl.qualifiedName } answers { null }
+            expect { false }
+            whenever {
+                ResolverContext.withResolver(resolver) {
+                    ResolverContext.hasGeneratedDslBuilderFor(decl)
+                }
+            }
+        }
+    }
+
+    @Test
     fun `hasGeneratedDslBuilderFor returns true when resolver finds sibling DslBuilder`() = test {
         given {
             val builderName: KSName = mockk(relaxed = true)

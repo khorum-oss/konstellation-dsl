@@ -711,6 +711,123 @@ class DefaultPropertySchemaFactoryAdapterTest : UnitSim() {
         }
     }
 
+    /**
+     * Covers the `hasMapGroup() == true` branch at
+     * [DefaultPropertySchemaFactoryAdapter.hasMapGroup]. When a map's value type is itself
+     * a `@GeneratedDsl` class, `mapDetails().hasMapGroup` must be true so downstream
+     * schema generation emits a `MapGroupPropSchema` instead of a plain `MapPropSchema`.
+     */
+    @Test
+    fun `mapDetails hasMapGroup is true when value decl is annotated with GeneratedDsl`() = test {
+        given {
+            expect { true }
+            whenever {
+                val keyDecl: KSClassDeclaration = mockk()
+                io.mockk.every { keyDecl.annotations } returns emptySequence()
+                io.mockk.every { keyDecl.toClassName() } returns ClassName("kotlin", "String")
+                val keyResolvedType: KSType = mockk()
+                io.mockk.every { keyResolvedType.declaration } returns keyDecl
+                val keyTypeRef: KSTypeReference = mockk()
+                io.mockk.every { keyTypeRef.resolve() } returns keyResolvedType
+                val keyArg: KSTypeArgument = mockk(relaxed = true)
+                io.mockk.every { keyArg.type } returns keyTypeRef
+
+                val valueDecl: KSClassDeclaration = mockk()
+                val genDslAnn: KSAnnotation = mockk()
+                io.mockk.every { genDslAnn.shortName } returns mockKSName("GeneratedDsl")
+                io.mockk.every { genDslAnn.arguments } returns emptyList()
+                io.mockk.every { valueDecl.annotations } returns sequenceOf(genDslAnn)
+                io.mockk.every { valueDecl.toClassName() } returns ClassName("org.test", "Ship")
+                val valueResolvedType: KSType = mockk()
+                io.mockk.every { valueResolvedType.declaration } returns valueDecl
+                val valueTypeRef: KSTypeReference = mockk()
+                io.mockk.every { valueTypeRef.resolve() } returns valueResolvedType
+                val valueArg: KSTypeArgument = mockk(relaxed = true)
+                io.mockk.every { valueArg.type } returns valueTypeRef
+
+                val mapTypeName = com.squareup.kotlinpoet.MAP.parameterizedBy(STRING, ClassName("org.test", "Ship"))
+                val typeRef: KSTypeReference = mockk()
+                io.mockk.every { typeRef.toTypeName() } returns mapTypeName
+                val resolvedType: KSType = mockk()
+                io.mockk.every { resolvedType.isMarkedNullable } returns false
+                val propDecl: KSClassDeclaration = mockk()
+                io.mockk.every { propDecl.toClassName() } returns ClassName("kotlin.collections", "Map")
+                io.mockk.every { propDecl.annotations } returns emptySequence()
+                io.mockk.every { propDecl.qualifiedName } returns mockKSName("kotlin.collections.Map")
+                io.mockk.every { resolvedType.declaration } returns propDecl
+                io.mockk.every { resolvedType.arguments } returns listOf(keyArg, valueArg)
+                io.mockk.every { typeRef.resolve() } returns resolvedType
+
+                val prop: KSPropertyDeclaration = mockk()
+                io.mockk.every { prop.simpleName } returns mockKSName("shipMap")
+                io.mockk.every { prop.type } returns typeRef
+                io.mockk.every { prop.annotations } returns emptySequence()
+
+                val adapter = DefaultPropertySchemaFactoryAdapter(prop, null)
+                adapter.mapDetails()?.hasMapGroup == true
+            }
+        }
+    }
+
+    /**
+     * Covers the short-circuit branch at [DefaultPropertySchemaFactoryAdapter.hasMapGroup]
+     * where `collectionSecondElementClassDecl == null`. This happens when the map value's
+     * type argument resolves to something that isn't a [KSClassDeclaration] (for example,
+     * a type parameter) — the map type is still parameterized, but we can't reason about
+     * the value's DSL-ness, so `hasMapGroup` must return false rather than NPE.
+     */
+    @Test
+    fun `mapDetails hasMapGroup is false when value decl is not a KSClassDeclaration`() = test {
+        given {
+            expect { false }
+            whenever {
+                val keyDecl: KSClassDeclaration = mockk()
+                io.mockk.every { keyDecl.annotations } returns emptySequence()
+                io.mockk.every { keyDecl.toClassName() } returns ClassName("kotlin", "String")
+                val keyResolvedType: KSType = mockk()
+                io.mockk.every { keyResolvedType.declaration } returns keyDecl
+                val keyTypeRef: KSTypeReference = mockk()
+                io.mockk.every { keyTypeRef.resolve() } returns keyResolvedType
+                val keyArg: KSTypeArgument = mockk(relaxed = true)
+                io.mockk.every { keyArg.type } returns keyTypeRef
+
+                // Value decl is NOT a KSClassDeclaration — resolveTypeArgDecl returns null,
+                // so collectionSecondElementClassDecl is null.
+                val nonClassDecl: com.google.devtools.ksp.symbol.KSDeclaration = mockk()
+                val valueResolvedType: KSType = mockk()
+                io.mockk.every { valueResolvedType.declaration } returns nonClassDecl
+                val valueTypeRef: KSTypeReference = mockk()
+                io.mockk.every { valueTypeRef.resolve() } returns valueResolvedType
+                val valueArg: KSTypeArgument = mockk(relaxed = true)
+                io.mockk.every { valueArg.type } returns valueTypeRef
+
+                val mapTypeName = com.squareup.kotlinpoet.MAP.parameterizedBy(
+                    STRING,
+                    com.squareup.kotlinpoet.TypeVariableName("V"),
+                )
+                val typeRef: KSTypeReference = mockk()
+                io.mockk.every { typeRef.toTypeName() } returns mapTypeName
+                val resolvedType: KSType = mockk()
+                io.mockk.every { resolvedType.isMarkedNullable } returns false
+                val propDecl: KSClassDeclaration = mockk()
+                io.mockk.every { propDecl.toClassName() } returns ClassName("kotlin.collections", "Map")
+                io.mockk.every { propDecl.annotations } returns emptySequence()
+                io.mockk.every { propDecl.qualifiedName } returns mockKSName("kotlin.collections.Map")
+                io.mockk.every { resolvedType.declaration } returns propDecl
+                io.mockk.every { resolvedType.arguments } returns listOf(keyArg, valueArg)
+                io.mockk.every { typeRef.resolve() } returns resolvedType
+
+                val prop: KSPropertyDeclaration = mockk()
+                io.mockk.every { prop.simpleName } returns mockKSName("rawMap")
+                io.mockk.every { prop.type } returns typeRef
+                io.mockk.every { prop.annotations } returns emptySequence()
+
+                val adapter = DefaultPropertySchemaFactoryAdapter(prop, null)
+                adapter.mapDetails()?.hasMapGroup ?: false
+            }
+        }
+    }
+
     @Test
     fun `classDeclarationInternal null when declaration is not KSClassDeclaration`() = test {
         given {

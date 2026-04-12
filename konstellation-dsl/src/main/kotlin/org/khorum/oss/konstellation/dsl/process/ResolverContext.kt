@@ -53,8 +53,8 @@ object ResolverContext {
      */
     fun hasGeneratedDslBuilderFor(declaration: KSClassDeclaration): Boolean {
         val resolver = current ?: return false
-        val qualifiedName = declaration.qualifiedName?.asString() ?: return false
-        val builderName = "${qualifiedName}DslBuilder"
+        val qName = declaration.qualifiedName ?: return false
+        val builderName = "${qName.asString()}DslBuilder"
         val ksName = resolver.getKSNameFromString(builderName)
         return resolver.getClassDeclarationByName(ksName) != null
     }
