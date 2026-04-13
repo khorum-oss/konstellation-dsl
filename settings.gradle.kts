@@ -11,7 +11,8 @@ pluginManagement {
 includeModules(
     "core-test",
     "konstellation-dsl",
-    "generate-test"
+    "generate-test",
+    "cross-module-test"
 )
 
 class Module(private val moduleName: String) {
