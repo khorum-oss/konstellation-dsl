@@ -35,7 +35,7 @@ class MapGroupPropSchema(
             name = propName
             type(propTypeName)
 
-            defaultValue?.codeBlock?.let { initializer = it } ?: initNullValue()
+            defaultValue?.let { initializer = it.codeBlock } ?: initNullValue()
         }
     }
 

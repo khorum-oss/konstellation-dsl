@@ -30,7 +30,7 @@ class GroupPropSchema(
             name = propName
             type(assignmentType)
             mutable()
-            defaultValue?.codeBlock?.let { initializer = it } ?: initNullValue()
+            defaultValue?.let { initializer = it.codeBlock } ?: initNullValue()
         }
     }
 
