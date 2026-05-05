@@ -225,7 +225,8 @@ abstract class AbstractPropertySchemaFactory<T : PropertySchemaFactoryAdapter, P
             adapter.actualPropTypeName,
             groupElementClassName,
             adapter.hasNullableAssignment,
-            adapter.annotationMetadata
+            adapter.annotationMetadata,
+            adapter.defaultValue
         )
     }
 
@@ -237,7 +238,8 @@ abstract class AbstractPropertySchemaFactory<T : PropertySchemaFactoryAdapter, P
             mapDetails.keyType,
             mapDetails.valueType,
             adapter.hasNullableAssignment,
-            adapter.annotationMetadata
+            adapter.annotationMetadata,
+            adapter.defaultValue
         )
     }
 
