@@ -1201,4 +1201,76 @@ class DslPropSchemaBranchTest : UnitSim() {
             whenever { param.accessors().size }
         }
     }
+
+    // --- GroupPropSchema toPropertySpec defaultValue branches ---
+
+    @Test
+    fun `GroupPropSchema toPropertySpec without defaultValue initializes with null`() = test {
+        given {
+            val param = GroupPropSchema(
+                "items",
+                com.squareup.kotlinpoet.ClassName("test", "Item"),
+                com.squareup.kotlinpoet.ClassName("test", "Item"),
+                defaultValue = null
+            )
+            expect { true }
+            whenever { param.toPropertySpec().toString().contains("null") }
+        }
+    }
+
+    @Test
+    fun `GroupPropSchema toPropertySpec with defaultValue uses initializer`() = test {
+        given {
+            val dv = org.khorum.oss.konstellation.dsl.domain.DefaultPropertyValue(
+                rawValue = "mutableListOf()",
+                codeBlock = com.squareup.kotlinpoet.CodeBlock.of("%L", "mutableListOf()"),
+                packageName = "",
+                className = ""
+            )
+            val param = GroupPropSchema(
+                "items",
+                com.squareup.kotlinpoet.ClassName("test", "Item"),
+                com.squareup.kotlinpoet.ClassName("test", "Item"),
+                defaultValue = dv
+            )
+            expect { true }
+            whenever { param.toPropertySpec().toString().contains("mutableListOf()") }
+        }
+    }
+
+    // --- MapGroupPropSchema toPropertySpec defaultValue branches ---
+
+    @Test
+    fun `MapGroupPropSchema toPropertySpec without defaultValue initializes with null`() = test {
+        given {
+            val param = MapGroupPropSchema(
+                "entries",
+                STRING,
+                com.squareup.kotlinpoet.ClassName("test", "Ship"),
+                defaultValue = null
+            )
+            expect { true }
+            whenever { param.toPropertySpec().toString().contains("null") }
+        }
+    }
+
+    @Test
+    fun `MapGroupPropSchema toPropertySpec with defaultValue uses initializer`() = test {
+        given {
+            val dv = org.khorum.oss.konstellation.dsl.domain.DefaultPropertyValue(
+                rawValue = "mutableMapOf()",
+                codeBlock = com.squareup.kotlinpoet.CodeBlock.of("%L", "mutableMapOf()"),
+                packageName = "",
+                className = ""
+            )
+            val param = MapGroupPropSchema(
+                "entries",
+                STRING,
+                com.squareup.kotlinpoet.ClassName("test", "Ship"),
+                defaultValue = dv
+            )
+            expect { true }
+            whenever { param.toPropertySpec().toString().contains("mutableMapOf()") }
+        }
+    }
 }

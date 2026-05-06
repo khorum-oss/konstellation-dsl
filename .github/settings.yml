@@ -1,0 +1,28 @@
+# Repository configuration for the `repository-settings/app` GitHub App.
+# Install: https://github.com/apps/settings — once installed, pushes to the
+# default branch reconcile this file with GitHub repo settings.
+
+branches:
+  - name: main
+    protection:
+      required_pull_request_reviews:
+        required_approving_review_count: 0
+        dismiss_stale_reviews: true
+        require_code_owner_reviews: false
+      required_status_checks:
+        strict: true
+        # Names must match the check-run names GitHub displays on a PR.
+        # For reusable workflows the visible name is usually `<job-id> / <called-job>`
+        # — verify against a recent PR's Checks tab and adjust if needed.
+        contexts:
+          - build-check
+          - detekt-check
+          - unit-tests
+          - coverage-and-sonar
+      enforce_admins: true
+      required_linear_history: true
+      required_signatures: false
+      allow_force_pushes: false
+      allow_deletions: false
+      required_conversation_resolution: true
+      restrictions: null

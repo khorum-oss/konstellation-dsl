@@ -8,6 +8,7 @@ import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import org.khorum.oss.konstellation.dsl.builder.kotlinPoet
 import org.khorum.oss.konstellation.dsl.builder.kpMapOf
+import org.khorum.oss.konstellation.dsl.domain.DefaultPropertyValue
 import org.khorum.oss.konstellation.dsl.domain.PropertyAnnotationMetadata
 
 /**
@@ -18,7 +19,8 @@ class MapGroupPropSchema(
     val mapKeyType: TypeName = STRING,
     val mapValueType: TypeName,
     override val nullableAssignment: Boolean = true,
-    override val annotationMetadata: PropertyAnnotationMetadata = PropertyAnnotationMetadata()
+    override val annotationMetadata: PropertyAnnotationMetadata = PropertyAnnotationMetadata(),
+    override val defaultValue: DefaultPropertyValue? = null
 ) : DslPropSchema {
     override val propTypeName: TypeName = kpMapOf(mapKeyType, mapValueType, nullable = true)
     override val iterableType: DslPropSchema.IterableType = DslPropSchema.IterableType.MAP
@@ -33,7 +35,7 @@ class MapGroupPropSchema(
             name = propName
             type(propTypeName)
 
-            initNullValue()
+            defaultValue?.let { initializer = it.codeBlock } ?: initNullValue()
         }
     }
 
